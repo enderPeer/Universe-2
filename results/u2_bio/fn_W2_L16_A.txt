@@ -1,0 +1,17 @@
+machine	EAT,MATE_A,SLEEP,WASTE
+mode	fn
+W	2
+L	16
+steps	64
+programs	5726623060
+distinct	16855
+after_length	4	6	18	32	66	135	283	586	1214	2604	5335	11174	14560	15703	16418	16855
+checksum	9df291c7fc187d69
+bijections	68
+constants	16
+vocab_hits	7
+vocab	id;x!=0;x>=8;x&1;const0;const15;const1;
+image_size_histogram	16	2068	3362	3066	2404	1922	1124	914	420	315	167	571	296	50	92	68
+secs	1556.5
+threads	24
+host	adler40

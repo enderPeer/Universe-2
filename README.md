@@ -57,7 +57,7 @@ the same machines by distinct functions of a 4-bit input, Universe-1's measure. 
 2,930,290 distinct unary functions, 1.6 times the Universe-1 champion's 1,829,051 at the same program size**, with
 64 instead of 256 steps and no register; JC (8,533,818) stays ahead. Every top machine has exactly one conditional;
 the perfect drawing machines compute 5 to 10 functions; Böhm's P'' ranks 2,628th. A proposed biological machine
-(EAT, MATE, SLEEP, WASTE) ranks in the top 10 % for functions but saturates near 16,000.
+(EAT, MATE, SLEEP, WASTE) ranks in the top 10 % for functions but saturates: 16,855 functions over all 5.7 billion programs of up to 16 symbols.
 
 **Real ISAs.** AArch64 exhaustive over all 2^32 words: **1,526,900,218 valid instructions (35.5509 %)**, 1,298
 mnemonics, 15 minutes on the workstation. Encoding density of other ISAs (16.7 M-word samples, Capstone): ARM32

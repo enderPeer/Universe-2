@@ -79,7 +79,29 @@ and the popcount family nowhere.
 
 ## 3. The top 644 machines rerun at 10 symbols (1,398,100 programs each)
 
-*(collected from the cluster when the run finishes; results/u2_tables/report_fn_L10_s64_sub644.json)*
+The union of the 400 best machines of each width at 8 symbols (644 ids) was rerun at L = 10 on the four nodes
+(adler40 147 s for 281 machines per width, falke64 71 s, knecht24 57 s, specht32 98 s; the first launch of this
+step was aborted because it ran each machine single-threaded, see the launch notes). Files:
+`results/u2_tables/fn_L10_s64_sub644_W{1,2}.tsv`, `report_fn_L10_s64_sub644.json`.
+
+| | W = 1 | W = 2 |
+|---|---|---|
+| best machine at 10 symbols | `L1, INC_L1, FLIP_R2, JNZB` (11037): **274,601** functions = 19.6 % of all programs | `INC, INC_R1, INC_L1, JNZB` (33395): **220,432** |
+| its functions after 1..10 symbols | 3, 5, 23, 77, 301, 1,302, 4,821, 18,817, 74,660, 274,601 | 3, 6, 25, 80, 258, 892, 3,465, 13,859, 56,540, 220,432 |
+| the 8-symbol winner 11054 | 266,084, rank 3 | 164,788, rank 30 |
+| median of the 644 | 95,618 | 66,990 |
+| control operation in the top 50 | JNZB 36, SKNZ 8, SKZ 6 | JNZB 37, SKZ 9, SKNZ 4 |
+| most named functions | `INC_L1, FLIP_R2, SKZ, SWAP`: 23 of 39 | `L1, INC, FLIP_R2, SKZ`: 20 of 39 |
+| named functions reached by any of the 644 | 29 of 39 (new at 10 symbols: shifts, rotates, nibble swap, x!=0, min(x,7)) | 24 of 39 (5x, x%3 and parity appear) |
+
+The two best W = 1 machines differ only in the flip pen's stride (2 against 3) and swap places between 8 and 10
+symbols; both grow by 3.7x per added symbol here (the ceiling is 4x). The function winners are all the same
+family: one two-instruction loop, two pens, one move. The pen pairs always combine an increment-and-step-left
+(INC_L1 or its W = 1 twin FLIP_L1) with a flip of stride 2 or 3 to the right: the left pen walks the head back
+over the input bits while the right pen jumps over them, and JNZB repeats while the cell is set.
+
+The 16-symbol run of section 4 used machine 11054 because it led at 8 symbols; at 10 symbols 11037 leads by 3 %.
+Its 2^32 map is the obvious next run (same cost, about 10 minutes of cluster CPU).
 
 ## 4. The best machine at 16 symbols = 32 bits: all 4^16 = 4,294,967,296 programs, the Universe-1 program size
 
@@ -159,5 +181,22 @@ law it is in the top 10 % (rank about 5,200 to 5,500), because SLEEP is a condit
 every top machine has, but its condition is on the stomach rather than on the cell, and EAT and WASTE both destroy
 information (EAT empties the cell, WASTE overwrites it with 11 and empties A). Machines that keep what they read
 compute more. Its biological reading, however, is exactly what the best function machines lack: a resource (A)
-that is consumed, so a soup of these organisms has an energy budget by construction. The 2^32 function map at
-16 symbols (W = 2, reading A) is recorded in section 6 when it completes.
+that is consumed, so a soup of these organisms has an energy budget by construction.
+
+## 6. The biological machine over all programs of 1 to 16 symbols (5,726,623,060 programs)
+
+`u2_tables_bio custom fn 2 16 64 EAT,MATE_A,SLEEP,WASTE`, adler40, 24 threads, 1,556.5 s (under heavy load from
+two other jobs). Files: `results/u2_bio/fn_W2_L16_A.txt`, `.log`.
+
+| symbols | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| distinct functions after this length | 4 | 6 | 18 | 32 | 66 | 135 | 283 | 586 | 1,214 | 2,604 | 5,335 | 11,174 | 14,560 | 15,703 | 16,418 | **16,855** |
+
+16,855 distinct unary functions from 5.7 billion programs, 68 bijections, all 16 constants, 7 named functions
+(identity, x != 0, x >= 8, x & 1, three constants). Growth per symbol: 2.1x up to 12 symbols, then 1.30, 1.08,
+1.05, 1.03: the machine has essentially run out of functions. Against the 2,930,290 of machine 11054 at 16 symbols
+alone, the biological machine computes 0.6 % as much. Reason, visible in the operations: EAT zeroes the cell it
+reads and WASTE overwrites with all-ones and empties A, so every path through the input destroys it; MATE's step
+right and WASTE's step left keep the head shuttling over the same two input cells. It is an energy model, not a
+computer, and as a seed for the DNA-1 world (docs/09) its ideas go into the energy layer rather than the codon
+table.
