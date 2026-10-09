@@ -2,8 +2,11 @@
 
 **What do all the short programs of a machine do, and what can be built from them?**
 
-Universe 2 is the fourth repository in a line of exhaustive program sweeps. The first three mapped tiny machines
-of their own design; this one starts from their results and asks two new questions:
+Universe 2 is the fourth repository in a line of exhaustive program sweeps, and it is a **2-bit machine**: one
+instruction is one symbol of a 4-letter alphabet, as in the genome, and programs are built from relocatable blocks.
+[docs/05_two_bit_isa.md](docs/05_two_bit_isa.md) lays out what fits in two bits, what the predecessors already
+measured about opcode width, operand width, cell width and control flow, and the first sweep of three candidate
+four-instruction machines. Two side questions came first and keep their tools here:
 
 1. **Real instruction sets.** The NANO maps covered every 5-byte (2^40) and 6-byte (2^48) program of an 8-bit toy
    CPU. Can the same census be done for all 2^32 four-byte words of **x86-64** and **AArch64**, the instruction sets
@@ -31,6 +34,8 @@ origin branches.
 |---|---|
 | [`tools/nano_ref.py`](tools/nano_ref.py) | NANO reference interpreter, identical to Dimension42's on 3,000 random programs and 10,000 input cases |
 | [`tools/nano_compose.py`](tools/nano_compose.py) | chains of mapped NANO programs: exact 256x256 tables, composition, formula verification, depth-limited chain search over a basis |
+| [`tools/u2_ref.py`](tools/u2_ref.py) | the three candidate 2-bit machines (P'' brackets, skip, no-control) and the exhaustive short-program sweep |
+| `results/u2_sweep/` | distinct final tapes per design, length and cell width |
 | [`tools/isa4_census.py`](tools/isa4_census.py) | decode census of 4-byte words (Capstone), sampled or exhaustive, x86-64 and AArch64 |
 | [`tools/isa4_exec_probe.py`](tools/isa4_exec_probe.py) | execution census (Unicorn): NANO-style classes and state fingerprints for every decodable word |
 | `results/isa4_census/`, `results/isa4_exec/` | JSON results with counts, percentages, throughput and host |
@@ -38,12 +43,17 @@ origin branches.
 
 ## First results (2026-10-09)
 
-Random samples; the exhaustive 2^32 decode census was running when this was written and its numbers go into
-docs/02 when it finishes.
+**2-bit machines, every program of 1 to 8 symbols (87,380), 16 cells, 64 steps:** the skip-and-wrap design S4
+produces 1,906 distinct final tapes with 1-bit cells and 5,688 with 2-bit cells; the Turing-complete P'' design 223
+and 408; a design without control flow 455 and 3,807. Variety at short lengths and expressiveness in the limit are
+different properties; the table search over all four-instruction sets is next.
+
+**Real ISAs.** AArch64 exhaustive over all 2^32 words: **1,526,900,218 valid instructions (35.5509 %)**, 1,298
+mnemonics, 15 minutes on the workstation. x86-64 exhaustive was still running; the rest are 1 M-word samples.
 
 | | AArch64 | x86-64 |
 |---|---:|---:|
-| 4-byte words that are a complete instruction (sequence) | 35.55 % | 22.46 % |
+| 4-byte words that are a complete instruction (sequence) | 35.5509 % (exact) | 22.46 % |
 | of all words: trap or privileged | 5.96 % | 0.57 % |
 | of all words: branch away | 4.76 % | 5.46 % |
 | of all words: write memory | 2.64 % | 5.45 % |
@@ -62,6 +72,8 @@ python tools/nano_ref.py "17 C5 91 50 71" -a 3 -b 5 --first-output
 python tools/nano_compose.py 456650D0 17C5915071 --formula "(a+b)^b^7"
 python tools/isa4_census.py --arch both --sample 1000000
 python tools/isa4_exec_probe.py --arch aarch64 --sample 100000
+python tools/u2_ref.py P4 "1 0 2 1 0 3" --W 1 --trace
+python tools/u2_ref.py --sweep 8 --W 2
 ```
 
 ## Caveats

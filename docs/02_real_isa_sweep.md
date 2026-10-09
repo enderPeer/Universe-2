@@ -95,8 +95,12 @@ are the system-register, barrier, SVC/HVC/SMC and privileged encodings that are 
 state. BRANCH_OUT on AArch64 is the branch family (B, BL, CBZ, TBZ, RET, ...) plus every word whose target lies
 outside the mapped code.
 
-**Exhaustive decode census of all 2^32 words for both ISAs:** started 2026-10-09 13:30 on the workstation; results
-will be added to `results/isa4_census/*_range_4294967296.json` and to this table when it finishes.
+**Exhaustive decode census, AArch64, all 2^32 words** (`results/isa4_census/aarch64_range_4294967296.json`,
+902.87 s at 24 processes, 4.76 M words/s): **1,526,900,218 valid instructions = 35.5509 %**, 2,768,067,078
+undefined = 64.4491 %, **1,298 distinct mnemonics**. The 16.7 M sample was within 0.0004 percentage points of
+the exact figure. Most frequent: ldr 2.867 %, adr 1.575 %, b 1.562 %, adrp 1.562 %, bl 1.562 %, stp 1.442 %,
+ldp 1.396 %, str 0.916 %, cbz / cbnz / tbz / tbnz 0.781 % each. The x86-64 exhaustive run was still in progress
+when this was written.
 
 ## 6. What this is good for, and what it is not
 
