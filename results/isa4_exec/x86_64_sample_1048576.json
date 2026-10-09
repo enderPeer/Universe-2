@@ -1,0 +1,44 @@
+{
+ "arch": "x86_64",
+ "mode": "sample",
+ "seed": 1,
+ "range": null,
+ "words": 1048576,
+ "classes": {
+  "UNDEF": 341421,
+  "OVERRUN": 471114,
+  "EXCEPTION": 6023,
+  "FAULT_MEM": 25167,
+  "BRANCH_OUT": 57290,
+  "MEM_WRITE": 57101,
+  "REG": 77383,
+  "IDLE": 13077
+ },
+ "percent": {
+  "UNDEF": 32.5604,
+  "OVERRUN": 44.9289,
+  "EXCEPTION": 0.5744,
+  "FAULT_MEM": 2.4001,
+  "BRANCH_OUT": 5.4636,
+  "MEM_WRITE": 5.4456,
+  "REG": 7.3798,
+  "IDLE": 1.2471
+ },
+ "distinct_state_fingerprints": 51844,
+ "fingerprints_note": "over executed words only (not UNDEF / OVERRUN)",
+ "unicorn_errors": {
+  "UC_ERR_INSN_INVALID": 68,
+  "UC_ERR_WRITE_UNMAPPED": 2172,
+  "UC_ERR_FETCH_UNMAPPED": 18252,
+  "UC_ERR_READ_UNMAPPED": 22995,
+  "UC_ERR_EXCEPTION": 6023,
+  "UC_ERR_FETCH_PROT": 5876
+ },
+ "seconds": 8.82,
+ "words_per_second": 118889,
+ "processes": 8,
+ "unicorn": "2.1.4",
+ "capstone": "5.0.7",
+ "state": "regs 0, flags 0, SP 0x8000, data page 0..0xFFFF zeroed, code at 0x100000, limit 4 instructions",
+ "host": "DESKTOP-E9PKJUK AMD64 32 logical CPUs, Python 3.11.9"
+}

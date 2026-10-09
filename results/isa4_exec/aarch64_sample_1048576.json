@@ -1,0 +1,43 @@
+{
+ "arch": "aarch64",
+ "mode": "sample",
+ "seed": 1,
+ "range": null,
+ "words": 1048576,
+ "classes": {
+  "UNDEF": 675428,
+  "OVERRUN": 0,
+  "EXCEPTION": 62443,
+  "FAULT_MEM": 42810,
+  "BRANCH_OUT": 49948,
+  "MEM_WRITE": 27693,
+  "REG": 98291,
+  "IDLE": 91963
+ },
+ "percent": {
+  "UNDEF": 64.4138,
+  "OVERRUN": 0.0,
+  "EXCEPTION": 5.955,
+  "FAULT_MEM": 4.0827,
+  "BRANCH_OUT": 4.7634,
+  "MEM_WRITE": 2.641,
+  "REG": 9.3738,
+  "IDLE": 8.7703
+ },
+ "distinct_state_fingerprints": 135309,
+ "fingerprints_note": "over executed words only (not UNDEF / OVERRUN)",
+ "unicorn_errors": {
+  "UC_ERR_EXCEPTION": 62443,
+  "UC_ERR_READ_UNMAPPED": 34153,
+  "UC_ERR_FETCH_UNMAPPED": 49618,
+  "UC_ERR_WRITE_UNMAPPED": 8657,
+  "UC_ERR_FETCH_PROT": 329
+ },
+ "seconds": 16.23,
+ "words_per_second": 64615,
+ "processes": 8,
+ "unicorn": "2.1.4",
+ "capstone": "5.0.7",
+ "state": "regs 0, flags 0, SP 0x8000, data page 0..0xFFFF zeroed, code at 0x100000, limit 4 instructions",
+ "host": "DESKTOP-E9PKJUK AMD64 32 logical CPUs, Python 3.11.9"
+}

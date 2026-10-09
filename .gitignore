@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.ppm
+*.zst
+*.bin
+!results/**/*.json
+.venv/
+scratch/
