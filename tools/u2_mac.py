@@ -1,6 +1,6 @@
 """Multiply-accumulate search for ONE 2-bit machine over every program of exactly L symbols, on the cluster CPUs.
 
-Question (docs/12): does machine 50098 `INC_R1,INC_L1,FLIP_R2,JNZB` (W = 2, 64 steps) have a program that computes
+Question (docs/13): does machine 50098 `INC_R1,INC_L1,FLIP_R2,JNZB` (W = 2, 64 steps) have a program that computes
 acc + w * x mod 4 for every acc, x in 0..3 and every ternary weight w, with (acc, w, x) seeded in cells 0, 1, 2
 and the result in one fixed cell or under the final head? Two weight encodings: MAC_T has w in {1, 3, 0} (3 = -1
 mod 4), MAC_B has the BitNet code c in {2, 0, 1} meaning c - 1. The local numpy search (Ghost/bitnet_u2/
@@ -12,6 +12,11 @@ built under the name u2_tables_mac on each node.
   python tools/u2_mac.py launch --L 15 --L 16  # shards by node speed, detached (plus Intel/AMD overlap ranges)
   python tools/u2_mac.py status --L 15 --L 16
   python tools/u2_mac.py collect --L 15 --L 16 # -> results/u2_mac/mac_L15.json, mac_L16.json (found programs re-verified)
+
+--steps N (default 64) does the same with another step budget: every file name then carries the budget
+(results/u2_mac/mac_s256_L13.json, plan_mac_s256_L13_L14_L15_L16.json, validation_L12_s256.json; the 64-step names
+above stay as they are), validate compares with prim_..._L12_s{N}.json (the 256-step one holds ADD, MUL_T, MAC_T,
+MAC_B only, so only those are run), and --L may be 13 or 14 as well (docs/13 section 9: 256 steps at 13 to 16).
 """
 import argparse
 import json
@@ -26,16 +31,32 @@ import u2_ops  # noqa: E402
 
 MACHINE = "INC_R1,INC_L1,FLIP_R2,JNZB"
 TABLE_ID = 50098
-W, STEPS = 2, 64
+W, STEPS = 2, 64          # STEPS: the default of docs/13; --steps overrides it (set_steps) for names, commands, validate
 PRIMS = "MAC_T,MAC_B"
 ALL_PRIMS = "MAC_T,MAC_B,ADD,MUL_T,COPY,CARRY"
 BINARY = "u2_tables_mac"
 # node: (threads, relative speed) as in tools/u2_table_search.py
 NODES = {"adler40": (24, 24.0), "falke64": (12, 15.0), "knecht24": (24, 8.0), "specht32": (12, 8.0)}
 OVERLAP_NODES = ("adler40", "knecht24")
-OVERLAP = {15: (123456789, 1 << 26), 16: (3000000000, 1 << 26)}   # (start, count): same range on an Intel and an AMD node
+OVERLAP = {13: (10000000, 1 << 24), 14: (100000000, 1 << 26),
+           15: (123456789, 1 << 26), 16: (3000000000, 1 << 26)}   # (start, count): same range on an Intel and an AMD node
 OUT = pathlib.Path("results/u2_mac")
-REF = pathlib.Path(r"C:\Users\end\Ghost\bitnet_u2\results\prim_INC_R1-INC_L1-FLIP_R2-JNZB_W2_L12_s64.json")
+REF_DIR = pathlib.Path(r"C:\Users\end\Ghost\bitnet_u2\results")
+
+
+def set_steps(steps):
+    global STEPS
+    STEPS = int(steps)
+
+
+def ref_path(L=12):
+    """prim_search.py's result for 1..L symbols at the current step budget (the 256-step one holds ADD, MUL_T, MAC_T, MAC_B)."""
+    return REF_DIR / f"prim_{MACHINE.replace(',', '-')}_W{W}_L{L}_s{STEPS}.json"
+
+
+def tagged(base):
+    """results/u2_mac file stem: the 64-step names of docs/13 stay as they are, other budgets get an _s{STEPS} tag."""
+    return base if STEPS == 64 else base.replace("mac_", f"mac_s{STEPS}_", 1)
 
 
 def ssh(node, cmd, timeout=120):
@@ -148,13 +169,14 @@ def build(nodes=None):
 def validate(L=12, node="adler40", threads=24):
     """All six primitives, every program of 1..L symbols, on one node; compared with prim_search.py's L12 results."""
     OUT.mkdir(parents=True, exist_ok=True)
-    ref = json.loads(REF.read_text())
+    ref = json.loads(ref_path(L).read_text())
     assert ref["machine"] == MACHINE and ref["W"] == W and ref["steps"] == STEPS and ref["L"] == L
+    prims_run = ",".join(p for p in ALL_PRIMS.split(",") if p in ref["primitives"])   # the 256-step reference lacks COPY, CARRY
     per_prim = {}
     log = []
     for l in range(1, L + 1):
         nm = f"mac_val_L{l}_s{STEPS}"
-        r = ssh(node, f"cd ~/universe2 && grep -q done results/{nm}.err 2>/dev/null || (nice -n 10 ./{BINARY} prim {ALL_PRIMS} {W} {l} {STEPS} {MACHINE} 0 {4 ** l} {threads} "
+        r = ssh(node, f"cd ~/universe2 && grep -q done results/{nm}.err 2>/dev/null || (nice -n 10 ./{BINARY} prim {prims_run} {W} {l} {STEPS} {MACHINE} 0 {4 ** l} {threads} "
                       f"> results/{nm}.txt 2> results/{nm}.err; echo done >> results/{nm}.err); cat results/{nm}.txt; echo ===ERR===; cat results/{nm}.err", timeout=900)
         txt, err = r.stdout.split("===ERR===\n")
         head, prims, kv, done = parse_output(txt, err)
@@ -167,7 +189,8 @@ def validate(L=12, node="adler40", threads=24):
                 acc["survivors"][i] += s
             acc["found"] += d["found"]
     report = {"machine": MACHINE, "table_id": TABLE_ID, "W": W, "steps": STEPS, "L": L, "node": node, "binary": BINARY,
-              "reference": str(REF), "reference_host": ref["host"], "reference_secs": ref["secs"], "runs": log, "primitives": {}}
+              "primitives_run": prims_run, "reference": str(ref_path(L)), "reference_host": ref["host"],
+              "reference_secs": ref["secs"], "runs": log, "primitives": {}}
     all_ok = True
     for p, acc in per_prim.items():
         rp = ref["primitives"][p]
@@ -217,7 +240,7 @@ def launch(Ls, only=None):
         r = ssh(n, f"cd ~/universe2 && mkdir -p results && (setsid nohup sh -c '{chain}' < /dev/null > /dev/null 2>&1 &); echo launched", timeout=30)
         print(n, r.stdout.strip() or r.stderr.strip(), [(L, f"{s:,} + {c:,}", "overlap" if o else "") for (nn, L, s, c, o) in runs if nn == n])
     tag = "_".join(f"L{L}" for L in Ls)
-    (OUT / f"plan_mac_{tag}.json").write_text(json.dumps({
+    (OUT / f"{tagged('plan_mac_' + tag)}.json").write_text(json.dumps({
         "launched": time.strftime("%Y-%m-%dT%H:%M:%S"), "machine": MACHINE, "table_id": TABLE_ID, "W": W, "steps": STEPS,
         "prims": PRIMS, "binary": BINARY, "lengths": Ls, "programs": {L: 4 ** L for L in Ls}, "nodes": NODES,
         "runs": [{"node": n, "L": L, "start": s, "count": c, "overlap": o} for (n, L, s, c, o) in runs]}, indent=1))
@@ -302,7 +325,7 @@ def collect(Ls):
                               for p, m in merged.items()},
                "shards": shards, "overlap": {"range": OVERLAP.get(L), "nodes": list(overlap), "identical": ov_ok, "runs": overlap},
                "collected": time.strftime("%Y-%m-%dT%H:%M:%S"), "collected_on": socket.gethostname()}
-        path = OUT / f"mac_L{L}.json"
+        path = OUT / f"{tagged(f'mac_L{L}')}.json"
         path.write_text(json.dumps(res, indent=1))
         for p, m in merged.items():
             print(f"L={L} {p}: {4 ** L:,} programs, survivors {m['survivors'][:8]}..., found {len(m['found'])}"
@@ -316,8 +339,10 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("action", choices=["build", "validate", "launch", "status", "collect"])
     ap.add_argument("nodes", nargs="*")
-    ap.add_argument("--L", type=int, action="append", help="program length(s), exactly L symbols")
+    ap.add_argument("--L", type=int, action="append", choices=sorted(OVERLAP), help="program length(s), exactly L symbols")
+    ap.add_argument("--steps", type=int, default=STEPS, help="step budget per run (default 64; docs/13 section 9 used 256)")
     a = ap.parse_args()
+    set_steps(a.steps)
     Ls = a.L or [15, 16]
     if a.action == "build":
         build(a.nodes or None)

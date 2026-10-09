@@ -1,0 +1,2 @@
+mode=prim prims=MAC_T,MAC_B ops=INC_R1,INC_L1,FLIP_R2,JNZB W=2 L=14 steps=256 programs=39045157 start=190345142 secs=23.9 threads=24 host=knecht24
+done

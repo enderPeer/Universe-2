@@ -11,7 +11,9 @@ symbols** (357,913,940 programs per encoding, 1,263 s on 24 local cores). 15 and
 **Result: no program of exactly 15 or exactly 16 symbols computes acc + w * x mod 4 either, in either weight
 encoding.** With the earlier runs, every one of the 5,726,623,060 programs of 1 to 16 symbols has been tried at
 64 steps, and none is a multiply-accumulate under the definition below. No program is consistent with more than
-17 of the 48 input triples.
+17 of the 48 input triples. Section 9, added later the same day, repeats 13 to 16 symbols with a 256-step budget
+on the cluster: still none, so with the numpy 256-step run up to 12 symbols every program of 1 to 16 symbols is
+covered at both budgets (the best 256-step program reaches 22 triples).
 
 ## 1. The primitive
 
@@ -138,7 +140,9 @@ earlier write their sum into cell 0 or 1, the multipliers their product into cel
 report, section 4a); a multiply-accumulate has to bring the product and acc together in one cell under the fixed
 layout, and nothing of this size does. Whether a longer program does is open. The survivor frontier does not move
 with length (16 or 14 inputs up to 14 symbols, 17 at 15 and again 17 at 16), which suggests the layout rather
-than the length is the obstacle, but that is a reading, not a result.
+than the length is the obstacle, but that is a reading, not a result. (At 256 steps it does move with length,
+17 to 22 inputs from 13 to 16 symbols, section 9; there the step budget looks like as much of an obstacle as the
+layout.)
 
 So the BitNet question is settled for this machine at this program size: the model's inner step is not a
 primitive here, and a token would need a composite of the found adder and multiplier (two programs, a copy in
@@ -150,8 +154,10 @@ answer.
 - The definition is fixed: inputs in cells 0, 1, 2 in the order (acc, w, x), head at 0, output in one fixed cell or
   under the final head, mod 4 with no carry. A multiply-accumulate with another layout (inputs elsewhere, w and x
   swapped, output split over two cells, output defined relative to the head's start) is not excluded by this run.
-- 64 steps. The numpy search also tried 256 steps up to 12 symbols (no multiply-accumulate; nine times as many
-  adders). 256 steps at 13 to 16 symbols would cost about four times this run and was not done.
+- Two budgets only. Sections 4 and 5 are 64 steps; the numpy search also tried 256 steps up to 12 symbols (no
+  multiply-accumulate; nine times as many adders), and section 9 extends 256 steps to 13 to 16 symbols (none
+  either, 15.1 core-hours). Budgets beyond 256 steps were not tried; at 256 steps the frontier still moves with
+  length (section 9), so a longer budget or a longer program is not excluded by these runs.
 - Exactly this machine. The other two W = 2 candidates (`INC, INC_R1, INC_L1, JNZB` and `L1, INC_L1, FLIP_R2, JNZB`)
   were searched up to 10 symbols only (Ghost report, section 4c).
 - Only the two weight encodings above; the primitive list of the C mode and the numpy search is the same, so a
@@ -159,11 +165,14 @@ answer.
 
 ## 8. Files and commands
 
-- `tools/u2_tables.c` (`prim` mode, built as `u2_tables_mac`), `tools/u2_mac.py` (driver).
-- `results/u2_mac/validation_L12_s64.json`, `plan_mac_L15_L16.json`, `mac_L15.json`, `mac_L16.json`, `raw/`
-  (every shard's stdout and stderr, named by node and range).
+- `tools/u2_tables.c` (`prim` mode, built as `u2_tables_mac`), `tools/u2_mac.py` (driver; `--steps N` selects the
+  budget, default 64, and `--L` accepts 13 to 16).
+- 64 steps: `results/u2_mac/validation_L12_s64.json`, `plan_mac_L15_L16.json`, `mac_L15.json`, `mac_L16.json`.
+- 256 steps (section 9): `validation_L12_s256.json`, `plan_mac_s256_L13_L14_L15_L16.json`, `mac_s256_L13.json` to
+  `mac_s256_L16.json`.
+- `raw/`: every shard's stdout and stderr, named by node, budget and range.
 - Reference search and report: `C:\Users\end\Ghost\bitnet_u2\` (`prim_search.py`, `u2_vec.py`, `REPORT.md`,
-  `results/prim_*_W2_L12_s64.json`, `..._L14_s64.json`), outside this repository.
+  `results/prim_*_W2_L12_s64.json`, `..._L14_s64.json`, `..._L12_s256.json`), outside this repository.
 
 ```
 python tools/u2_mac.py build
@@ -171,4 +180,122 @@ python tools/u2_mac.py validate
 python tools/u2_mac.py launch --L 15 --L 16
 python tools/u2_mac.py status --L 15 --L 16
 python tools/u2_mac.py collect --L 15 --L 16
+python tools/u2_mac.py validate --steps 256
+python tools/u2_mac.py launch --steps 256 --L 13 --L 14 --L 15 --L 16
+python tools/u2_mac.py status --steps 256 --L 13 --L 14 --L 15 --L 16
+python tools/u2_mac.py collect --steps 256 --L 13 --L 14 --L 15 --L 16
 ```
+
+## 9. 256 steps at 13 to 16 symbols (2026-10-09, 21:10 to 21:25 workstation time)
+
+Section 7 left the longer budget open. This section closes it: the same binary (`u2_tables_mac`, source identical
+on all four nodes to the committed `tools/u2_tables.c`), the same shards, the same checks, with 256 instead of 64
+instructions per run (`tools/u2_mac.py --steps 256`), over every program of exactly 13, 14, 15 and 16 symbols in
+both weight encodings. The numpy search had already done 256 steps for 1 to 12 symbols (Ghost report, section 4b).
+
+**Result: no program of 13 to 16 symbols computes acc + w * x mod 4 at 256 steps either, in either encoding.**
+Together with the numpy run, all 5,726,623,060 programs of 1 to 16 symbols are now covered at 256 steps as well as
+at 64, with 0 multiply-accumulates. The longer budget does move the frontier: at 16 symbols three MAC_T programs
+get through 22 of the 48 triples (17 at 64 steps), but no program at any length gets through the negative weight.
+
+### Validation at 256 steps (adler40, 24 threads, 17.9 s of compute)
+
+All four primitives of the numpy 256-step file (`prim_INC_R1-INC_L1-FLIP_R2-JNZB_W2_L12_s256.json`: ADD, MUL_T,
+MAC_T, MAC_B; that run had no COPY and no CARRY), every program of 1 to 12 symbols, one invocation per length.
+File: `results/u2_mac/validation_L12_s256.json`.
+
+| primitive | survivors after each input | found (C) | found (numpy) | re-verified with `u2_ops.run` at 256 steps |
+|---|---|---|---|---|
+| MAC_T (48 inputs) | identical, all 48 | 0 | 0 | |
+| MAC_B (48) | identical | 0 | 0 | |
+| ADD (16) | identical | 46 | 46, the same programs | 46 / 46 |
+| MUL_T (12) | identical | 16 | 16, the same | 16 / 16 |
+
+The 12-symbol length took 11.6 s (6.9 s at 64 steps); the numpy run took 614.3 s on 24 processes.
+
+### Cluster at launch (21:10:30 workstation time; the nodes' clocks read 19:10)
+
+| node | threads, nice 10 | load before | other CPU work at launch |
+|---|---|---|---|
+| adler40 | 24 | 1.00 | the single-thread `dna_world_v3` run of docs/12, still going (its GPU work was not touched) |
+| falke64 | 12 | 0.21 | none |
+| knecht24 | 24 | 0.08 | the Windows VM |
+| specht32 | 12 | 0.08 | none |
+
+Shards by the same speed rule as section 4 (`results/u2_mac/plan_mac_s256_L13_L14_L15_L16.json`); 15 and 16
+symbols exactly as in the table there, 13 and 14 as follows, plus Intel/AMD overlap ranges on adler40 and knecht24
+at every length:
+
+| node | 13 symbols: start + count | 14 symbols: start + count | overlap |
+|---|---|---|---|
+| adler40 | 0 + 29,283,868 | 0 + 117,135,472 | 10,000,000 + 2^24 (L = 13), 100,000,000 + 2^26 (L = 14), the two ranges of section 4 (L = 15, 16) |
+| falke64 | 29,283,868 + 18,302,417 | 117,135,472 + 73,209,670 | |
+| knecht24 | 47,586,285 + 9,761,289 | 190,345,142 + 39,045,157 | the same four ranges |
+| specht32 | 57,347,574 + 9,761,290 | 229,390,299 + 39,045,157 | |
+
+### Results (collected 21:26; `results/u2_mac/mac_s256_L13.json` to `mac_s256_L16.json`, raw shard outputs in `raw/`)
+
+| 256 steps | 13, MAC_T | 13, MAC_B | 14, MAC_T | 14, MAC_B | 15, MAC_T | 15, MAC_B | 16, MAC_T | 16, MAC_B |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| programs | 67,108,864 | 67,108,864 | 268,435,456 | 268,435,456 | 1,073,741,824 | 1,073,741,824 | 4,294,967,296 | 4,294,967,296 |
+| alive after input 1 | 66,879,786 | 66,892,106 | 267,645,095 | 267,677,609 | 1,071,180,331 | 1,071,244,031 | 4,285,833,253 | 4,286,174,479 |
+| after 2 | 18,447,360 | 18,419,241 | 73,814,354 | 73,643,821 | 299,880,736 | 298,816,032 | 1,192,877,481 | 1,188,618,984 |
+| after 3 | 10,867,736 | 10,941,147 | 42,458,876 | 42,802,715 | 170,794,662 | 172,226,967 | 664,972,858 | 671,291,291 |
+| after 4 | 2,032,318 | 2,065,277 | 8,138,710 | 8,276,940 | 33,059,349 | 33,564,312 | 134,726,055 | 136,935,906 |
+| after 6 | 393,051 | 398,798 | 1,569,335 | 1,593,989 | 6,297,185 | 6,394,713 | 25,241,688 | 25,622,408 |
+| after 9 | 1,901 | 1,514 | 5,954 | 5,322 | 21,959 | 19,965 | 80,850 | 72,311 |
+| after 12 | 709 | 318 | 1,879 | 799 | 6,724 | 2,743 | 22,800 | 7,944 |
+| after 13 | 188 | 113 | 375 | 217 | 1,427 | 906 | 2,872 | 2,317 |
+| after 14 | 10 | 2 | 32 | 33 | 105 | 127 | 299 | 352 |
+| after 15 | 3 | 2 | 3 | 13 | 37 | 61 | 99 | 145 |
+| after 16 | 1 | 2 | 2 | 8 | 26 | 26 | 77 | 66 |
+| after 17 | 1 | 2 | 2 | 8 | 24 | 20 | 58 | 65 |
+| after 18 | **0** | 2 | 2 | 7 | 16 | 18 | 48 | 53 |
+| after 19 | 0 | **0** | 2 | 3 | 16 | 3 | 48 | 3 |
+| after 20 | 0 | 0 | **0** | **0** | **0** | **0** | 3 | **0** |
+| after 21, 22 | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 0 |
+| after 23 | 0 | 0 | 0 | 0 | 0 | 0 | **0** | 0 |
+| **multiply-accumulates (alive after 48)** | **0** | **0** | **0** | **0** | **0** | **0** | **0** | **0** |
+
+The triple order is that of section 1: inputs 1 to 12 are the positive weight, 13 to 24 the negative one (acc
+rising, x inner, zero targets deferred to the end), 25 to 36 the zero weight, 37 to 48 the twelve zero-target
+triples. At 64 steps every survivor died on input 18, (acc, x) = (1, 3) with w = -1. At 256 steps the frontier
+depends on length and encoding: MAC_B dies on input 19 at 13 symbols and on input 20, (acc, x) = (2, 1), at 14 to
+16 symbols; MAC_T dies on input 18 at 13 symbols, on 20 at 14 and 15, and at 16 symbols three programs survive
+inputs 20 to 22, (acc, x) = (2, 1), (2, 3), (3, 0), and die on input 23, (acc, x) = (3, 1), target 2. The numpy run
+at 12 symbols and 256 steps had reached 16 (MAC_T, one program) and 18 (MAC_B, two). So four times the budget lets
+the best programs handle two more values of acc under the negative weight, and length now matters (17, 19, 19, 22
+inputs for MAC_T at 13, 14, 15, 16 symbols), but no program at any length completes the negative-weight block, and
+none reaches the zero weight. Programs alive at the frontier: 1, 2, 16, 3 (MAC_T at 13 to 16 symbols) and 2, 3, 3,
+3 (MAC_B). Nothing was found, so nothing had to be re-verified; the `u2_ops.run` path at 256 steps is the one that
+re-verified the 46 adders and 16 multipliers of the validation above.
+
+Runs executed per encoding (first triple for every program, further triples for survivors): 166 million at 13
+symbols, 664 million at 14, 2.66 billion at 15, 10.63 billion at 16 (the 64-step run needed 2.57 and 10.27 billion
+at 15 and 16: a few more programs survive the early triples at the longer budget).
+
+### Run record
+
+| node | 13 symbols | 14 symbols | 15 symbols | 16 symbols | overlaps 13 / 14 / 15 / 16 | node total |
+|---|---|---|---|---|---|---|
+| adler40, 24 threads | 29,283,868 programs, 9.9 s | 117,135,472, 39.6 s | 468,541,887, 157.3 s | 1,874,167,547, 608.6 s | 5.6 / 21.7 / 25.0 / 21.3 s | 889.0 s |
+| falke64, 12 threads | 18,302,417, 7.1 s | 73,209,670, 27.9 s | 292,838,679, 111.5 s | 1,171,354,717, 442.8 s | | 589.3 s |
+| knecht24, 24 threads | 9,761,289, 6.3 s | 39,045,157, 23.9 s | 156,180,629, 94.9 s | 624,722,516, 379.5 s | 10.1 / 39.6 / 46.4 / 38.1 s | 638.8 s |
+| specht32, 12 threads | 9,761,290, 10.6 s | 39,045,157, 41.5 s | 156,180,629, 165.9 s | 624,722,516, 663.6 s | | 881.6 s |
+
+Launched 21:10:30, the last run (the 16-symbol overlap on adler40) finished 21:25:20 workstation time; 15.1
+CPU-core-hours in all, 3.4 times the 64-step run of section 5 (which had no 13 and 14; per program at 15 and 16
+symbols the 256-step runs took 2.8 times as long on adler40 and 2.9 on falke64). CPU only, nice 10; the
+`dna_world_v3` job on adler40 ran throughout. Checks at collection, as in section 5: every shard's header and
+summary carry the planned start, count, length, machine and host; the shards of each length sum to 4^L; the
+overlap ranges (2^24 programs at 13 symbols, 2^26 at 14, 15, 16) are **identical between adler40 and knecht24 at
+all four lengths** (96 survivor counts and the empty found lists each).
+
+### What is now covered
+
+| budget | 1 to 12 symbols | 13, 14 symbols | 15, 16 symbols | multiply-accumulates |
+|---|---|---|---|---|
+| 64 steps | numpy (Ghost report, sections 3 and 4) | numpy (section 4 there) | this note, sections 4 and 5 | 0 |
+| 256 steps | numpy (Ghost report, section 4b) | this section | this section | 0 |
+
+Both budgets, both encodings, every program of 1 to 16 symbols, machine 50098 with the fixed layout of section 1.
