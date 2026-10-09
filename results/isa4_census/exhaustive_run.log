@@ -1,0 +1,2 @@
+aarch64: 4,294,967,296 words in 902.9 s (4,757,000/s): undefined 64.4491%, valid 35.5509%; 1298 distinct mnemonics -> results\isa4_census\aarch64_range_4294967296.json
+x86_64: 4,294,967,296 words in 985.6 s (4,357,908/s): no_instruction 32.5199%, partial 45.0152%, whole 22.4648%; 940 distinct mnemonics -> results\isa4_census\x86_64_range_4294967296.json

@@ -70,6 +70,7 @@ Decode, 16,777,216 words per ISA (`results/isa4_census/*_sample_16777216.json`):
 | | AArch64 | x86-64 |
 |---|---:|---:|
 | valid single instruction / whole decode | **35.55 %** | **22.46 %** (whole) |
+| exact over all 2^32 (see below) | 35.5509 % | 22.4648 % |
 | undefined / no instruction | 64.45 % | 32.53 % |
 | partial (fragment at the end) | - | 45.01 % |
 | distinct mnemonics seen | 1,219 | 766 |
@@ -99,8 +100,15 @@ outside the mapped code.
 902.87 s at 24 processes, 4.76 M words/s): **1,526,900,218 valid instructions = 35.5509 %**, 2,768,067,078
 undefined = 64.4491 %, **1,298 distinct mnemonics**. The 16.7 M sample was within 0.0004 percentage points of
 the exact figure. Most frequent: ldr 2.867 %, adr 1.575 %, b 1.562 %, adrp 1.562 %, bl 1.562 %, stp 1.442 %,
-ldp 1.396 %, str 0.916 %, cbz / cbnz / tbz / tbnz 0.781 % each. The x86-64 exhaustive run was still in progress
-when this was written.
+ldp 1.396 %, str 0.916 %, cbz / cbnz / tbz / tbnz 0.781 % each.
+
+**Exhaustive decode census, x86-64, all 2^32 words** (`results/isa4_census/x86_64_range_4294967296.json`, 985.56 s,
+4.36 M words/s): **964,857,126 words = 22.4648 % decode into whole instructions**, 1,933,389,759 = 45.0152 % end in a
+fragment, 1,396,720,411 = 32.5199 % begin with no instruction; **940 distinct mnemonics** within four bytes. Whole
+instructions per word: 0: 1,396,720,411; 1: 1,407,574,436; 2: 1,187,253,057; 3: 286,642,176; 4: exactly
+16,777,216 = 2^24, which says that x86-64 has exactly 64 one-byte instructions (64^4 = 2^24 words made of four of
+them). Most frequent first instruction: mov 5.224 %, push 3.956 %, xchg 3.670 %, pop 3.520 %, then the eight
+classic ALU operations (add, or, adc, sbb, and, sub, xor, cmp) at 1.739 % each.
 
 ## 5b. Encoding density across instruction sets
 
@@ -121,7 +129,7 @@ against a second decoder (Unicorn/QEMU), and AArch64 agreed within 0.04 points.
 | RISC-V 64 with the C extension | 16 / 32 bits | 57.41 % whole words (21.99 % no instruction) | 291 | 2- and 4-byte instructions mixed, counted like x86-64 |
 | SPARC | 32 bits | 52.58 % | 515 | |
 | **AArch64** | 32 bits | **35.5509 % (exact)** | 1,298 | 64.45 % of the space is undefined (reserved and unallocated regions) |
-| x86-64 | 1 to 15 bytes | 22.46 % of 4-byte words are whole instruction sequences; 67.47 % begin with a valid instruction | 766 in 4 bytes | variable length, so "density" depends on the window |
+| x86-64 | 1 to 15 bytes | **22.4648 % (exact)** of 4-byte words are whole instruction sequences; 67.4801 % begin with a valid instruction | 940 in 4 bytes | variable length, so "density" depends on the window |
 | RISC-V 64 without the C extension | 32 bits | **7.09 %** | 253 | by design: only words with low bits `11` are 32-bit instructions (25 % of the space); the rest is reserved for 16-, 48- and 64-bit formats |
 
 Reading: the designed machines sit at 100 % because every encoding was meant to be used; real ISAs reserve space
@@ -146,7 +154,7 @@ is a program, which is what an exhaustive sweep and an evolutionary soup both ne
 
 ## 7. Next steps
 
-1. Finish and commit the exhaustive decode census (in progress).
+1. Exhaustive decode census for AArch64 and x86-64: done (2026-10-09, 15 and 16 minutes).
 2. Execution census over all 2^32 AArch64 words: fingerprints written per chunk to disk (the current tool keeps one
    set in memory, fine for samples, not for 1.5 G entries), split by `--range` across the workstation and the idle
    cluster CPUs (adler40 has Python 3.14; Capstone and Unicorn need `pip install --user`).
