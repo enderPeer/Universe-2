@@ -1,0 +1,1 @@
+rows 6585887 faithful 3 spontaneous 0 kept_bytes 261835

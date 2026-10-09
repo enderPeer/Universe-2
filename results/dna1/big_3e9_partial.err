@@ -1,1 +1,0 @@
-dna_world N=2999999488 G=1024 S=2929687 ticks=600000 seed=1 I=16 T=64 mu=0.001 D=2861 F=715 double=1 code=standard blank=0 n_seed=0 hash_every=-1 census_every=10 gpu=0

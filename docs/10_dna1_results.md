@@ -83,11 +83,9 @@ Launched 2026-10-09 16:47 local on GPU 0: `dna_world --N 2999999488 --G 1024 --t
 --census-every 10` (I 16, T 64, mu 0.001, D 2,861, F 715, double strand, standard code, random soup). Measured rate
 in the run: 396 ticks per second at 94 % GPU utilisation and 2,952 MiB.
 
-Census at tick 88,249 (223 s into the run): live 503; births 968,487 of which 938,719 spontaneous (inflow) and
-**29,768 by DIVIDE**; faithful births **0**; deaths 967,984; distinct genes among the living 496; lineage depth
-histogram {0: 487, 1: 16}. At tick 93,969: births 1,030,963, spontaneous 999,421, faithful 0.
-
-*The final census of the 600,000-tick run is appended in section 7 when the run completes.*
+Census at tick 88,249 (223 s into the run, the point at which the run agent had to report): live 503; births
+968,487 of which 938,719 spontaneous (inflow) and **29,768 by DIVIDE**; faithful births 0; deaths 967,984; distinct
+genes among the living 496; lineage depth histogram {0: 487, 1: 16}. The final census is in section 7.
 
 ## 6. Reading
 
@@ -112,4 +110,30 @@ histogram {0: 487, 1: 16}. At tick 93,969: births 1,030,963, spontaneous 999,421
 
 ## 7. Final census of the 600,000-tick run
 
-*(pending)*
+Finished 2026-10-09 17:12 local: 600,000 ticks in 1,512.5 s (396.7 ticks per second), 2.68 GB of device memory.
+Files: `results/dna1/big_3e9_final.json`, `big_3e9.err`, `big_3e9_census.txt.gz` (60,000 census lines, one per 10
+ticks), `big_3e9.births.sampled` (the engine kept 1 birth row in 1,000: 6,705 rows), `big_3e9_births_stats.txt`.
+
+| tick | live | births so far | by DIVIDE | faithful | deaths so far | distinct genes | lineage depths |
+|---:|---:|---:|---:|---:|---:|---:|---|
+| 9 | 86 | 112 | 0 | 0 | 26 | 86 | {0: 86} |
+| 99 | 494 | 1,084 | 13 | 0 | 590 | 489 | {0: 483, 1: 11} |
+| 999 | 552 | 11,252 | 340 | 0 | 10,700 | 545 | {0: 531, 1: 21} |
+| 9,999 | 528 | 110,097 | 3,511 | 0 | 109,569 | 517 | {0: 492, 1: 36} |
+| 599,999 | 505 | 6,585,887 | 204,881 | **3** | 6,585,382 | 494 | {0: 499, 1: 6} |
+
+Read: the population is a steady state of about 500 living processors, almost all of them spontaneous (the inflow
+refills 715 slots per tick, about 11 of which are expressible), each living its 64 ticks. 3.1 % of all births are
+DIVIDE births, children of organisms that claimed a slot and copied something, and in the whole run **three** of
+those 204,881 children were faithful copies of their parent (parent and child gene hashes equal), about 1 in
+70,000 DIVIDE births or 1 in 2.2 million births. None of the three divided in turn: the lineage-depth histogram
+never shows depth 2. The 1-in-1,000 birth sample did not catch any of the three rows, so their genes are not
+recorded; only the counter is. A future run should log every faithful birth unsampled.
+
+The recurring "top genes" of the census (hashes beginning `0846..07b4fc..` or `0847..`, counts 2 to 3) are not
+clones: they are the two-codon genes `ATG xxx STOP`, whose FNV-1a hashes differ only in the low bits because they
+differ only in the last codon, and the inflow creates them again and again.
+
+So the first DNA-1 world is where Universe-1's crawler soup and NANO's alife census were before their sweeps:
+copying exists, faithful copying is a one-in-a-million event among random genes, and no lineage persists. The
+copier sweep (spec section 12, proposed as its own session) is the way to find the genes that do it on purpose.

@@ -1,0 +1,2 @@
+dna_world N=2999999488 G=1024 S=2929687 ticks=600000 seed=1 I=16 T=64 mu=0.001 D=2861 F=715 double=1 code=standard blank=0 n_seed=0 hash_every=-1 census_every=10 gpu=0
+summary ticks=600000 seconds=1512.480 ticks_per_second=396.70 seconds_total=1512.484 device_mem_alloc_bytes=2666038150 device_mem_used_bytes=2680160256 live=505 births=6585887 faithful=3 spontaneous=6381006 deaths=6585382
