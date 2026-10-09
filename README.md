@@ -39,6 +39,7 @@ origin branches.
 | [`tools/isa4_census.py`](tools/isa4_census.py) | decode census of 4-byte words (Capstone), sampled or exhaustive, x86-64 and AArch64 |
 | [`tools/isa4_exec_probe.py`](tools/isa4_exec_probe.py) | execution census (Unicorn): NANO-style classes and state fingerprints for every decodable word |
 | `results/isa4_census/`, `results/isa4_exec/` | JSON results with counts, percentages, throughput and host |
+| [`sim/dna_ref.py`](sim/dna_ref.py), [`gpu/dna_world.cu`](gpu/dna_world.cu) | **DNA-1**: the DNA-like machine of [docs/09](docs/09_dna1_spec.md) (4 symbols, complement xor 3, two strands, 1,024-cell slots, the standard genetic code's 64 codons onto 20 operations + STOP, processors with machine-held copy pointers, deterministic ticks). Python reference and CUDA engine agree bit for bit on 17 test worlds; the engine runs 2,999,999,488 cells at 405 ticks/s in 2.6 GB on one RTX 4090. First worlds and reading in [docs/10](docs/10_dna1_results.md). |
 | [`docs/08_dna_machine.md`](docs/08_dna_machine.md) | how to build the machine like DNA: complement as repair, pointers in the polymerase, codon layer with degeneracy, regulation by templates, the world; six experiments in order |
 | [`docs/03_resources.md`](docs/03_resources.md) | the workstation and the four cluster nodes as found on 2026-10-09, and how to bound CPU, memory and power on each |
 
