@@ -1,0 +1,121 @@
+{
+ "launched": "2026-10-09T20:37:38",
+ "machine": "INC_R1,INC_L1,FLIP_R2,JNZB",
+ "table_id": 50098,
+ "W": 2,
+ "steps": 64,
+ "prims": "MAC_T,MAC_B",
+ "binary": "u2_tables_mac",
+ "lengths": [
+  15,
+  16
+ ],
+ "programs": {
+  "15": 1073741824,
+  "16": 4294967296
+ },
+ "nodes": {
+  "adler40": [
+   24,
+   24.0
+  ],
+  "falke64": [
+   12,
+   15.0
+  ],
+  "knecht24": [
+   24,
+   8.0
+  ],
+  "specht32": [
+   12,
+   8.0
+  ]
+ },
+ "runs": [
+  {
+   "node": "adler40",
+   "L": 15,
+   "start": 0,
+   "count": 468541887,
+   "overlap": false
+  },
+  {
+   "node": "adler40",
+   "L": 16,
+   "start": 0,
+   "count": 1874167547,
+   "overlap": false
+  },
+  {
+   "node": "adler40",
+   "L": 15,
+   "start": 123456789,
+   "count": 67108864,
+   "overlap": true
+  },
+  {
+   "node": "adler40",
+   "L": 16,
+   "start": 3000000000,
+   "count": 67108864,
+   "overlap": true
+  },
+  {
+   "node": "falke64",
+   "L": 15,
+   "start": 468541887,
+   "count": 292838679,
+   "overlap": false
+  },
+  {
+   "node": "falke64",
+   "L": 16,
+   "start": 1874167547,
+   "count": 1171354717,
+   "overlap": false
+  },
+  {
+   "node": "knecht24",
+   "L": 15,
+   "start": 761380566,
+   "count": 156180629,
+   "overlap": false
+  },
+  {
+   "node": "knecht24",
+   "L": 16,
+   "start": 3045522264,
+   "count": 624722516,
+   "overlap": false
+  },
+  {
+   "node": "knecht24",
+   "L": 15,
+   "start": 123456789,
+   "count": 67108864,
+   "overlap": true
+  },
+  {
+   "node": "knecht24",
+   "L": 16,
+   "start": 3000000000,
+   "count": 67108864,
+   "overlap": true
+  },
+  {
+   "node": "specht32",
+   "L": 15,
+   "start": 917561195,
+   "count": 156180629,
+   "overlap": false
+  },
+  {
+   "node": "specht32",
+   "L": 16,
+   "start": 3670244780,
+   "count": 624722516,
+   "overlap": false
+  }
+ ]
+}

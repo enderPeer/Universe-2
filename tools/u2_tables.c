@@ -9,6 +9,8 @@
  *   u2_tables W L steps start count threads        -> one TSV line per table on stdout
  *   u2_tables --check                              -> reads "W steps table_id program" lines, prints final states
  *   u2_tables --list                               -> the catalog
+ *   u2_tables prim PRIMS W L steps OPS start count threads -> arithmetic primitives (COPY, ADD, MUL_T, MAC_T,
+ *       MAC_B, CARRY) of one machine over all programs of exactly L symbols in an index range (docs/13)
  *
  * TSV columns: table_id, op0..op3 (names), union_after_L1 .. union_after_L<L> (distinct tapes over all programs up
  * to that length), halted, nonblank, checksum (sum of all program tape hashes, order-independent, for cross-node
@@ -27,7 +29,7 @@
 #define NOPS 41
 #define NBASE 36   /* table ids rank 4-subsets of the first 36 operations only; the biological operations are used by name */
 #define NCELL 256
-#define MAXL 12
+#define MAXL 16   /* prim mode runs 16-symbol programs; the table modes stay at L <= 12 */
 static const char *NAMES[NOPS] = {
     "R1", "L1", "R2", "L2", "R3", "L3", "INC", "DEC", "FLIP", "NOT", "ZERO", "SET", "SHL",
     "INC_R1", "INC_L1", "FLIP_R1", "FLIP_L1", "FLIP_R2", "FLIP_R3", "SET_R1", "SET_R3", "ZERO_R1", "ZERO_R3",
@@ -294,6 +296,161 @@ static int custom_mode(int argc, char **argv)
     return 0;
 }
 
+/* ---- prim mode: arithmetic primitives of ONE explicit machine over all programs of EXACTLY L symbols whose index
+ * (base-4 number of the program, most significant symbol first) lies in [start, start+count) ----
+ *
+ *   u2_tables prim PRIMS W L steps OPS start count threads
+ *
+ * PRIMS is a comma-separated subset of COPY, ADD, MUL_T, MAC_T, MAC_B, CARRY with the definitions and the input
+ * order of Ghost/bitnet_u2/prim_search.py (2026-10-09): the inputs are seeded into cells 0, 1, 2 (COPY: a in cell
+ * 0; ADD: a, b -> a + b; MUL_T: w in {1, -1, 0}, x -> w * x; MAC_T: acc, w in {1, -1, 0}, x -> acc + w * x; MAC_B:
+ * acc, code c in {2, 0, 1} meaning c - 1, x -> acc + (c - 1) * x; CARRY: a, b -> a + b >= 2^W), all mod 2^W.
+ * A program is kept when one FIXED cell (for COPY not cell 0), or the cell under the FINAL head, holds the target
+ * after the run for EVERY input. Inputs are ordered nonzero target first (stable), and a program stops at its
+ * first failing input (candidate cells are a 256-bit mask that only shrinks). Output per primitive: the number of
+ * programs still alive after each input, and every program found with its output cells and whether the head cell
+ * matched. Several primitives in one call share the program enumeration only.
+ */
+#define MAXIN 64
+typedef struct { const char *name; int excl0; int nin, ninit; uint8_t init[MAXIN][3]; uint8_t target[MAXIN]; } Prim;
+
+static int prim_build(Prim *p, const char *name, int W)
+{
+    int mask = (1 << W) - 1, nv = 1 << W, neg = mask;
+    uint8_t ti[MAXIN][3]; int tt[MAXIN], n = 0;
+    memset(p, 0, sizeof *p);
+    p->name = name;
+#define PUSH(a, b, c, t) do { ti[n][0] = (uint8_t)(a); ti[n][1] = (uint8_t)(b); ti[n][2] = (uint8_t)(c); tt[n] = (t); n++; } while (0)
+    if (strcmp(name, "COPY") == 0) {
+        p->ninit = 1; p->excl0 = 1;
+        for (int a = 1; a < nv; a++) PUSH(a, 0, 0, a);
+        PUSH(0, 0, 0, 0);
+    } else if (strcmp(name, "ADD") == 0) {
+        p->ninit = 2;
+        for (int a = 0; a < nv; a++) for (int b = 0; b < nv; b++) PUSH(a, b, 0, (a + b) & mask);
+    } else if (strcmp(name, "MUL_T") == 0) {
+        p->ninit = 2;
+        const int ws[3] = {1, neg, 0};
+        for (int i = 0; i < 3; i++) for (int x = 0; x < nv; x++) PUSH(ws[i], x, 0, (ws[i] * x) & mask);
+    } else if (strcmp(name, "MAC_T") == 0) {
+        p->ninit = 3;
+        const int ws[3] = {1, neg, 0};
+        for (int i = 0; i < 3; i++) for (int acc = 0; acc < nv; acc++) for (int x = 0; x < nv; x++) PUSH(acc, ws[i], x, (acc + ws[i] * x) & mask);
+    } else if (strcmp(name, "MAC_B") == 0) {
+        p->ninit = 3;
+        const int cs[3] = {2, 0, 1};
+        for (int i = 0; i < 3; i++) for (int acc = 0; acc < nv; acc++) for (int x = 0; x < nv; x++) PUSH(acc, cs[i], x, (acc + (cs[i] - 1) * x) & mask);
+    } else if (strcmp(name, "CARRY") == 0) {
+        p->ninit = 2;
+        for (int a = 0; a < nv; a++) for (int b = 0; b < nv; b++) PUSH(a, b, 0, a + b >= nv);
+    } else return 0;
+#undef PUSH
+    /* stable partition: nonzero targets first, as prim_search.py sorts them */
+    int k = 0;
+    for (int pass = 0; pass < 2; pass++)
+        for (int i = 0; i < n; i++)
+            if ((tt[i] != 0) == (pass == 0)) { memcpy(p->init[k], ti[i], 3); p->target[k] = (uint8_t)tt[i]; k++; }
+    p->nin = n;
+    return 1;
+}
+
+/* returns the number of inputs the program survived (== p->nin: found); mask/headok describe the output cells */
+static int prim_eval(const int *table, const uint8_t *prog, int L, int W, int steps, const Prim *p, State *st, uint64_t *mask, int *headok)
+{
+    mask[0] = mask[1] = mask[2] = mask[3] = ~0ULL;
+    if (p->excl0) mask[0] &= ~1ULL;
+    *headok = 1;
+    for (int i = 0; i < p->nin; i++) {
+        run(table, prog, L, W, steps, st, p->init[i], p->ninit);
+        uint8_t t = p->target[i];
+        for (int w = 0; w < 4; w++) {
+            uint64_t m = mask[w];
+            while (m) { int b = __builtin_ctzll(m); m &= m - 1; if (st->tape[64 * w + b] != t) mask[w] &= ~(1ULL << b); }
+        }
+        if (*headok && (st->tape[st->head] != t || (p->excl0 && st->head == 0))) *headok = 0;
+        if (!(mask[0] | mask[1] | mask[2] | mask[3]) && !*headok) return i;
+    }
+    return p->nin;
+}
+
+typedef struct { char *buf; size_t len, cap; } Buf;
+static void buf_add(Buf *b, const char *s)
+{
+    size_t n = strlen(s);
+    if (b->len + n + 1 > b->cap) { b->cap = b->cap ? b->cap * 2 : 1 << 16; while (b->len + n + 1 > b->cap) b->cap *= 2; b->buf = realloc(b->buf, b->cap); }
+    memcpy(b->buf + b->len, s, n + 1); b->len += n;
+}
+
+static int prim_mode(int argc, char **argv)
+{
+    (void)argc;
+    char names[256]; strncpy(names, argv[2], 255); names[255] = 0;
+    int W = atoi(argv[3]), L = atoi(argv[4]), steps = atoi(argv[5]);
+    int table[4];
+    if (!parse_ops(argv[6], table)) { fprintf(stderr, "unknown operation in %s\n", argv[6]); return 2; }
+    unsigned long long start = strtoull(argv[7], 0, 0), count = strtoull(argv[8], 0, 0);
+    int threads = atoi(argv[9]);
+    if (L < 1 || L > MAXL || W < 1 || W > 4) { fprintf(stderr, "1 <= L <= %d, 1 <= W <= 4\n", MAXL); return 2; }
+    Prim prims[8]; int np = 0;
+    for (char *tok = strtok(names, ","); tok && np < 8; tok = strtok(NULL, ",")) {
+        if (!prim_build(&prims[np], tok, W)) { fprintf(stderr, "unknown primitive %s\n", tok); return 2; }
+        np++;
+    }
+    /* per-thread: histogram of "inputs survived" per primitive, found-program text per primitive */
+    unsigned long long *hist = calloc((size_t)threads * np * (MAXIN + 1), sizeof(unsigned long long));
+    Buf *found = calloc((size_t)threads * np, sizeof(Buf));
+    double t0 = omp_get_wtime();
+    #pragma omp parallel num_threads(threads)
+    {
+        int tid = omp_get_thread_num();
+        unsigned long long *h = hist + (size_t)tid * np * (MAXIN + 1);
+        Buf *fb = found + (size_t)tid * np;
+        uint8_t prog[MAXL]; State st; uint64_t mask[4]; int headok;
+        char line[512];
+        #pragma omp for schedule(dynamic, 65536)
+        for (unsigned long long q = start; q < start + count; q++) {
+            for (int i = 0; i < L; i++) prog[i] = (uint8_t)((q >> (2 * (L - 1 - i))) & 3);
+            for (int k = 0; k < np; k++) {
+                int ns = prim_eval(table, prog, L, W, steps, &prims[k], &st, mask, &headok);
+                h[k * (MAXIN + 1) + ns]++;
+                if (ns == prims[k].nin) {
+                    int n = snprintf(line, sizeof line, "F\t%s\t", prims[k].name);
+                    for (int i = 0; i < L; i++) line[n++] = (char)('0' + prog[i]);
+                    line[n++] = '\t';
+                    int first = 1;
+                    for (int c = 0; c < NCELL; c++) if (mask[c >> 6] >> (c & 63) & 1) { n += snprintf(line + n, sizeof line - n, first ? "%d" : ",%d", c); first = 0; }
+                    if (first) line[n++] = '-';
+                    n += snprintf(line + n, sizeof line - n, "\t%d\n", headok);
+                    buf_add(&fb[k], line);
+                }
+            }
+        }
+    }
+    double secs = omp_get_wtime() - t0;
+    printf("machine\t%s,%s,%s,%s\nmode\tprim\nW\t%d\nL\t%d\nsteps\t%d\nstart\t%llu\nprograms\t%llu\n",
+           NAMES[table[0]], NAMES[table[1]], NAMES[table[2]], NAMES[table[3]], W, L, steps, start, count);
+    for (int k = 0; k < np; k++) {
+        const Prim *p = &prims[k];
+        unsigned long long tot[MAXIN + 1] = {0}, nfound = 0;
+        for (int t = 0; t < threads; t++) for (int i = 0; i <= p->nin; i++) tot[i] += hist[((size_t)t * np + k) * (MAXIN + 1) + i];
+        nfound = tot[p->nin];
+        printf("prim\t%s\ninputs\t%d\nexcluded_cell0\t%d\norder", p->name, p->nin, p->excl0);
+        for (int i = 0; i < p->nin; i++) { printf("\t"); for (int j = 0; j < p->ninit; j++) printf("%s%d", j ? "," : "", p->init[i][j]); printf(":%d", p->target[i]); }
+        printf("\nsurvivors");
+        unsigned long long surv[MAXIN], alive = 0;
+        for (int i = p->nin - 1; i >= 0; i--) { alive += tot[i + 1]; surv[i] = alive; }   /* alive after input i = programs that survived more than i inputs */
+        for (int i = 0; i < p->nin; i++) printf("\t%llu", surv[i]);
+        printf("\nfound\t%llu\n", nfound);
+        for (int t = 0; t < threads; t++) { Buf *b = &found[(size_t)t * np + k]; if (b->len) fputs(b->buf, stdout); free(b->buf); }
+    }
+    fflush(stdout);
+    char host[64] = "?"; gethostname(host, sizeof host);
+    fprintf(stderr, "mode=prim prims=%s ops=%s,%s,%s,%s W=%d L=%d steps=%d programs=%llu start=%llu secs=%.1f threads=%d host=%s\n",
+            argv[2], NAMES[table[0]], NAMES[table[1]], NAMES[table[2]], NAMES[table[3]], W, L, steps, count, start, secs, threads, host);
+    free(hist); free(found);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     if (argc >= 2 && strcmp(argv[1], "--list") == 0) {
@@ -301,6 +458,7 @@ int main(int argc, char **argv)
         return 0;
     }
     if (argc >= 8 && strcmp(argv[1], "custom") == 0) return custom_mode(argc, argv);
+    if (argc >= 10 && strcmp(argv[1], "prim") == 0) return prim_mode(argc, argv);
     if (argc >= 4 && strcmp(argv[1], "--checkops") == 0) {
         /* --checkops OPS W : reads "steps program" lines, prints state and truth table for the explicit machine */
         int table[4]; if (!parse_ops(argv[2], table)) return 2; int W = atoi(argv[3]);

@@ -61,6 +61,14 @@ the same machines by distinct functions of a 4-bit input, Universe-1's measure. 
 the perfect drawing machines compute 5 to 10 functions; Böhm's P'' ranks 2,628th. A proposed biological machine
 (EAT, MATE, SLEEP, WASTE) ranks in the top 10 % for functions but saturates: 16,855 functions over all 5.7 billion programs of up to 16 symbols.
 
+**The multiply-accumulate search** ([docs/13](docs/13_mac_search.md)): can the best W = 2 machine `INC_R1, INC_L1,
+FLIP_R2, JNZB` compute acc + w * x mod 4 for a ternary weight w (the BitNet b1.58 inner step) with the inputs in
+cells 0, 1, 2 and the result in one fixed cell or under the head? **No program of 1 to 16 symbols does**, in either
+weight encoding: 5,726,623,060 programs per encoding at 64 steps (1 to 14 symbols locally with numpy, 15 and 16 on the
+four cluster nodes with a new `prim` mode of the C sweeper, validated against the numpy search at 12 symbols and
+with an Intel/AMD overlap), while the same machine has copy at 5 symbols, a ternary multiplier at 10 and an adder
+at 11. The furthest any program gets is 17 of the 48 input triples.
+
 **The DNA-1 copier sweep** ([docs/11](docs/11_dna1_copier_sweep.md)): every gene of 2 to 7 codons (64 + 4,096 +
 262,144 + 16,777,216 + 1,073,741,824 + 68,719,476,736 codon strings after START) alone in a blank 8-slot world with
 mu = 0, under the standard genetic code and a uniform code, verified tick by tick against the reference on 6,219
