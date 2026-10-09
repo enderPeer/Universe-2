@@ -74,10 +74,12 @@ def matching(program, table):
     return m
 
 
-def run(table, program, W=1, steps=64, trace=False):
-    """table: 4 op indices; program: list of symbols 0..3. Returns the final state."""
+def run(table, program, W=1, steps=64, trace=False, init=()):
+    """table: 4 op indices; program: list of symbols 0..3. Returns the final state. init: initial cells 0.."""
     mask = (1 << W) - 1
     tape = [0] * N
+    for i, v in enumerate(init):
+        tape[i] = v
     head = pc = A = 0
     L = len(program)
     halted = False
@@ -142,6 +144,21 @@ def run(table, program, W=1, steps=64, trace=False):
     nz = [i for i in range(N) if tape[i]]
     return {"tape_nonzero": {i: tape[i] for i in nz}, "head": head, "A": A, "pc": pc, "halted": halted,
             "steps": done, "trace": hist if trace else None}
+
+
+def truth_table(table, program, W=1, steps=64):
+    """Function mode: 4-bit x in the first ceil(4/W) cells (cell i = bits W*i..), output = the same cells after the run."""
+    n = (4 + W - 1) // W
+    mask = (1 << W) - 1
+    out = []
+    for x in range(16):
+        init = [(x >> (W * i)) & mask for i in range(n)]
+        st = run(table, program, W, steps, init=init)
+        v = 0
+        for i in range(n):
+            v |= st["tape_nonzero"].get(i, 0) << (W * i)
+        out.append(v & 15)
+    return out
 
 
 def tape_key(state):
