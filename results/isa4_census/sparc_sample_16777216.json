@@ -1,0 +1,184 @@
+{
+ "arch": "sparc",
+ "mode": "sample",
+ "seed": 1,
+ "range": null,
+ "words": 16777216,
+ "counts": {
+  "undefined": 7955915,
+  "valid": 8821301
+ },
+ "percent": {
+  "undefined": 47.4209,
+  "valid": 52.5791
+ },
+ "instructions_per_word": null,
+ "distinct_mnemonics": 515,
+ "top_mnemonics": [
+  [
+   "call",
+   4195348
+  ],
+  [
+   "sethi",
+   523575
+  ],
+  [
+   "ld",
+   65929
+  ],
+  [
+   "st",
+   65841
+  ],
+  [
+   "sth",
+   33258
+  ],
+  [
+   "xorcc",
+   33234
+  ],
+  [
+   "udivx",
+   33225
+  ],
+  [
+   "ldsw",
+   33214
+  ],
+  [
+   "xnor",
+   33157
+  ],
+  [
+   "ldd",
+   33143
+  ],
+  [
+   "sdivcc",
+   33089
+  ],
+  [
+   "lduh",
+   33070
+  ],
+  [
+   "orcc",
+   33069
+  ],
+  [
+   "ldsb",
+   33059
+  ],
+  [
+   "addcc",
+   33033
+  ],
+  [
+   "sllx",
+   33011
+  ],
+  [
+   "smul",
+   33001
+  ],
+  [
+   "tsubcc",
+   32990
+  ],
+  [
+   "udivcc",
+   32988
+  ],
+  [
+   "subx",
+   32982
+  ],
+  [
+   "smulcc",
+   32955
+  ],
+  [
+   "andncc",
+   32939
+  ],
+  [
+   "save",
+   32938
+  ],
+  [
+   "addxcc",
+   32925
+  ],
+  [
+   "umul",
+   32922
+  ],
+  [
+   "tsubcctv",
+   32919
+  ],
+  [
+   "xor",
+   32915
+  ],
+  [
+   "add",
+   32898
+  ],
+  [
+   "stx",
+   32891
+  ],
+  [
+   "srlx",
+   32881
+  ],
+  [
+   "ldsh",
+   32878
+  ],
+  [
+   "orncc",
+   32877
+  ],
+  [
+   "andcc",
+   32867
+  ],
+  [
+   "ldub",
+   32853
+  ],
+  [
+   "xnorcc",
+   32849
+  ],
+  [
+   "sub",
+   32807
+  ],
+  [
+   "addx",
+   32804
+  ],
+  [
+   "taddcctv",
+   32800
+  ],
+  [
+   "orn",
+   32797
+  ],
+  [
+   "srax",
+   32790
+  ]
+ ],
+ "seconds": 9.91,
+ "words_per_second": 1693061,
+ "processes": 12,
+ "capstone": "5.0.7",
+ "host": "DESKTOP-E9PKJUK AMD64 32 logical CPUs, Python 3.11.9"
+}

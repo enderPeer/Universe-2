@@ -1,0 +1,184 @@
+{
+ "arch": "riscv64",
+ "mode": "sample",
+ "seed": 1,
+ "range": null,
+ "words": 16777216,
+ "counts": {
+  "undefined": 15588028,
+  "valid": 1189188
+ },
+ "percent": {
+  "undefined": 92.9119,
+  "valid": 7.0881
+ },
+ "instructions_per_word": null,
+ "distinct_mnemonics": 253,
+ "top_mnemonics": [
+  [
+   "auipc",
+   131906
+  ],
+  [
+   "lui",
+   131281
+  ],
+  [
+   "jal",
+   127060
+  ],
+  [
+   "fmadd.d",
+   24873
+  ],
+  [
+   "fmsub.d",
+   24686
+  ],
+  [
+   "fnmsub.d",
+   24682
+  ],
+  [
+   "fmadd.s",
+   24680
+  ],
+  [
+   "fmsub.s",
+   24660
+  ],
+  [
+   "fnmadd.d",
+   24611
+  ],
+  [
+   "fnmsub.s",
+   24566
+  ],
+  [
+   "fnmadd.s",
+   24539
+  ],
+  [
+   "sh",
+   16658
+  ],
+  [
+   "fld",
+   16578
+  ],
+  [
+   "sw",
+   16559
+  ],
+  [
+   "lwu",
+   16529
+  ],
+  [
+   "lw",
+   16517
+  ],
+  [
+   "sd",
+   16493
+  ],
+  [
+   "ld",
+   16481
+  ],
+  [
+   "xori",
+   16471
+  ],
+  [
+   "lhu",
+   16460
+  ],
+  [
+   "fsd",
+   16435
+  ],
+  [
+   "bltu",
+   16428
+  ],
+  [
+   "andi",
+   16424
+  ],
+  [
+   "sb",
+   16421
+  ],
+  [
+   "bgeu",
+   16410
+  ],
+  [
+   "addi",
+   16402
+  ],
+  [
+   "ori",
+   16387
+  ],
+  [
+   "addiw",
+   16381
+  ],
+  [
+   "sltiu",
+   16376
+  ],
+  [
+   "lh",
+   16354
+  ],
+  [
+   "jalr",
+   16351
+  ],
+  [
+   "lbu",
+   16311
+  ],
+  [
+   "slti",
+   16281
+  ],
+  [
+   "fsw",
+   16280
+  ],
+  [
+   "flw",
+   16214
+  ],
+  [
+   "lb",
+   16163
+  ],
+  [
+   "csrrw",
+   15913
+  ],
+  [
+   "csrrwi",
+   15868
+  ],
+  [
+   "csrrsi",
+   15834
+  ],
+  [
+   "csrrci",
+   15815
+  ]
+ ],
+ "seconds": 7.53,
+ "words_per_second": 2228454,
+ "processes": 12,
+ "capstone": "5.0.7",
+ "host": "DESKTOP-E9PKJUK AMD64 32 logical CPUs, Python 3.11.9"
+}

@@ -91,6 +91,27 @@ S4 (skip + wrap) wins both widths. None of this is a decision yet: the next step
 *every* four-instruction table over a candidate operation set (moves, increments, flips, skip, brackets, fixed jumps,
 halt) on all programs up to 11 or 12 symbols, on the cluster CPUs, and then the chosen law to 2^40 on the GPUs.
 
+## 6b. How big can the memory be? (asked: 93.75 to 100 million words)
+
+Any size in that range is trivial for the hardware: 100,000,000 cells of 2 bits are 25 MB (12.5 MB at 1 bit,
+50 MB at 4 bits); the workstation has 64 GB and every cluster GPU 12 to 32 GB. What matters is *what the memory is
+for*:
+
+- **For the sweep** (every program up to a length, run for a step budget), the tape only has to be as large as the
+  head can reach: at most one cell per step, so 64 steps need 64 cells, 256 steps 256 cells. A larger tape changes
+  nothing in the results and costs GPU memory per program instance (a GPU runs millions of programs at once, so the
+  per-program tape is what limits parallelism; 25 MB per program would allow about 1,000 at a time on a 24 GB card
+  instead of millions).
+- **For a world** (a soup where many programs live in one shared memory and compose by being next to each other,
+  the genome-like use), one tape of 10^8 cells shared by all heads is exactly right: 25 MB holds it on any device,
+  a GPU can run millions of heads over it in parallel, and with W = 2 every cell is also an instruction, so code and
+  data are one thing as in the crawler and NANO. For comparison, the human genome is 3.1 x 10^9 bases, so 10^8
+  cells is about a thirtieth of it, or one large chromosome.
+
+So: yes. The sweep gets a small tape sized to the step budget; the world gets the 10^8-cell tape. The two numbers
+in the question differ by 1/16 (93.75 = 100 x 15/16); if that was meant as "2^k-ish", 2^26 = 67.1 M and
+2^27 = 134.2 M cells are the neighbouring powers of two, and 100 M is fine as is.
+
 ## 7. What a 2-bit machine cannot do in one symbol, and why that is fine
 
 No load-immediate (there are no value bits: constants are built by repeated `+`), no random access (the head

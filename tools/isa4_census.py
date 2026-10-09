@@ -2,7 +2,8 @@
 
 The NANO maps asked "what does every 5- or 6-byte program do?". The same question for a real CPU starts
 with "which of the 2^32 four-byte words are instructions at all?". AArch64 has fixed 4-byte instructions,
-so one word is exactly one instruction slot. x86-64 is variable length, so one 4-byte word holds 0 to 4
+so one word is exactly one instruction slot; so do ARM32, RISC-V without the C extension, MIPS, PowerPC and
+SPARC. x86-64 (and RISC-V with compressed instructions) is variable length, so one 4-byte word holds 0 to 4
 whole instructions (and usually a trailing fragment).
 
   python tools/isa4_census.py --arch aarch64 --sample 16777216          # uniform random sample
@@ -25,9 +26,16 @@ from multiprocessing import Pool, cpu_count
 
 import capstone as cs
 
+# name: (capstone arch, mode, fixed 4-byte instructions?)
 ARCHES = {
-    "aarch64": (cs.CS_ARCH_ARM64, cs.CS_MODE_ARM),
-    "x86_64": (cs.CS_ARCH_X86, cs.CS_MODE_64),
+    "aarch64": (cs.CS_ARCH_ARM64, cs.CS_MODE_ARM, True),
+    "x86_64": (cs.CS_ARCH_X86, cs.CS_MODE_64, False),
+    "arm32": (cs.CS_ARCH_ARM, cs.CS_MODE_ARM, True),
+    "riscv64": (cs.CS_ARCH_RISCV, cs.CS_MODE_RISCV64, True),                        # without the C extension
+    "riscv64c": (cs.CS_ARCH_RISCV, cs.CS_MODE_RISCV64 | cs.CS_MODE_RISCVC, False),  # 2- and 4-byte instructions
+    "mips64": (cs.CS_ARCH_MIPS, cs.CS_MODE_MIPS64 | cs.CS_MODE_LITTLE_ENDIAN, True),
+    "ppc64": (cs.CS_ARCH_PPC, cs.CS_MODE_64 | cs.CS_MODE_LITTLE_ENDIAN, True),
+    "sparc": (cs.CS_ARCH_SPARC, cs.CS_MODE_BIG_ENDIAN, True),
 }
 
 
@@ -43,7 +51,8 @@ def _words_range(start, count):
 def census(job):
     arch, kind, p0, p1 = job
     words = _words_sample(p0, p1) if kind == "sample" else _words_range(p0, p1)
-    md = cs.Cs(*ARCHES[arch])
+    a, m, fixed = ARCHES[arch]
+    md = cs.Cs(a, m)
     md.detail = False
     c = Counter()
     mnem = Counter()
@@ -58,8 +67,8 @@ def census(job):
             n += 1
             used += size
         c["words"] += 1
-        if arch == "aarch64":
-            if n == 1:
+        if fixed:
+            if n == 1 and used == 4:
                 c["valid"] += 1
                 mnem[first] += 1
             else:
@@ -79,7 +88,8 @@ def census(job):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--arch", choices=list(ARCHES) + ["both"], default="both")
+    ap.add_argument("--arch", choices=list(ARCHES) + ["both", "all"], default="both",
+                    help="both = aarch64 + x86_64; all = every architecture")
     ap.add_argument("--sample", type=int, help="number of uniformly random words")
     ap.add_argument("--range", nargs=2, type=int, metavar=("START", "COUNT"), help="exhaustive word range")
     ap.add_argument("--seed", type=int, default=1)
@@ -89,7 +99,7 @@ def main():
     args = ap.parse_args()
     if not args.sample and not args.range:
         ap.error("--sample N or --range START COUNT")
-    arches = list(ARCHES) if args.arch == "both" else [args.arch]
+    arches = list(ARCHES) if args.arch == "all" else ["aarch64", "x86_64"] if args.arch == "both" else [args.arch]
     out = pathlib.Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     for arch in arches:

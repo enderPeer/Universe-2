@@ -49,7 +49,10 @@ and 408; a design without control flow 455 and 3,807. Variety at short lengths a
 different properties; the table search over all four-instruction sets is next.
 
 **Real ISAs.** AArch64 exhaustive over all 2^32 words: **1,526,900,218 valid instructions (35.5509 %)**, 1,298
-mnemonics, 15 minutes on the workstation. x86-64 exhaustive was still running; the rest are 1 M-word samples.
+mnemonics, 15 minutes on the workstation. Encoding density of other ISAs (16.7 M-word samples, Capstone): ARM32
+86.8 %, MIPS64 79.7 %, PowerPC64 76.9 %, SPARC 52.6 %, x86-64 22.5 % whole 4-byte words, RISC-V without compressed
+instructions 7.1 %; the designed machines (NANO, Universe-1, universe7, Universe 2) and the genome's codon are at
+100 % (docs/02, section 5b). x86-64 exhaustive was still running; the execution rows are 1 M-word samples.
 
 | | AArch64 | x86-64 |
 |---|---:|---:|

@@ -102,6 +102,35 @@ the exact figure. Most frequent: ldr 2.867 %, adr 1.575 %, b 1.562 %, adrp 1.562
 ldp 1.396 %, str 0.916 %, cbz / cbnz / tbz / tbnz 0.781 % each. The x86-64 exhaustive run was still in progress
 when this was written.
 
+## 5b. Encoding density across instruction sets
+
+How much of a machine's encoding space is an instruction at all. Toy machines and the genome are exact by
+construction; AArch64 is exact (all 2^32 words); the rest are 16,777,216-word samples with Capstone 5.0.9
+(`results/isa4_census/*_sample_16777216.json`), so they say what *Capstone's* decoder accepts, which for ARM32,
+MIPS and RISC-V is known to be looser or less complete than the manuals. Only AArch64 and x86-64 were cross-checked
+against a second decoder (Unicorn/QEMU), and AArch64 agreed within 0.04 points.
+
+| machine | word | words that are an instruction | distinct operations | note |
+|---|---|---:|---:|---|
+| NANO (Dimension42) | 8 bits | **100 %** (256 / 256) | 16 (15 encodings of NOP) | every byte is a program; this density is what makes the 2^40 and 2^48 maps rich |
+| Universe-1 word, Universe-7 symbol, Universe 2 symbol | 4, 2, 2 bits | **100 %** | 4 to 8 | by construction |
+| the genome's codon | 6 bits | 100 % (64 / 64: 61 sense, 3 stop) | 21 meanings | 3 of the 6 bits are redundancy (synonyms) |
+| ARM32 (A32) | 32 bits | 86.84 % | 5,791 Capstone mnemonics (condition suffixes counted) | the 4-bit condition field makes almost every word legal |
+| MIPS64 | 32 bits | 79.73 % | 976 | Capstone accepts some reserved encodings |
+| PowerPC64 | 32 bits | 76.90 % | 1,250 | |
+| RISC-V 64 with the C extension | 16 / 32 bits | 57.41 % whole words (21.99 % no instruction) | 291 | 2- and 4-byte instructions mixed, counted like x86-64 |
+| SPARC | 32 bits | 52.58 % | 515 | |
+| **AArch64** | 32 bits | **35.5509 % (exact)** | 1,298 | 64.45 % of the space is undefined (reserved and unallocated regions) |
+| x86-64 | 1 to 15 bytes | 22.46 % of 4-byte words are whole instruction sequences; 67.47 % begin with a valid instruction | 766 in 4 bytes | variable length, so "density" depends on the window |
+| RISC-V 64 without the C extension | 32 bits | **7.09 %** | 253 | by design: only words with low bits `11` are 32-bit instructions (25 % of the space); the rest is reserved for 16-, 48- and 64-bit formats |
+
+Reading: the designed machines sit at 100 % because every encoding was meant to be used; real ISAs reserve space
+for the future (RISC-V most of all), for longer formats, or waste it on illegal operand combinations. Density is
+also robustness: a random bit flip in NANO code always yields a runnable program, in AArch64 code it yields an
+undefined instruction about two thirds of the time, in the genome a point mutation is a synonym about a quarter of
+the time. For Universe 2 this is the argument for a dense 4-symbol alphabet (section 7 of docs/05): every mutation
+is a program, which is what an exhaustive sweep and an evolutionary soup both need.
+
 ## 6. What this is good for, and what it is not
 
 - It gives the behaviour-based catalog of a real ISA on one state, the raw material for the composition idea in

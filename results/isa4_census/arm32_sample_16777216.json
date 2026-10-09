@@ -1,0 +1,184 @@
+{
+ "arch": "arm32",
+ "mode": "sample",
+ "seed": 1,
+ "range": null,
+ "words": 16777216,
+ "counts": {
+  "undefined": 2207911,
+  "valid": 14569305
+ },
+ "percent": {
+  "undefined": 13.1602,
+  "valid": 86.8398
+ },
+ "instructions_per_word": null,
+ "distinct_mnemonics": 5791,
+ "top_mnemonics": [
+  [
+   "blx",
+   131656
+  ],
+  [
+   "bne",
+   66056
+  ],
+  [
+   "blo",
+   65925
+  ],
+  [
+   "blne",
+   65917
+  ],
+  [
+   "blpl",
+   65888
+  ],
+  [
+   "blls",
+   65846
+  ],
+  [
+   "ble",
+   65834
+  ],
+  [
+   "bge",
+   65797
+  ],
+  [
+   "svcgt",
+   65791
+  ],
+  [
+   "bhi",
+   65726
+  ],
+  [
+   "bhs",
+   65718
+  ],
+  [
+   "bvc",
+   65688
+  ],
+  [
+   "blvs",
+   65685
+  ],
+  [
+   "svcvs",
+   65673
+  ],
+  [
+   "svcls",
+   65646
+  ],
+  [
+   "svcmi",
+   65644
+  ],
+  [
+   "bpl",
+   65631
+  ],
+  [
+   "svcpl",
+   65616
+  ],
+  [
+   "blgt",
+   65613
+  ],
+  [
+   "bllo",
+   65603
+  ],
+  [
+   "svc",
+   65583
+  ],
+  [
+   "blge",
+   65557
+  ],
+  [
+   "bleq",
+   65555
+  ],
+  [
+   "b",
+   65538
+  ],
+  [
+   "svcvc",
+   65524
+  ],
+  [
+   "svcge",
+   65503
+  ],
+  [
+   "blhi",
+   65501
+  ],
+  [
+   "blvc",
+   65493
+  ],
+  [
+   "blmi",
+   65492
+  ],
+  [
+   "svceq",
+   65431
+  ],
+  [
+   "blt",
+   65413
+  ],
+  [
+   "beq",
+   65402
+  ],
+  [
+   "svchi",
+   65398
+  ],
+  [
+   "svcne",
+   65393
+  ],
+  [
+   "svchs",
+   65390
+  ],
+  [
+   "blle",
+   65383
+  ],
+  [
+   "svclo",
+   65360
+  ],
+  [
+   "bmi",
+   65341
+  ],
+  [
+   "blhs",
+   65314
+  ],
+  [
+   "svclt",
+   65204
+  ]
+ ],
+ "seconds": 17.14,
+ "words_per_second": 978746,
+ "processes": 12,
+ "capstone": "5.0.7",
+ "host": "DESKTOP-E9PKJUK AMD64 32 logical CPUs, Python 3.11.9"
+}
