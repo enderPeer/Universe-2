@@ -42,7 +42,7 @@ Output per primitive: the survivor count after every input and each found progra
 head flag. Cost: a run is up to 64 instructions, about 1 ns each; a program averages 2.4 runs per encoding because
 the second triple already removes 78 % and the fourth 97 %.
 
-## 3. Validation (adler40, 24 threads, 10.3 s in all)
+## 3. Validation (adler40, 24 threads, 10.4 s in all)
 
 All six primitives over every program of 1 to 12 symbols (22,369,620 programs per primitive), one invocation per
 length, summed, against `prim_INC_R1-INC_L1-FLIP_R2-JNZB_W2_L12_s64.json` of the numpy search (which was itself
@@ -59,8 +59,9 @@ validated against `u2_ops.run` on 600 random states). File: `results/u2_mac/vali
 
 Every found program's cells and head flag were checked on every input of its primitive with the Python reference
 interpreter. The build on each node also runs a self-check (COPY at 5 symbols must find exactly `01302` with output
-cell 1). The 12-symbol length alone took 6.8 s for all six primitives on 24 threads, against 370.5 s for the numpy
-search on 24 processes.
+cell 1). The 12-symbol length alone took 6.9 s for all six primitives on 24 threads, against 370.5 s for the numpy
+search on 24 processes. (The validation was rerun from the committed source after a one-line fix to the table
+modes' length check; both runs were identical.)
 
 ## 4. Cluster at launch (2026-10-09, 20:37 workstation time; the nodes' clocks read 18:37)
 

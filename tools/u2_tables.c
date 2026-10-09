@@ -626,11 +626,11 @@ int main(int argc, char **argv)
         }
         return 0;
     }
-    if (argc < 7) { fprintf(stderr, "usage: u2_tables W L steps start count threads | --check | --list\n"); return 2; }
+    if (argc < 7) { fprintf(stderr, "usage: u2_tables W L steps start count threads | prim PRIMS W L steps OPS start count threads | --check | --list\n"); return 2; }
     int W = atoi(argv[1]), L = atoi(argv[2]), steps = atoi(argv[3]);
     long start = atol(argv[4]), count = atol(argv[5]);
     int threads = atoi(argv[6]);
-    if (L > MAXL || W < 1 || W > 8) { fprintf(stderr, "L <= %d, 1 <= W <= 8\n", MAXL); return 2; }
+    if (L > 12 || W < 1 || W > 8) { fprintf(stderr, "L <= 12, 1 <= W <= 8 (the table modes; prim allows L <= %d)\n", MAXL); return 2; }
     long per_table = 0;
     for (int l = 1; l <= L; l++) per_table += 1L << (2 * l);
 
