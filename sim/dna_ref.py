@@ -272,6 +272,7 @@ class World:
         self.claimed_by = [-1] * S              # parent slot that holds the claim on this slot, or -1
         self.live = set()
         self.births = self.faithful = self.spontaneous = self.deaths = 0
+        self.claims = self.copied_cells = 0     # diagnostics for the done line: ALLOC grants, cells written by COPY/COPYR
         self.birth_log = []                     # (tick, parent, child, parent_hash or None, child_hash, faithful)
         self.tick_no = 0
 
@@ -401,6 +402,7 @@ class World:
                             fwd[Q] = v
                             rev[Q] = v ^ 3
                             copied += 1
+                            self.copied_cells += 1
                         P = (P + 1) % N if op == COPY else (P - 1) % N
                         Q = (Q + 1) % N
                     elif op == R1:
@@ -481,6 +483,7 @@ class World:
                 child_[s] = cand
                 Q_[s] = cand * G
                 copied_[s] = 0
+                self.claims += 1
 
         # 3. births
         for p, ch in marked:
@@ -641,9 +644,9 @@ def main(argv=None):
             f.write(w.state_bytes())
     divide_births = w.births - w.spontaneous
     print("done ticks=%d live=%d births=%d divide_births=%d faithful=%d spontaneous=%d deaths=%d "
-          "secs=%.2f hash_secs=%.2f init_secs=%.2f" % (a.ticks, len(w.live), w.births, divide_births, w.faithful,
-                                                      w.spontaneous, w.deaths, secs, t_hash, t_init),
-          file=sys.stderr, flush=True)
+          "claims=%d copied_cells=%d secs=%.2f hash_secs=%.2f init_secs=%.2f"
+          % (a.ticks, len(w.live), w.births, divide_births, w.faithful, w.spontaneous, w.deaths, w.claims,
+             w.copied_cells, secs, t_hash, t_init), file=sys.stderr, flush=True)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,18 @@
+ALL IDENTICAL
+#run	worlds	prefiltered	secs_pf	secs_nopf	verdict
+L2_standard_t256.json	64	54	0.003	0.003	identical
+L2_standard_t64.json	64	54	0.004	0.024	identical
+L2_uniform_t256.json	64	60	0.003	0.004	identical
+L2_uniform_t64.json	64	60	0.003	0.004	identical
+L3_standard_t256.json	4096	2946	0.086	0.107	identical
+L3_standard_t64.json	4096	2946	0.086	0.107	identical
+L3_uniform_t256.json	4096	3604	0.086	0.108	identical
+L3_uniform_t64.json	4096	3604	0.086	0.108	identical
+L4_standard_t256.json	262144	162534	0.152	0.152	identical
+L4_standard_t64.json	262144	162534	0.153	0.152	identical
+L4_uniform_t256.json	262144	216732	0.107	0.105	identical
+L4_uniform_t64.json	262144	216732	0.107	0.105	identical
+L5_standard_t256.json	16777216	9075666	5.413	7.132	identical
+L5_standard_t64.json	16777216	9075666	5.417	7.109	identical
+L5_uniform_t256.json	16777216	13049332	2.109	3.290	identical
+L5_uniform_t64.json	16777216	13049332	2.107	3.290	identical
