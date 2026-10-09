@@ -39,6 +39,7 @@ origin branches.
 | [`tools/isa4_census.py`](tools/isa4_census.py) | decode census of 4-byte words (Capstone), sampled or exhaustive, x86-64 and AArch64 |
 | [`tools/isa4_exec_probe.py`](tools/isa4_exec_probe.py) | execution census (Unicorn): NANO-style classes and state fingerprints for every decodable word |
 | `results/isa4_census/`, `results/isa4_exec/` | JSON results with counts, percentages, throughput and host |
+| [`docs/08_dna_machine.md`](docs/08_dna_machine.md) | how to build the machine like DNA: complement as repair, pointers in the polymerase, codon layer with degeneracy, regulation by templates, the world; six experiments in order |
 | [`docs/03_resources.md`](docs/03_resources.md) | the workstation and the four cluster nodes as found on 2026-10-09, and how to bound CPU, memory and power on each |
 
 ## First results (2026-10-09)
