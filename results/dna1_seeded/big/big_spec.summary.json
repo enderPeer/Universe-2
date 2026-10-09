@@ -1,0 +1,942 @@
+{
+ "run": "big_spec",
+ "params": {
+  "N": "2999999488",
+  "G": "1024",
+  "S": "2929687",
+  "ticks": "2000",
+  "seed": "1",
+  "I": "16",
+  "T": "64",
+  "mu": "0.001",
+  "D": "2861",
+  "F": "715",
+  "double": "1",
+  "code": "standard",
+  "blank": "0",
+  "n_seed": "1000000",
+  "hash_every": "-1",
+  "census_every": "10",
+  "gpu": "0",
+  "seed_hash": "d63dbd3ebc6a4cbb",
+  "seed_codons": 7
+ },
+ "summary": {
+  "ticks": "2000",
+  "seconds": "5.630",
+  "ticks_per_second": "355.21",
+  "seconds_total": "28.659",
+  "device_mem_alloc_bytes": "2701200114",
+  "device_mem_used_bytes": "2715811840",
+  "live": "502",
+  "births": "21917",
+  "faithful": "3",
+  "spontaneous": "21031",
+  "deaths": "1021415"
+ },
+ "series": [
+  {
+   "tick": 9,
+   "live": 1000033,
+   "births_total": 43,
+   "divide_total": 0,
+   "faithful_total": 0,
+   "spontaneous_total": 43,
+   "deaths_total": 10,
+   "distinct_genes": 34,
+   "depth_hist": [
+    [
+     0,
+     1000033
+    ]
+   ],
+   "max_depth": 0,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     1000000
+    ],
+    [
+     "041d360512a9977c",
+     1
+    ],
+    [
+     "08471007b4fd000f",
+     1
+    ]
+   ]
+  },
+  {
+   "tick": 19,
+   "live": 1000058,
+   "births_total": 78,
+   "divide_total": 0,
+   "faithful_total": 0,
+   "spontaneous_total": 78,
+   "deaths_total": 20,
+   "distinct_genes": 59,
+   "depth_hist": [
+    [
+     0,
+     1000058
+    ]
+   ],
+   "max_depth": 0,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     1000000
+    ],
+    [
+     "041d360512a9977c",
+     1
+    ],
+    [
+     "0846fd07b4fcdfc6",
+     1
+    ]
+   ]
+  },
+  {
+   "tick": 49,
+   "live": 1000134,
+   "births_total": 187,
+   "divide_total": 0,
+   "faithful_total": 0,
+   "spontaneous_total": 187,
+   "deaths_total": 53,
+   "distinct_genes": 135,
+   "depth_hist": [
+    [
+     0,
+     1000134
+    ]
+   ],
+   "max_depth": 0,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     1000000
+    ],
+    [
+     "041d360512a9977c",
+     1
+    ],
+    [
+     "04fb5f20426b6fc1",
+     1
+    ]
+   ]
+  },
+  {
+   "tick": 59,
+   "live": 1000161,
+   "births_total": 220,
+   "divide_total": 0,
+   "faithful_total": 0,
+   "spontaneous_total": 220,
+   "deaths_total": 59,
+   "distinct_genes": 162,
+   "depth_hist": [
+    [
+     0,
+     1000161
+    ]
+   ],
+   "max_depth": 0,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     1000000
+    ],
+    [
+     "041d360512a9977c",
+     1
+    ],
+    [
+     "04fb5f20426b6fc1",
+     1
+    ]
+   ]
+  },
+  {
+   "tick": 69,
+   "live": 206,
+   "births_total": 302,
+   "divide_total": 0,
+   "faithful_total": 0,
+   "spontaneous_total": 302,
+   "deaths_total": 1000096,
+   "distinct_genes": 206,
+   "depth_hist": [
+    [
+     0,
+     206
+    ]
+   ],
+   "max_depth": 0,
+   "top": [
+    [
+     "04fb5f20426b6fc1",
+     1
+    ],
+    [
+     "07c318edc3a3357d",
+     1
+    ],
+    [
+     "0846ea07b4fcbf7d",
+     1
+    ]
+   ]
+  },
+  {
+   "tick": 99,
+   "live": 347,
+   "births_total": 616,
+   "divide_total": 4,
+   "faithful_total": 0,
+   "spontaneous_total": 612,
+   "deaths_total": 1000269,
+   "distinct_genes": 343,
+   "depth_hist": [
+    [
+     0,
+     343
+    ],
+    [
+     1,
+     4
+    ]
+   ],
+   "max_depth": 1,
+   "top": [
+    [
+     "0846ea07b4fcbf7d",
+     2
+    ],
+    [
+     "0846f707b4fcd594",
+     2
+    ],
+    [
+     "08471207b4fd0375",
+     2
+    ]
+   ]
+  },
+  {
+   "tick": 119,
+   "live": 490,
+   "births_total": 867,
+   "divide_total": 17,
+   "faithful_total": 0,
+   "spontaneous_total": 850,
+   "deaths_total": 1000377,
+   "distinct_genes": 475,
+   "depth_hist": [
+    [
+     0,
+     475
+    ],
+    [
+     1,
+     15
+    ]
+   ],
+   "max_depth": 1,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     5
+    ],
+    [
+     "0846e007b4fcae7f",
+     3
+    ],
+    [
+     "0846f707b4fcd594",
+     3
+    ]
+   ]
+  },
+  {
+   "tick": 149,
+   "live": 553,
+   "births_total": 1218,
+   "divide_total": 37,
+   "faithful_total": 0,
+   "spontaneous_total": 1181,
+   "deaths_total": 1000665,
+   "distinct_genes": 526,
+   "depth_hist": [
+    [
+     0,
+     521
+    ],
+    [
+     1,
+     32
+    ]
+   ],
+   "max_depth": 1,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     11
+    ],
+    [
+     "0e2c57fa4fde8e8b",
+     6
+    ],
+    [
+     "0846e007b4fcae7f",
+     3
+    ]
+   ]
+  },
+  {
+   "tick": 199,
+   "live": 565,
+   "births_total": 1809,
+   "divide_total": 60,
+   "faithful_total": 3,
+   "spontaneous_total": 1749,
+   "deaths_total": 1001244,
+   "distinct_genes": 541,
+   "depth_hist": [
+    [
+     0,
+     535
+    ],
+    [
+     1,
+     26
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     3,
+     1
+    ],
+    [
+     4,
+     1
+    ],
+    [
+     5,
+     1
+    ]
+   ],
+   "max_depth": 5,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     16
+    ],
+    [
+     "05e39bb0230a842f",
+     4
+    ],
+    [
+     "0e2c57fa4fde8e8b",
+     4
+    ]
+   ]
+  },
+  {
+   "tick": 299,
+   "live": 525,
+   "births_total": 2913,
+   "divide_total": 95,
+   "faithful_total": 3,
+   "spontaneous_total": 2818,
+   "deaths_total": 1002388,
+   "distinct_genes": 506,
+   "depth_hist": [
+    [
+     0,
+     504
+    ],
+    [
+     1,
+     21
+    ]
+   ],
+   "max_depth": 1,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     11
+    ],
+    [
+     "0846df07b4fcaccc",
+     2
+    ],
+    [
+     "0846e307b4fcb398",
+     2
+    ]
+   ]
+  },
+  {
+   "tick": 499,
+   "live": 509,
+   "births_total": 5114,
+   "divide_total": 163,
+   "faithful_total": 3,
+   "spontaneous_total": 4951,
+   "deaths_total": 1004605,
+   "distinct_genes": 486,
+   "depth_hist": [
+    [
+     0,
+     478
+    ],
+    [
+     1,
+     31
+    ]
+   ],
+   "max_depth": 1,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     15
+    ],
+    [
+     "0e2c57fa4fde8e8b",
+     4
+    ],
+    [
+     "0846e107b4fcb032",
+     3
+    ]
+   ]
+  },
+  {
+   "tick": 999,
+   "live": 557,
+   "births_total": 10899,
+   "divide_total": 446,
+   "faithful_total": 3,
+   "spontaneous_total": 10453,
+   "deaths_total": 1010342,
+   "distinct_genes": 540,
+   "depth_hist": [
+    [
+     0,
+     530
+    ],
+    [
+     1,
+     27
+    ]
+   ],
+   "max_depth": 1,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     12
+    ],
+    [
+     "0846dc07b4fca7b3",
+     2
+    ],
+    [
+     "0846ee07b4fcc649",
+     2
+    ]
+   ]
+  },
+  {
+   "tick": 1999,
+   "live": 502,
+   "births_total": 21917,
+   "divide_total": 886,
+   "faithful_total": 3,
+   "spontaneous_total": 21031,
+   "deaths_total": 1021415,
+   "distinct_genes": 497,
+   "depth_hist": [
+    [
+     0,
+     495
+    ],
+    [
+     1,
+     7
+    ]
+   ],
+   "max_depth": 1,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     3
+    ],
+    [
+     "0846f007b4fcc9af",
+     2
+    ],
+    [
+     "08470d07b4fcfaf6",
+     2
+    ]
+   ]
+  }
+ ],
+ "peak_live": {
+  "tick": 59,
+  "live": 1000161
+ },
+ "max_depth_ever": 5,
+ "last_tick_with_depth_ge_1": 1999,
+ "seed_gene": {
+  "hash": "d63dbd3ebc6a4cbb",
+  "last_census_tick_among_top10": 1999,
+  "peak_count_in_top10": 1000000
+ },
+ "generations": [
+  {
+   "depth": 1,
+   "births": 873,
+   "faithful": 0,
+   "faithful_frac": 0.0,
+   "first_tick": 81,
+   "last_tick": 1998,
+   "copied_mean": 7.22,
+   "copied_min": 6,
+   "copied_max": 413,
+   "parent_age_median": 31,
+   "parent_age_min": 1,
+   "parent_age_max": 63
+  },
+  {
+   "depth": 2,
+   "births": 10,
+   "faithful": 1,
+   "faithful_frac": 0.1,
+   "first_tick": 173,
+   "last_tick": 1660,
+   "copied_mean": 6.3,
+   "copied_min": 6,
+   "copied_max": 7,
+   "parent_age_median": 19.5,
+   "parent_age_min": 5,
+   "parent_age_max": 61
+  },
+  {
+   "depth": 3,
+   "births": 1,
+   "faithful": 1,
+   "faithful_frac": 1.0,
+   "first_tick": 178,
+   "last_tick": 178,
+   "copied_mean": 6.0,
+   "copied_min": 6,
+   "copied_max": 6,
+   "parent_age_median": 5,
+   "parent_age_min": 5,
+   "parent_age_max": 5
+  },
+  {
+   "depth": 4,
+   "births": 1,
+   "faithful": 1,
+   "faithful_frac": 1.0,
+   "first_tick": 183,
+   "last_tick": 183,
+   "copied_mean": 6.0,
+   "copied_min": 6,
+   "copied_max": 6,
+   "parent_age_median": 5,
+   "parent_age_min": 5,
+   "parent_age_max": 5
+  },
+  {
+   "depth": 5,
+   "births": 1,
+   "faithful": 0,
+   "faithful_frac": 0.0,
+   "first_tick": 188,
+   "last_tick": 188,
+   "copied_mean": 6.0,
+   "copied_min": 6,
+   "copied_max": 6,
+   "parent_age_median": 5,
+   "parent_age_min": 5,
+   "parent_age_max": 5
+  }
+ ],
+ "generations_seed": [
+  {
+   "depth": 1,
+   "births": 327,
+   "faithful": 0,
+   "first_tick": 90,
+   "last_tick": 1971,
+   "copied_mean": 6.38,
+   "parent_age_median": 34
+  },
+  {
+   "depth": 2,
+   "births": 4,
+   "faithful": 0,
+   "first_tick": 1224,
+   "last_tick": 1660,
+   "copied_mean": 6.5,
+   "parent_age_median": 49.5
+  }
+ ],
+ "faithful_births_outside_seed_lineage": 3,
+ "faithful_ratio_per_generation": [
+  {
+   "from_depth": 1,
+   "ratio": null
+  },
+  {
+   "from_depth": 2,
+   "ratio": 1.0
+  },
+  {
+   "from_depth": 3,
+   "ratio": 1.0
+  },
+  {
+   "from_depth": 4,
+   "ratio": 0.0
+  }
+ ],
+ "fecundity_hist_of_dividing_parents": [
+  [
+   0,
+   222
+  ],
+  [
+   1,
+   3
+  ]
+ ],
+ "log_rows": 886,
+ "log_divide_rows": 886,
+ "most_common_child_genes": [
+  {
+   "hash": "d63dbd3ebc6a4cbb",
+   "births": 331,
+   "faithful_to_parent": true,
+   "codons": "ATG TTC GGA GCA AAA ATA CTC",
+   "ops": "START SKZ DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "0e2c57fa4fde8e8b",
+   "births": 14,
+   "faithful_to_parent": false,
+   "codons": "ATG ATC GGA GCA AAA ATA CTC",
+   "ops": "START SKNZ DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "190d6a2c1ce7c89b",
+   "births": 9,
+   "faithful_to_parent": false,
+   "codons": "ATG CTC GGA GCA AAA ATA CTC",
+   "ops": "START COPY DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "73eb15ce47abe12b",
+   "births": 7,
+   "faithful_to_parent": false,
+   "codons": "ATG GTC GGA GCA AAA ATA CTC",
+   "ops": "START JNZB DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "ad48954bf0e2ba10",
+   "births": 5,
+   "faithful_to_parent": false,
+   "codons": "ATG ATG GGA GCA AAA ATA CTC",
+   "ops": "START START DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "05e39bb0230a842f",
+   "births": 4,
+   "faithful_to_parent": false,
+   "codons": "ATG CGC GGA GCA AAA ATA CTC",
+   "ops": "START L1 DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "6e4c5558fff98e4f",
+   "births": 4,
+   "faithful_to_parent": false,
+   "codons": "ATG TGC GGA GCA AAA ATA CTC",
+   "ops": "START COPYR DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "0846dc07b4fca7b3",
+   "births": 2,
+   "faithful_to_parent": false,
+   "codons": "ATG CAA",
+   "ops": "START INC"
+  },
+  {
+   "hash": "0846ed07b4fcc496",
+   "births": 2,
+   "faithful_to_parent": false,
+   "codons": "ATG AAT",
+   "ops": "START FLIP"
+  },
+  {
+   "hash": "0846f907b4fcd8fa",
+   "births": 2,
+   "faithful_to_parent": false,
+   "codons": "ATG ATT",
+   "ops": "START SKNZ"
+  },
+  {
+   "hash": "0846fa07b4fcdaad",
+   "births": 2,
+   "faithful_to_parent": false,
+   "codons": "ATG ATG",
+   "ops": "START START"
+  },
+  {
+   "hash": "6781356d74094a9a",
+   "births": 2,
+   "faithful_to_parent": false,
+   "codons": null,
+   "ops": null
+  }
+ ],
+ "most_common_unfaithful_child_genes": [
+  {
+   "hash": "d63dbd3ebc6a4cbb",
+   "births": 331,
+   "codons": "ATG TTC GGA GCA AAA ATA CTC",
+   "ops": "START SKZ DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "0e2c57fa4fde8e8b",
+   "births": 14,
+   "codons": "ATG ATC GGA GCA AAA ATA CTC",
+   "ops": "START SKNZ DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "190d6a2c1ce7c89b",
+   "births": 9,
+   "codons": "ATG CTC GGA GCA AAA ATA CTC",
+   "ops": "START COPY DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "73eb15ce47abe12b",
+   "births": 7,
+   "codons": "ATG GTC GGA GCA AAA ATA CTC",
+   "ops": "START JNZB DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "ad48954bf0e2ba10",
+   "births": 5,
+   "codons": "ATG ATG GGA GCA AAA ATA CTC",
+   "ops": "START START DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "6e4c5558fff98e4f",
+   "births": 4,
+   "codons": "ATG TGC GGA GCA AAA ATA CTC",
+   "ops": "START COPYR DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "0846dc07b4fca7b3",
+   "births": 2,
+   "codons": "ATG CAA",
+   "ops": "START INC"
+  },
+  {
+   "hash": "0846ed07b4fcc496",
+   "births": 2,
+   "codons": "ATG AAT",
+   "ops": "START FLIP"
+  },
+  {
+   "hash": "0846f907b4fcd8fa",
+   "births": 2,
+   "codons": "ATG ATT",
+   "ops": "START SKNZ"
+  },
+  {
+   "hash": "0846fa07b4fcdaad",
+   "births": 2,
+   "codons": "ATG ATG",
+   "ops": "START START"
+  },
+  {
+   "hash": "6781356d74094a9a",
+   "births": 2,
+   "codons": null,
+   "ops": null
+  },
+  {
+   "hash": "802756729c3ddb72",
+   "births": 2,
+   "codons": null,
+   "ops": null
+  }
+ ],
+ "top_genes_last_census": [
+  {
+   "hash": "d63dbd3ebc6a4cbb",
+   "count": 3,
+   "depth": 1,
+   "codons": "ATG TTC GGA GCA AAA ATA CTC",
+   "ops": "START SKZ DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "0846f007b4fcc9af",
+   "count": 2,
+   "depth": 0,
+   "codons": "ATG ACA",
+   "ops": "START SETQ"
+  },
+  {
+   "hash": "08470d07b4fcfaf6",
+   "count": 2,
+   "depth": 0,
+   "codons": "ATG GAT",
+   "ops": "START L3"
+  },
+  {
+   "hash": "08471407b4fd06db",
+   "count": 2,
+   "depth": 0,
+   "codons": "ATG GGA",
+   "ops": "START DIVIDE"
+  },
+  {
+   "hash": "00c13b9c0cacbae1",
+   "count": 1,
+   "depth": 0,
+   "codons": "ATG ACT CTA GCC GAA GGG ACA TTT CGC GGG",
+   "ops": "START SETQ COPY ALLOC SEEK DIVIDE SETQ SKZ L1 DIVIDE"
+  },
+  {
+   "hash": "00f144510a11f47e",
+   "count": 1,
+   "depth": 0,
+   "codons": "ATG ACT GTT ACA GGA CGC",
+   "ops": "START SETQ JNZB SETQ DIVIDE L1"
+  },
+  {
+   "hash": "018c4ac7a62ee3f4",
+   "count": 1,
+   "depth": 0,
+   "codons": "ATG TAT TTC TCC CCG ATC TGG GGC GTC CCG TCC ACT ACG CTA GCC AGG CTA GAT ATA AGC GTC TGG GGC CTT TTT CGT CCA CGC GAT GAG CCA TCG CAT TTT TCA CTG CCA TCC ACG GTC GAA CGC ATT CGT AAC GAC ACG CCT TTG TCA GAA GTT GCT GAA CAC CAG CCT AAT TTT GTT",
+   "ops": "START LDA SKZ R1 SETP SKNZ REWIND DIVIDE JNZB SETP R1 SETQ SETQ COPY ALLOC L1 COPY L3 SKNZ R1 JNZB REWIND DIVIDE COPY SKZ L1 SETP L1 L3 SEEK SETP R1 STA SKZ R1 COPY SETP R1 SETQ JNZB SEEK L1 SKNZ L1 FLIP L3 SETQ SETP COPY R1 SEEK JNZB ALLOC SEEK STA INC SETP FLIP SKZ JNZB"
+  },
+  {
+   "hash": "026ed3ff45523c55",
+   "count": 1,
+   "depth": 0,
+   "codons": "ATG GTA ACC TGC CAC CGT TGG CGT GCT TCT AAC CCA GGG CGG",
+   "ops": "START JNZB SETQ COPYR STA L1 REWIND L1 ALLOC R1 FLIP SETP DIVIDE L1"
+  },
+  {
+   "hash": "03cd748cd05c5e24",
+   "count": 1,
+   "depth": 0,
+   "codons": "ATG GAG TAT ATA AAG TAT GCG GCA TCG ATA ACT AGG TGT CAC TTT GTT TGG CTA",
+   "ops": "START SEEK LDA SKNZ R3 LDA ALLOC ALLOC R1 SKNZ SETQ L1 COPYR STA SKZ JNZB REWIND COPY"
+  },
+  {
+   "hash": "03d921b09aa8c5f2",
+   "count": 1,
+   "depth": 0,
+   "codons": "ATG TAT GAG GAA GTC AAC GTC CAT TTT ACG TTT AAC AGA TTA GGA TTG AAA GAG GAC TGG GAC ACT TCC CGT CGG",
+   "ops": "START LDA SEEK SEEK JNZB FLIP JNZB STA SKZ SETQ SKZ FLIP L1 COPY DIVIDE COPY R3 SEEK L3 REWIND L3 SETQ R1 L1 L1"
+  }
+ ],
+ "genes_ever_rank1": [
+  {
+   "hash": "d63dbd3ebc6a4cbb",
+   "first_tick": 9,
+   "count_then": 1000000,
+   "codons": "ATG TTC GGA GCA AAA ATA CTC",
+   "ops": "START SKZ DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "04fb5f20426b6fc1",
+   "first_tick": 69,
+   "count_then": 1,
+   "codons": "ATG GCG ATA TTG CTA ATT ACC CGA GGC GGG AAG ACT CCT ACC GCA GGG TTG GGG CTG TGT GCA TTG TTT",
+   "ops": "START ALLOC SKNZ COPY COPY SKNZ SETQ L1 DIVIDE DIVIDE R3 SETQ SETP SETQ ALLOC DIVIDE COPY DIVIDE COPY COPYR ALLOC COPY SKZ"
+  },
+  {
+   "hash": "07c318edc3a3357d",
+   "first_tick": 69,
+   "count_then": 1,
+   "codons": "ATG CTC CAG AAT CCG TAC GGC CCC TTC GCG CTA CTC GAC ACA GGA CCA TTA TGT TGC CGC ACT GAG ATC CTG GGT GCG CTT CCC GAC TGT AAG",
+   "ops": "START COPY INC FLIP SETP LDA DIVIDE SETP SKZ ALLOC COPY COPY L3 SETQ DIVIDE SETP COPY COPYR COPYR L1 SETQ SEEK SKNZ COPY DIVIDE ALLOC COPY SETP L3 COPYR R3"
+  },
+  {
+   "hash": "0846ea07b4fcbf7d",
+   "first_tick": 69,
+   "count_then": 1,
+   "codons": "ATG CTG",
+   "ops": "START COPY"
+  },
+  {
+   "hash": "0846eb07b4fcc130",
+   "first_tick": 69,
+   "count_then": 1,
+   "codons": "ATG AAC",
+   "ops": "START FLIP"
+  },
+  {
+   "hash": "0846f507b4fcd22e",
+   "first_tick": 69,
+   "count_then": 1,
+   "codons": "ATG AGT",
+   "ops": "START R1"
+  },
+  {
+   "hash": "0846fb07b4fcdc60",
+   "first_tick": 69,
+   "count_then": 1,
+   "codons": "ATG TAC",
+   "ops": "START LDA"
+  },
+  {
+   "hash": "0846fd07b4fcdfc6",
+   "first_tick": 69,
+   "count_then": 1,
+   "codons": "ATG TAT",
+   "ops": "START LDA"
+  },
+  {
+   "hash": "08470807b4fcf277",
+   "first_tick": 69,
+   "count_then": 1,
+   "codons": "ATG TTA",
+   "ops": "START COPY"
+  },
+  {
+   "hash": "08470907b4fcf42a",
+   "first_tick": 69,
+   "count_then": 1,
+   "codons": "ATG TTT",
+   "ops": "START SKZ"
+  },
+  {
+   "hash": "08471207b4fd0375",
+   "first_tick": 69,
+   "count_then": 1,
+   "codons": "ATG GCG",
+   "ops": "START ALLOC"
+  },
+  {
+   "hash": "0846f707b4fcd594",
+   "first_tick": 99,
+   "count_then": 2,
+   "codons": "ATG ATC",
+   "ops": "START SKNZ"
+  }
+ ]
+}

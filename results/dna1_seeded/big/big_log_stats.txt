@@ -1,0 +1,1 @@
+rows 1373185 faithful 148008 depth>=2 92629

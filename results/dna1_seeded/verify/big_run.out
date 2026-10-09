@@ -1,0 +1,10 @@
+v1 v3 OK 300 hashes
+v2 v3 OK 300 hashes
+v8 v3 OK 400 hashes
+v2 v3 census identical
+c256_35511 ticks_per_second=1512.48 live=72 births=35451 faithful=5675 spontaneous=28375 deaths=70890
+c256_35511_mu001 ticks_per_second=1510.09 live=72 births=35345 faithful=5424 spontaneous=28375 deaths=70784
+c256_35511_mu01 ticks_per_second=1506.53 live=72 births=34673 faithful=3930 spontaneous=28376 deaths=70112
+c256_35511_nodouble ticks_per_second=1539.35 live=72 births=39122 faithful=8875 spontaneous=28372 deaths=74561
+big ticks_per_second=373.25 live=2051 births=39527135 faithful=148008 spontaneous=38153950 deaths=40525084
+big-done

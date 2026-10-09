@@ -1,0 +1,4 @@
+dna_world N=99999744 G=1024 S=97656 ticks=20000 seed=1 I=16 T=64 mu=0 D=95 F=23 double=1 code=standard blank=1 n_seed=48828 hash_every=-1 census_every=10 gpu=0
+log_births=b1024_48828.log log_filter=divide log_every=1 depth_cap=10 top_genes=b1024_48828.top slot_map=
+seeded 48828 slots with 7 codons, gene hash d63dbd3ebc6a4cbb, expressible=1
+summary ticks=20000 seconds=10.905 ticks_per_second=1834.08 seconds_total=12.020 device_mem_alloc_bytes=90039852 device_mem_used_bytes=92274688 live=17 births=7225 faithful=0 spontaneous=6955 deaths=56036

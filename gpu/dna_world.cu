@@ -14,6 +14,29 @@
  *          k-th tick and after the last, 0: last only; default 1 for N <= 2^24, else never) --no-hash --hash-init
  *          (also hash the initial state, printed as tick -1) --census-every k (default 10, 0: last only)
  *          --births FILE --dump FILE --out FILE --gpu i
+ *          Added for the seeded worlds of docs/12 (2026-10-09; none of them changes the world, only the output):
+ *          --log-births FILE   every DIVIDE birth unsampled (no 1-in-1000 FIFO sampling), TSV
+ *                              "#tick parent child parent_hash child_hash faithful depth parent_age copied parent_P":
+ *                              the child's lineage depth, the parent's age at the division (before the ageing of
+ *                              step 4), the cells the parent had copied into the child since the claim, and the
+ *                              parent's template pointer P after its instructions of the tick (P - copied is the
+ *                              first cell it copied from, modulo N, if nothing moved P in between)
+ *          --log-filter divide|faithful|all   rows of --log-births (default divide: step-3 births only; faithful:
+ *                              only those with equal hashes; all: spontaneous births too, with depth 0, age -1, copied -1)
+ *          --log-every k       only ticks with t mod k = 0 go to --log-births (default 1 = every tick)
+ *          --log-codons        two more columns in --log-births: the parent's and the child's gene as codon letters,
+ *                              read at the end of the tick (steps 4 to 7 may have changed them: unrepaired damage, or
+ *                              the inflow refilling a parent that died in the same tick, both rare); the hashes of
+ *                              the row are the ones of step 3
+ *          --depth-cap K       census: depth_hist buckets every depth >= K into one entry [K, n] and the census
+ *                              gets a "max_depth" field (K = 0, the default, leaves the census as the reference prints it)
+ *          --top-genes FILE    at every census, for each of the 10 most common gene hashes among the living, one
+ *                              carrier's codons and operations: "tick hash count slot depth codons ops"
+ *          --max-seconds s     stop after the first tick (checked every 100 ticks) at which the main loop has run
+ *                              for s seconds; that tick is then the last one (final census, --out, --dump as usual)
+ *          --slot-map FILE     at every census, one byte per slot appended to FILE (a frame for a video): 0 dead,
+ *                              1 .. 254 live with depth + 1 (254 = depth >= 253), 255 dead but claimed as a child;
+ *                              the frame order is the census order, S bytes per frame
  * stdout:  "tick <t> hash <16 hex>" = the state after tick t (t = 0 .. ticks-1, as sim/dna_ref.py prints it),
  *          "census {json}" lines with the reference's key order.
  * stderr:  configuration, then one summary line: ticks, seconds, ticks per second, device memory.
@@ -118,7 +141,10 @@ struct Params {
 /* 80 bytes, the ten 64-bit fields of section 4 in the hash order of section 8 */
 struct Proc { i64 slot, pc, H, P, Q, child, A, age, depth, copied; };
 
-struct BirthRec { i64 parent, child; u64 phash, chash; };
+/* one birth of this tick; depth = the child's lineage depth, page = the parent's age at the division (before step
+ * 4), copied = cells the parent wrote into the child since the claim; a spontaneous birth has parent -1, page -1,
+ * copied -1 */
+struct BirthRec { i32 parent, child, depth, page, copied; u64 phash, chash; i64 pP; };   /* pP: the parent's P after step 1 */
 
 struct World {
     u8 *fwd, *rev, *fwd_old;  /* packed 2-bit strands; fwd_old = snapshot at the start of the tick */
@@ -128,6 +154,7 @@ struct World {
     i32 *claim;               /* ALLOC resolution scratch: lowest requesting slot per candidate (atomicMin) */
     u8 *alloc_req;            /* ALLOC requested this tick */
     i32 *div_mark;            /* child slot marked for birth by DIVIDE this tick, or -1 */
+    i32 *div_copied;          /* the parent's copied count at that DIVIDE (for the log only) */
     i32 *refill_k;            /* inflow scratch: largest k refilling this slot this tick, or -1 */
     u64 *ghash;               /* gene hash per live processor (set at birth, refreshed for the census) */
     i32 *cens_depth;          /* census scratch: depth of live processor or -1 */
@@ -272,7 +299,7 @@ __global__ void k_execute(World w, Params P, i64 t)
             p.Q += 1; if (p.Q >= N) p.Q -= N;
             break;
         case DIVIDE:
-            if (p.child >= 0 && p.copied >= 6) { w.div_mark[s] = (i32)p.child; p.child = -1; cbase = -1; p.copied = 0; p.Q = 0; }
+            if (p.child >= 0 && p.copied >= 6) { w.div_mark[s] = (i32)p.child; w.div_copied[s] = (i32)p.copied; p.child = -1; cbase = -1; p.copied = 0; p.Q = 0; }
             break;
         }
         if (p.pc >= len) p.pc = 1;                        /* the gene loops, skipping START */
@@ -323,7 +350,7 @@ __global__ void k_births(World w, Params P, i64 t)
     w.ghash[c] = ch;
     atomicAdd((unsigned long long *)&w.counters[0], 1ULL);
     if (ph == ch) atomicAdd((unsigned long long *)&w.counters[1], 1ULL);
-    if (w.log) { u32 n = atomicAdd(w.log_n, 1u); if (n < w.log_cap) { BirthRec r = { s, c, ph, ch }; w.log[n] = r; } }
+    if (w.log) { u32 n = atomicAdd(w.log_n, 1u); if (n < w.log_cap) { BirthRec r = { (i32)s, (i32)c, (i32)q.depth, (i32)w.proc[s].age, w.div_copied[s], ph, ch, w.proc[s].P }; w.log[n] = r; } }
 }
 
 /* step 4: ageing and deaths */
@@ -418,17 +445,20 @@ __global__ void k_inflow_births(World w, Params P, i64 t)
     w.ghash[d] = ch;
     atomicAdd((unsigned long long *)&w.counters[0], 1ULL);
     atomicAdd((unsigned long long *)&w.counters[2], 1ULL);
-    if (w.log) { u32 n = atomicAdd(w.log_n, 1u); if (n < w.log_cap) { BirthRec r = { -1, d, 0, ch }; w.log[n] = r; } }
+    if (w.log) { u32 n = atomicAdd(w.log_n, 1u); if (n < w.log_cap) { BirthRec r = { -1, (i32)d, 0, -1, -1, 0, ch, -1 }; w.log[n] = r; } }
 }
 
-/* census scratch: depth (-1 if dead) and a fresh gene hash per live processor */
+/* census scratch: depth (-1 if dead, -2 if dead but claimed) and a fresh gene hash per live processor */
 __global__ void k_census(World w, Params P)
 {
     i64 s = (i64)blockIdx.x * blockDim.x + threadIdx.x;
     if (s >= P.S) return;
     if (w.live[s]) { w.cens_depth[s] = (i32)w.proc[s].depth; w.ghash[s] = gene_hash(w.fwd, (u64)s * P.G, w.table, P.maxk); }
-    else w.cens_depth[s] = -1;
+    else w.cens_depth[s] = w.claimed_by[s] >= 0 ? -2 : -1;
 }
+
+static const char *OP_NAMES[N_OPS] = { "NOP", "START", "STOP", "COPY", "R1", "L1", "R3", "L3", "JNZB", "SETP", "SETQ", "ALLOC",
+                                       "DIVIDE", "SKNZ", "SKZ", "LDA", "STA", "INC", "FLIP", "SEEK", "COPYR", "REWIND" };
 
 /* ---------------------------------------------------------------- host side */
 static inline u64 fnv_bytes(u64 h, const u8 *p, u64 n) { for (u64 i = 0; i < n; i++) h = (h ^ p[i]) * 1099511628211ULL; return h; }
@@ -436,10 +466,31 @@ static inline u64 fnv_u64le(u64 h, u64 v) { u8 b[8]; for (int i = 0; i < 8; i++)
 static inline void put_u64le(FILE *f, u64 v) { u8 b[8]; for (int i = 0; i < 8; i++) b[i] = (u8)(v >> (8 * i)); fwrite(b, 1, 8, f); }
 
 struct Host {
-    Params P; World w; u64 nbytes; u8 *table;
+    Params P; World w; u64 nbytes; u8 table[64];
     std::vector<u8> fwd, rev, live; std::vector<Proc> proc; std::vector<u64> ghash; std::vector<i32> depth;
     u64 counters[4] = { 0, 0, 0, 0 };
+    i64 depth_cap = 0;                       /* --depth-cap: 0 = the reference's uncapped depth_hist */
+    FILE *top_f = NULL, *map_f = NULL;       /* --top-genes, --slot-map */
+    std::vector<u8> map_frame;
 };
+
+/* the codons of slot `base` up to the first STOP, as letters and as operation names (one small device read) */
+static void read_gene(Host &h, u64 base, std::string &codons, std::string &ops)
+{
+    i64 ncells = 3 * (h.P.maxk + 1);
+    u64 b0 = base >> 2, b1 = (base + ncells - 1) >> 2, n = b1 - b0 + 1;
+    std::vector<u8> f(n);
+    CUDA_CHECK(cudaMemcpy(f.data(), h.w.fwd + b0, n, cudaMemcpyDeviceToHost));
+    codons.clear(); ops.clear();
+    for (i64 k = 0; k <= h.P.maxk; k++) {
+        u32 c = codon_at(f.data(), base - b0 * 4, k);
+        if (h.table[c] == STOP) break;
+        if (k) { codons += ' '; ops += ' '; }
+        static const char L[5] = "ACGT";
+        codons += L[c >> 4]; codons += L[(c >> 2) & 3]; codons += L[c & 3];
+        ops += OP_NAMES[h.table[c]];
+    }
+}
 
 static void fetch_state(Host &h)   /* the bytes of section 8 */
 {
@@ -487,13 +538,38 @@ static std::string census_json(Host &h, i64 tick, const u64 prev[4], bool have_h
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaMemcpy(h.depth.data(), h.w.cens_depth, h.P.S * sizeof(i32), cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaMemcpy(h.ghash.data(), h.w.ghash, h.P.S * sizeof(u64), cudaMemcpyDeviceToHost));
-    std::vector<u64> hs; std::map<i32, u64> dh;
-    for (i64 s = 0; s < h.P.S; s++) if (h.depth[s] >= 0) { hs.push_back(h.ghash[s]); dh[h.depth[s]]++; }
+    std::vector<u64> hs; std::map<i32, u64> dh; std::vector<i64> live_slots; i32 max_depth = -1;
+    for (i64 s = 0; s < h.P.S; s++) if (h.depth[s] >= 0) {
+        hs.push_back(h.ghash[s]); live_slots.push_back(s);
+        i32 d = h.depth[s]; if (d > max_depth) max_depth = d;
+        dh[h.depth_cap > 0 && d >= h.depth_cap ? (i32)h.depth_cap : d]++;
+    }
     std::sort(hs.begin(), hs.end());
     std::vector<std::pair<u64, u64>> runs;   /* (count, hash) */
     for (size_t i = 0; i < hs.size();) { size_t j = i; while (j < hs.size() && hs[j] == hs[i]) j++; runs.push_back({ (u64)(j - i), hs[i] }); i = j; }
     std::sort(runs.begin(), runs.end(), [](const std::pair<u64, u64> &a, const std::pair<u64, u64> &b) {
         return a.first != b.first ? a.first > b.first : a.second < b.second; });
+    if (h.top_f) {                           /* --top-genes: one carrier of each of the top 10 hashes */
+        size_t ntop = std::min<size_t>(10, runs.size());
+        std::vector<i64> carrier(ntop, -1); size_t found = 0;
+        for (size_t i = 0; i < live_slots.size() && found < ntop; i++) {
+            u64 g = h.ghash[live_slots[i]];
+            for (size_t j = 0; j < ntop; j++) if (carrier[j] < 0 && runs[j].second == g) { carrier[j] = live_slots[i]; found++; break; }
+        }
+        for (size_t j = 0; j < ntop; j++) {
+            std::string codons, ops; read_gene(h, (u64)carrier[j] * h.P.G, codons, ops);
+            fprintf(h.top_f, "%lld\t%016llx\t%llu\t%lld\t%d\t%s\t%s\n", (long long)tick, (unsigned long long)runs[j].second,
+                    (unsigned long long)runs[j].first, (long long)carrier[j], h.depth[carrier[j]], codons.c_str(), ops.c_str());
+        }
+        fflush(h.top_f);
+    }
+    if (h.map_f) {                           /* --slot-map: one byte per slot, one frame per census */
+        for (i64 s = 0; s < h.P.S; s++) {
+            i32 d = h.depth[s];
+            h.map_frame[s] = d >= 0 ? (u8)(d >= 253 ? 254 : d + 1) : d == -2 ? 255 : 0;
+        }
+        fwrite(h.map_frame.data(), 1, h.P.S, h.map_f); fflush(h.map_f);
+    }
     /* same key order and separators as the reference's json.dumps */
     char buf[512]; std::string js = "{";
     snprintf(buf, sizeof buf, "\"tick\": %lld, \"live\": %zu, \"births\": %llu, \"faithful\": %llu, \"spontaneous\": %llu, \"deaths\": %llu, ",
@@ -510,7 +586,8 @@ static std::string census_json(Host &h, i64 tick, const u64 prev[4], bool have_h
     js += "], \"depth_hist\": [";
     bool first = true;
     for (auto &kv : dh) { snprintf(buf, sizeof buf, "%s[%d, %llu]", first ? "" : ", ", kv.first, (unsigned long long)kv.second); js += buf; first = false; }
-    js += "], \"hash\": ";
+    if (h.depth_cap > 0) { snprintf(buf, sizeof buf, "], \"max_depth\": %d", max_depth); js += buf; js += ", \"hash\": "; }
+    else js += "], \"hash\": ";
     if (have_hash) { snprintf(buf, sizeof buf, "\"%016llx\"", (unsigned long long)hash); js += buf; } else js += "null";
     js += "}";
     return js;
@@ -532,7 +609,9 @@ static void usage()
 {
     fprintf(stderr, "usage: dna_world --N cells --G slot --ticks n --seed s [--I 16 --T 64 --mu 0.001 --D auto --F auto\n"
                     "  --no-double --uniform-code --blank --genome \"ATG GCT ...\" --n-seed k --hash-every k --no-hash --hash-init\n"
-                    "  --census-every k --births FILE --dump FILE --out FILE --gpu i]\n");
+                    "  --census-every k --births FILE --dump FILE --out FILE --gpu i\n"
+                    "  --log-births FILE --log-filter divide|faithful|all --log-every k --log-codons --depth-cap K --top-genes FILE --slot-map FILE\n"
+                    "  --max-seconds s]\n");
     exit(1);
 }
 
@@ -543,6 +622,8 @@ int main(int argc, char **argv)
     u64 N = 2999999488ULL, seed = 1; i64 G = 1024, ticks = 100, I = 16, T = 64, D = -1, F = -1, n_seed = 0;
     double mu = 0.001; bool dbl = true, uniform = false, blank = false, no_hash = false, hash_init = false; i64 hash_every = -2, census_every = 10;
     std::string genome, births_path, dump_path, out_path; int gpu = 0;
+    std::string log_path, top_path, map_path; int log_filter = 0; i64 log_every = 1, depth_cap = 0;   /* filter: 0 divide, 1 faithful, 2 all */
+    bool log_codons = false; double max_seconds = 0;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         auto next = [&]() -> const char * { if (i + 1 >= argc) usage(); return argv[++i]; };
@@ -570,6 +651,15 @@ int main(int argc, char **argv)
         else if (a == "--dump") dump_path = next();
         else if (a == "--out") out_path = next();
         else if (a == "--gpu") gpu = atoi(next());
+        else if (a == "--log-births") log_path = next();
+        else if (a == "--log-filter") { const char *v = next(); if (!strcmp(v, "divide")) log_filter = 0; else if (!strcmp(v, "faithful")) log_filter = 1;
+                                        else if (!strcmp(v, "all")) log_filter = 2; else { fprintf(stderr, "--log-filter divide|faithful|all\n"); return 1; } }
+        else if (a == "--log-every") { log_every = atoll(next()); if (log_every < 1) { fprintf(stderr, "--log-every must be >= 1\n"); return 1; } }
+        else if (a == "--depth-cap") { depth_cap = atoll(next()); if (depth_cap < 0) { fprintf(stderr, "--depth-cap must be >= 0\n"); return 1; } }
+        else if (a == "--log-codons") log_codons = true;
+        else if (a == "--max-seconds") max_seconds = atof(next());
+        else if (a == "--top-genes") top_path = next();
+        else if (a == "--slot-map") map_path = next();
         else { fprintf(stderr, "unknown option %s\n", a.c_str()); usage(); }
     }
     if (G < 6 || N % (u64)G != 0) { fprintf(stderr, "N must be a multiple of G and G >= 6\n"); return 1; }
@@ -586,7 +676,8 @@ int main(int argc, char **argv)
     Params &P = h.P;
     P.seed = seed; P.N = N; P.G = G; P.S = S; P.I = I; P.T = T; P.maxk = G / 3 - 1; P.mu = mu; P.D = D; P.F = F;
     P.atomic_writes = (G % 4) != 0;
-    u8 table[64]; build_table(table, uniform);
+    u8 *table = h.table; build_table(table, uniform);
+    h.depth_cap = depth_cap;
 
     CUDA_CHECK(cudaSetDevice(gpu));
     size_t mem_free0, mem_total; CUDA_CHECK(cudaMemGetInfo(&mem_free0, &mem_total));
@@ -600,6 +691,7 @@ int main(int argc, char **argv)
     dalloc((void **)&w.proc, S * sizeof(Proc)); dalloc((void **)&w.live, S);
     dalloc((void **)&w.claimed_by, S * sizeof(i32)); dalloc((void **)&w.claim, S * sizeof(i32));
     dalloc((void **)&w.alloc_req, S); dalloc((void **)&w.div_mark, S * sizeof(i32)); dalloc((void **)&w.refill_k, S * sizeof(i32));
+    dalloc((void **)&w.div_copied, S * sizeof(i32));
     dalloc((void **)&w.ghash, S * sizeof(u64)); dalloc((void **)&w.cens_depth, S * sizeof(i32));
     dalloc((void **)&w.counters, 4 * sizeof(u64)); dalloc((void **)&w.table, 64);
     CUDA_CHECK(cudaMemset(w.claimed_by, 0xFF, S * sizeof(i32)));
@@ -607,21 +699,36 @@ int main(int argc, char **argv)
     CUDA_CHECK(cudaMemset(w.refill_k, 0xFF, S * sizeof(i32)));
     CUDA_CHECK(cudaMemset(w.claim, 0xFF, S * sizeof(i32)));   /* sentinel 0xFFFFFFFF: above every slot index */
     CUDA_CHECK(cudaMemcpy(w.table, table, 64, cudaMemcpyHostToDevice));
-    FILE *births_f = NULL; std::vector<BirthRec> log_host;
-    if (!births_path.empty()) {
+    FILE *births_f = NULL, *log_f = NULL; std::vector<BirthRec> log_host;
+    if (!births_path.empty() || !log_path.empty()) {
         w.log_cap = (u32)std::min<i64>(S + F, (1LL << 31) - 1);
         dalloc((void **)&w.log, (size_t)w.log_cap * sizeof(BirthRec)); dalloc((void **)&w.log_n, sizeof(u32));
+        log_host.resize(w.log_cap);
+    }
+    if (!births_path.empty()) {
         births_f = fopen(births_path.c_str(), "w");
         if (!births_f) { fprintf(stderr, "cannot write %s\n", births_path.c_str()); return 1; }
         fprintf(births_f, "#tick\tparent\tchild\tparent_hash\tchild_hash\tfaithful\n");
-        log_host.resize(w.log_cap);
     }
+    if (!log_path.empty()) {
+        log_f = fopen(log_path.c_str(), "w");
+        if (!log_f) { fprintf(stderr, "cannot write %s\n", log_path.c_str()); return 1; }
+        fprintf(log_f, "#tick\tparent\tchild\tparent_hash\tchild_hash\tfaithful\tdepth\tparent_age\tcopied\tparent_P%s\n",
+                log_codons ? "\tparent_codons\tchild_codons" : "");
+    }
+    if (!top_path.empty()) { h.top_f = fopen(top_path.c_str(), "w"); if (!h.top_f) { fprintf(stderr, "cannot write %s\n", top_path.c_str()); return 1; }
+                             fprintf(h.top_f, "#tick\thash\tcount\tslot\tdepth\tcodons\tops\n"); }
+    if (!map_path.empty()) { h.map_f = fopen(map_path.c_str(), "wb"); if (!h.map_f) { fprintf(stderr, "cannot write %s\n", map_path.c_str()); return 1; }
+                             h.map_frame.resize(S); }
     h.fwd.resize(h.nbytes); h.rev.resize(h.nbytes); h.live.resize(S); h.proc.resize(S); h.ghash.resize(S); h.depth.resize(S);
 
     fprintf(stderr, "dna_world N=%llu G=%lld S=%lld ticks=%lld seed=%llu I=%lld T=%lld mu=%g D=%lld F=%lld double=%d code=%s blank=%d "
                     "n_seed=%lld hash_every=%lld census_every=%lld gpu=%d\n", (unsigned long long)N, (long long)G, (long long)S,
             (long long)ticks, (unsigned long long)seed, (long long)I, (long long)T, mu, (long long)D, (long long)F, dbl ? 1 : 0,
             uniform ? "uniform" : "standard", blank ? 1 : 0, (long long)n_seed, (long long)hash_every, (long long)census_every, gpu);
+    if (log_f || h.top_f || h.map_f || depth_cap)
+        fprintf(stderr, "log_births=%s log_filter=%s log_every=%lld depth_cap=%lld top_genes=%s slot_map=%s\n", log_path.c_str(),
+                log_filter == 0 ? "divide" : log_filter == 1 ? "faithful" : "all", (long long)log_every, (long long)depth_cap, top_path.c_str(), map_path.c_str());
 
     auto t_start = std::chrono::steady_clock::now();
     /* initial state (section 6) */
@@ -715,10 +822,11 @@ int main(int argc, char **argv)
         }
         CUDA_CHECK(cudaGetLastError());
         CUDA_CHECK(cudaMemcpy(h.counters, w.counters, sizeof h.counters, cudaMemcpyDeviceToHost));   /* also syncs */
-        if (births_f) {
+        if (w.log) {
             u32 n; CUDA_CHECK(cudaMemcpy(&n, w.log_n, sizeof n, cudaMemcpyDeviceToHost));
             if (n > w.log_cap) { fprintf(stderr, "births log overflow at tick %lld (%u > %u)\n", (long long)t, n, w.log_cap); n = w.log_cap; }
-            if (n) {
+            bool want_log = log_f && t % log_every == 0;
+            if (n && (births_f || want_log)) {
                 CUDA_CHECK(cudaMemcpy(log_host.data(), w.log, (size_t)n * sizeof(BirthRec), cudaMemcpyDeviceToHost));
                 /* reference order: DIVIDE births by parent slot, then spontaneous births by slot */
                 std::sort(log_host.begin(), log_host.begin() + n, [](const BirthRec &a, const BirthRec &b) {
@@ -728,11 +836,28 @@ int main(int argc, char **argv)
                 for (u32 i = 0; i < n; i++) {
                     const BirthRec &r = log_host[i];
                     char ph[20]; if (r.parent >= 0) snprintf(ph, sizeof ph, "%016llx", (unsigned long long)r.phash); else strcpy(ph, "-");
-                    fprintf(births_f, "%lld\t%lld\t%lld\t%s\t%016llx\t%d\n", (long long)t, (long long)r.parent, (long long)r.child, ph,
-                            (unsigned long long)r.chash, r.parent >= 0 && r.phash == r.chash ? 1 : 0);
+                    int faithful = r.parent >= 0 && r.phash == r.chash ? 1 : 0;
+                    if (births_f)
+                        fprintf(births_f, "%lld\t%d\t%d\t%s\t%016llx\t%d\n", (long long)t, r.parent, r.child, ph, (unsigned long long)r.chash, faithful);
+                    if (want_log && (log_filter == 2 || (r.parent >= 0 && (log_filter == 0 || faithful)))) {
+                        fprintf(log_f, "%lld\t%d\t%d\t%s\t%016llx\t%d\t%d\t%d\t%d\t%lld", (long long)t, r.parent, r.child, ph, (unsigned long long)r.chash,
+                                faithful, r.depth, r.page, r.copied, (long long)r.pP);
+                        if (log_codons) {
+                            std::string pc, po, cc, co;
+                            if (r.parent >= 0) read_gene(h, (u64)r.parent * G, pc, po); else pc = "-";
+                            read_gene(h, (u64)r.child * G, cc, co);
+                            fprintf(log_f, "\t%s\t%s", pc.c_str(), cc.c_str());
+                        }
+                        fputc('\n', log_f);
+                    }
                 }
-                CUDA_CHECK(cudaMemset(w.log_n, 0, sizeof(u32)));
             }
+            if (n) CUDA_CHECK(cudaMemset(w.log_n, 0, sizeof(u32)));
+        }
+        if (max_seconds > 0 && t % 100 == 99 && t + 1 < ticks &&
+            std::chrono::duration<double>(std::chrono::steady_clock::now() - t_loop).count() >= max_seconds) {
+            fprintf(stderr, "max-seconds reached: stopping after tick %lld\n", (long long)t);
+            ticks = t + 1;                                    /* this tick becomes the last one */
         }
         report(t);
     }
@@ -741,6 +866,9 @@ int main(int argc, char **argv)
     double secs_total = std::chrono::duration<double>(std::chrono::steady_clock::now() - t_start).count();
     if (!dump_path.empty()) dump_state(h, dump_path.c_str());
     if (births_f) fclose(births_f);
+    if (log_f) fclose(log_f);
+    if (h.top_f) fclose(h.top_f);
+    if (h.map_f) fclose(h.map_f);
     i64 live_n = 0; CUDA_CHECK(cudaMemcpy(h.live.data(), w.live, S, cudaMemcpyDeviceToHost)); for (i64 s = 0; s < S; s++) live_n += h.live[s];
     fprintf(stderr, "summary ticks=%lld seconds=%.3f ticks_per_second=%.2f seconds_total=%.3f device_mem_alloc_bytes=%zu "
                     "device_mem_used_bytes=%zu live=%lld births=%llu faithful=%llu spontaneous=%llu deaths=%llu\n",

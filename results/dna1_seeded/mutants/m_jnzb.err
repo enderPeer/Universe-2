@@ -1,0 +1,4 @@
+dna_world N=99999744 G=256 S=390624 ticks=20000 seed=1 I=16 T=64 mu=0 D=95 F=95 double=1 code=standard blank=1 n_seed=35511 hash_every=-1 census_every=10 gpu=0
+log_births=m_jnzb.log log_filter=divide log_every=1 depth_cap=10 top_genes=m_jnzb.top slot_map=
+seeded 35511 slots with 7 codons, gene hash a45ae6c1eb25eed7, expressible=1
+summary ticks=20000 seconds=22.256 ticks_per_second=898.64 seconds_total=23.305 device_mem_alloc_bytes=135159804 device_mem_used_bytes=140509184 live=72 births=29418 faithful=0 spontaneous=28379 deaths=64857

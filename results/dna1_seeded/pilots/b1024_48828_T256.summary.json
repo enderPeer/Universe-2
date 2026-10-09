@@ -1,0 +1,1715 @@
+{
+ "run": "b1024_48828_T256",
+ "params": {
+  "N": "99999744",
+  "G": "1024",
+  "S": "97656",
+  "ticks": "20000",
+  "seed": "1",
+  "I": "16",
+  "T": "256",
+  "mu": "0",
+  "D": "95",
+  "F": "23",
+  "double": "1",
+  "code": "standard",
+  "blank": "1",
+  "n_seed": "48828",
+  "hash_every": "-1",
+  "census_every": "10",
+  "gpu": "0",
+  "seed_hash": "d63dbd3ebc6a4cbb",
+  "seed_codons": 7
+ },
+ "summary": {
+  "ticks": "20000",
+  "seconds": "38.568",
+  "ticks_per_second": "518.56",
+  "seconds_total": "39.665",
+  "device_mem_alloc_bytes": "90039852",
+  "device_mem_used_bytes": "92274688",
+  "live": "69",
+  "births": "38627",
+  "faithful": "29371",
+  "spontaneous": "6823",
+  "deaths": "87386"
+ },
+ "series": [
+  {
+   "tick": 9,
+   "live": 48828,
+   "births_total": 0,
+   "divide_total": 0,
+   "faithful_total": 0,
+   "spontaneous_total": 0,
+   "deaths_total": 0,
+   "distinct_genes": 1,
+   "depth_hist": [
+    [
+     0,
+     48828
+    ]
+   ],
+   "max_depth": 0,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     48828
+    ]
+   ]
+  },
+  {
+   "tick": 19,
+   "live": 48828,
+   "births_total": 0,
+   "divide_total": 0,
+   "faithful_total": 0,
+   "spontaneous_total": 0,
+   "deaths_total": 0,
+   "distinct_genes": 1,
+   "depth_hist": [
+    [
+     0,
+     48828
+    ]
+   ],
+   "max_depth": 0,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     48828
+    ]
+   ]
+  },
+  {
+   "tick": 49,
+   "live": 48828,
+   "births_total": 0,
+   "divide_total": 0,
+   "faithful_total": 0,
+   "spontaneous_total": 0,
+   "deaths_total": 0,
+   "distinct_genes": 1,
+   "depth_hist": [
+    [
+     0,
+     48828
+    ]
+   ],
+   "max_depth": 0,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     48828
+    ]
+   ]
+  },
+  {
+   "tick": 59,
+   "live": 48828,
+   "births_total": 0,
+   "divide_total": 0,
+   "faithful_total": 0,
+   "spontaneous_total": 0,
+   "deaths_total": 0,
+   "distinct_genes": 1,
+   "depth_hist": [
+    [
+     0,
+     48828
+    ]
+   ],
+   "max_depth": 0,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     48828
+    ]
+   ]
+  },
+  {
+   "tick": 69,
+   "live": 48828,
+   "births_total": 0,
+   "divide_total": 0,
+   "faithful_total": 0,
+   "spontaneous_total": 0,
+   "deaths_total": 0,
+   "distinct_genes": 1,
+   "depth_hist": [
+    [
+     0,
+     48828
+    ]
+   ],
+   "max_depth": 0,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     48828
+    ]
+   ]
+  },
+  {
+   "tick": 99,
+   "live": 48828,
+   "births_total": 0,
+   "divide_total": 0,
+   "faithful_total": 0,
+   "spontaneous_total": 0,
+   "deaths_total": 0,
+   "distinct_genes": 1,
+   "depth_hist": [
+    [
+     0,
+     48828
+    ]
+   ],
+   "max_depth": 0,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     48828
+    ]
+   ]
+  },
+  {
+   "tick": 119,
+   "live": 48853,
+   "births_total": 25,
+   "divide_total": 25,
+   "faithful_total": 0,
+   "spontaneous_total": 0,
+   "deaths_total": 0,
+   "distinct_genes": 5,
+   "depth_hist": [
+    [
+     0,
+     48828
+    ],
+    [
+     1,
+     25
+    ]
+   ],
+   "max_depth": 1,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     48828
+    ],
+    [
+     "4ab590e316e2c1ec",
+     18
+    ],
+    [
+     "2aff53aa2bcc12a4",
+     4
+    ]
+   ]
+  },
+  {
+   "tick": 149,
+   "live": 48855,
+   "births_total": 27,
+   "divide_total": 27,
+   "faithful_total": 2,
+   "spontaneous_total": 0,
+   "deaths_total": 0,
+   "distinct_genes": 5,
+   "depth_hist": [
+    [
+     0,
+     48828
+    ],
+    [
+     1,
+     27
+    ]
+   ],
+   "max_depth": 1,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     48830
+    ],
+    [
+     "4ab590e316e2c1ec",
+     18
+    ],
+    [
+     "2aff53aa2bcc12a4",
+     4
+    ]
+   ]
+  },
+  {
+   "tick": 199,
+   "live": 48855,
+   "births_total": 27,
+   "divide_total": 27,
+   "faithful_total": 2,
+   "spontaneous_total": 0,
+   "deaths_total": 0,
+   "distinct_genes": 5,
+   "depth_hist": [
+    [
+     0,
+     48828
+    ],
+    [
+     1,
+     27
+    ]
+   ],
+   "max_depth": 1,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     48830
+    ],
+    [
+     "4ab590e316e2c1ec",
+     18
+    ],
+    [
+     "2aff53aa2bcc12a4",
+     4
+    ]
+   ]
+  },
+  {
+   "tick": 299,
+   "live": 19280,
+   "births_total": 19283,
+   "divide_total": 19272,
+   "faithful_total": 19247,
+   "spontaneous_total": 11,
+   "deaths_total": 48831,
+   "distinct_genes": 13,
+   "depth_hist": [
+    [
+     0,
+     8
+    ],
+    [
+     1,
+     19272
+    ]
+   ],
+   "max_depth": 1,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     19247
+    ],
+    [
+     "4ab590e316e2c1ec",
+     18
+    ],
+    [
+     "2aff53aa2bcc12a4",
+     4
+    ]
+   ]
+  },
+  {
+   "tick": 499,
+   "live": 7297,
+   "births_total": 26662,
+   "divide_total": 26609,
+   "faithful_total": 26087,
+   "spontaneous_total": 53,
+   "deaths_total": 68193,
+   "distinct_genes": 85,
+   "depth_hist": [
+    [
+     0,
+     37
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     2,
+     4255
+    ],
+    [
+     3,
+     2262
+    ],
+    [
+     4,
+     733
+    ],
+    [
+     5,
+     7
+    ]
+   ],
+   "max_depth": 5,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     6846
+    ],
+    [
+     "6b2027b9f143ee20",
+     143
+    ],
+    [
+     "9a27200abbe7f0bc",
+     52
+    ]
+   ]
+  },
+  {
+   "tick": 999,
+   "live": 982,
+   "births_total": 29536,
+   "divide_total": 29315,
+   "faithful_total": 28389,
+   "spontaneous_total": 221,
+   "deaths_total": 77382,
+   "distinct_genes": 149,
+   "depth_hist": [
+    [
+     0,
+     62
+    ],
+    [
+     2,
+     4
+    ],
+    [
+     3,
+     3
+    ],
+    [
+     4,
+     25
+    ],
+    [
+     5,
+     122
+    ],
+    [
+     6,
+     262
+    ],
+    [
+     7,
+     238
+    ],
+    [
+     8,
+     139
+    ],
+    [
+     9,
+     77
+    ],
+    [
+     10,
+     50
+    ]
+   ],
+   "max_depth": 15,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     801
+    ],
+    [
+     "08470707b4fcf0c4",
+     12
+    ],
+    [
+     "267d934e22d75520",
+     5
+    ]
+   ]
+  },
+  {
+   "tick": 1999,
+   "live": 153,
+   "births_total": 30992,
+   "divide_total": 30425,
+   "faithful_total": 29241,
+   "spontaneous_total": 567,
+   "deaths_total": 79667,
+   "distinct_genes": 99,
+   "depth_hist": [
+    [
+     0,
+     75
+    ],
+    [
+     1,
+     12
+    ],
+    [
+     7,
+     1
+    ],
+    [
+     10,
+     65
+    ]
+   ],
+   "max_depth": 25,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     55
+    ],
+    [
+     "022bdb4f7bdcc1d2",
+     1
+    ],
+    [
+     "04e14b34685657c3",
+     1
+    ]
+   ]
+  },
+  {
+   "tick": 2999,
+   "live": 88,
+   "births_total": 31457,
+   "divide_total": 30520,
+   "faithful_total": 29291,
+   "spontaneous_total": 937,
+   "deaths_total": 80197,
+   "distinct_genes": 79,
+   "depth_hist": [
+    [
+     0,
+     75
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     2,
+     4
+    ],
+    [
+     3,
+     2
+    ],
+    [
+     4,
+     1
+    ],
+    [
+     10,
+     3
+    ]
+   ],
+   "max_depth": 25,
+   "top": [
+    [
+     "d63dbd3ebc6a4cbb",
+     9
+    ],
+    [
+     "08471707b4fd0bf4",
+     2
+    ],
+    [
+     "02fea4588931908a",
+     1
+    ]
+   ]
+  },
+  {
+   "tick": 4999,
+   "live": 74,
+   "births_total": 32342,
+   "divide_total": 30698,
+   "faithful_total": 29334,
+   "spontaneous_total": 1644,
+   "deaths_total": 81096,
+   "distinct_genes": 74,
+   "depth_hist": [
+    [
+     0,
+     70
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     3,
+     1
+    ]
+   ],
+   "max_depth": 3,
+   "top": [
+    [
+     "00fa8a4cc78db1c7",
+     1
+    ],
+    [
+     "019b3e2e9cc3ce46",
+     1
+    ],
+    [
+     "04b3e68db9dfc958",
+     1
+    ]
+   ]
+  },
+  {
+   "tick": 9999,
+   "live": 142,
+   "births_total": 34375,
+   "divide_total": 30999,
+   "faithful_total": 29349,
+   "spontaneous_total": 3376,
+   "deaths_total": 83061,
+   "distinct_genes": 140,
+   "depth_hist": [
+    [
+     0,
+     81
+    ],
+    [
+     1,
+     60
+    ],
+    [
+     2,
+     1
+    ]
+   ],
+   "max_depth": 2,
+   "top": [
+    [
+     "ad48954bf0e2ba10",
+     2
+    ],
+    [
+     "d63dbd3ebc6a4cbb",
+     2
+    ],
+    [
+     "0846e107b4fcb032",
+     1
+    ]
+   ]
+  },
+  {
+   "tick": 19999,
+   "live": 69,
+   "births_total": 38627,
+   "divide_total": 31804,
+   "faithful_total": 29371,
+   "spontaneous_total": 6823,
+   "deaths_total": 87386,
+   "distinct_genes": 69,
+   "depth_hist": [
+    [
+     0,
+     69
+    ]
+   ],
+   "max_depth": 0,
+   "top": [
+    [
+     "0067ce41e80aefaf",
+     1
+    ],
+    [
+     "01264b3ed568a44b",
+     1
+    ],
+    [
+     "03760ae7c4fcd2a3",
+     1
+    ]
+   ]
+  }
+ ],
+ "peak_live": {
+  "tick": 219,
+  "live": 68101
+ },
+ "max_depth_ever": 27,
+ "last_tick_with_depth_ge_1": 19879,
+ "seed_gene": {
+  "hash": "d63dbd3ebc6a4cbb",
+  "last_census_tick_among_top10": 14559,
+  "peak_count_in_top10": 68075
+ },
+ "generations": [
+  {
+   "depth": 1,
+   "births": 20217,
+   "faithful": 19247,
+   "faithful_frac": 0.952,
+   "first_tick": 107,
+   "last_tick": 19639,
+   "copied_mean": 327.79,
+   "copied_min": 6,
+   "copied_max": 344,
+   "parent_age_median": 213,
+   "parent_age_min": 2,
+   "parent_age_max": 255
+  },
+  {
+   "depth": 2,
+   "births": 4448,
+   "faithful": 4317,
+   "faithful_frac": 0.9705,
+   "first_tick": 320,
+   "last_tick": 19315,
+   "copied_mean": 228.9,
+   "copied_min": 6,
+   "copied_max": 683,
+   "parent_age_median": 107.0,
+   "parent_age_min": 4,
+   "parent_age_max": 254
+  },
+  {
+   "depth": 3,
+   "births": 2691,
+   "faithful": 2600,
+   "faithful_frac": 0.9662,
+   "first_tick": 349,
+   "last_tick": 14335,
+   "copied_mean": 293.24,
+   "copied_min": 6,
+   "copied_max": 721,
+   "parent_age_median": 107,
+   "parent_age_min": 6,
+   "parent_age_max": 251
+  },
+  {
+   "depth": 4,
+   "births": 1493,
+   "faithful": 978,
+   "faithful_frac": 0.6551,
+   "first_tick": 455,
+   "last_tick": 14416,
+   "copied_mean": 135.52,
+   "copied_min": 6,
+   "copied_max": 721,
+   "parent_age_median": 28,
+   "parent_age_min": 9,
+   "parent_age_max": 255
+  },
+  {
+   "depth": 5,
+   "births": 779,
+   "faithful": 518,
+   "faithful_frac": 0.665,
+   "first_tick": 458,
+   "last_tick": 14669,
+   "copied_mean": 141.14,
+   "copied_min": 6,
+   "copied_max": 720,
+   "parent_age_median": 107,
+   "parent_age_min": 3,
+   "parent_age_max": 253
+  },
+  {
+   "depth": 6,
+   "births": 471,
+   "faithful": 374,
+   "faithful_frac": 0.7941,
+   "first_tick": 578,
+   "last_tick": 14596,
+   "copied_mean": 174.27,
+   "copied_min": 6,
+   "copied_max": 754,
+   "parent_age_median": 107,
+   "parent_age_min": 8,
+   "parent_age_max": 249
+  },
+  {
+   "depth": 7,
+   "births": 352,
+   "faithful": 298,
+   "faithful_frac": 0.8466,
+   "first_tick": 598,
+   "last_tick": 3635,
+   "copied_mean": 181.06,
+   "copied_min": 6,
+   "copied_max": 789,
+   "parent_age_median": 107.0,
+   "parent_age_min": 6,
+   "parent_age_max": 249
+  },
+  {
+   "depth": 8,
+   "births": 282,
+   "faithful": 237,
+   "faithful_frac": 0.8404,
+   "first_tick": 630,
+   "last_tick": 3744,
+   "copied_mean": 178.75,
+   "copied_min": 6,
+   "copied_max": 702,
+   "parent_age_median": 107.0,
+   "parent_age_min": 8,
+   "parent_age_max": 235
+  },
+  {
+   "depth": 9,
+   "births": 231,
+   "faithful": 185,
+   "faithful_frac": 0.8009,
+   "first_tick": 747,
+   "last_tick": 3851,
+   "copied_mean": 180.26,
+   "copied_min": 6,
+   "copied_max": 710,
+   "parent_age_median": 107,
+   "parent_age_min": 9,
+   "parent_age_max": 249
+  },
+  {
+   "depth": 10,
+   "births": 174,
+   "faithful": 146,
+   "faithful_frac": 0.8391,
+   "first_tick": 760,
+   "last_tick": 3882,
+   "copied_mean": 173.25,
+   "copied_min": 6,
+   "copied_max": 709,
+   "parent_age_median": 107.0,
+   "parent_age_min": 8,
+   "parent_age_max": 242
+  },
+  {
+   "depth": 11,
+   "births": 143,
+   "faithful": 112,
+   "faithful_frac": 0.7832,
+   "first_tick": 813,
+   "last_tick": 3918,
+   "copied_mean": 166.87,
+   "copied_min": 6,
+   "copied_max": 699,
+   "parent_age_median": 71,
+   "parent_age_min": 8,
+   "parent_age_max": 242
+  },
+  {
+   "depth": 12,
+   "births": 109,
+   "faithful": 81,
+   "faithful_frac": 0.7431,
+   "first_tick": 842,
+   "last_tick": 3929,
+   "copied_mean": 168.33,
+   "copied_min": 6,
+   "copied_max": 720,
+   "parent_age_median": 107,
+   "parent_age_min": 6,
+   "parent_age_max": 249
+  },
+  {
+   "depth": 13,
+   "births": 111,
+   "faithful": 62,
+   "faithful_frac": 0.5586,
+   "first_tick": 852,
+   "last_tick": 4148,
+   "copied_mean": 93.47,
+   "copied_min": 6,
+   "copied_max": 678,
+   "parent_age_median": 75,
+   "parent_age_min": 7,
+   "parent_age_max": 243
+  },
+  {
+   "depth": 14,
+   "births": 87,
+   "faithful": 65,
+   "faithful_frac": 0.7471,
+   "first_tick": 959,
+   "last_tick": 4362,
+   "copied_mean": 155.77,
+   "copied_min": 6,
+   "copied_max": 613,
+   "parent_age_median": 107,
+   "parent_age_min": 5,
+   "parent_age_max": 227
+  },
+  {
+   "depth": 15,
+   "births": 62,
+   "faithful": 42,
+   "faithful_frac": 0.6774,
+   "first_tick": 988,
+   "last_tick": 4422,
+   "copied_mean": 143.63,
+   "copied_min": 6,
+   "copied_max": 660,
+   "parent_age_median": 86.0,
+   "parent_age_min": 5,
+   "parent_age_max": 229
+  },
+  {
+   "depth": 16,
+   "births": 44,
+   "faithful": 28,
+   "faithful_frac": 0.6364,
+   "first_tick": 1105,
+   "last_tick": 4551,
+   "copied_mean": 91.41,
+   "copied_min": 6,
+   "copied_max": 346,
+   "parent_age_median": 45.0,
+   "parent_age_min": 5,
+   "parent_age_max": 224
+  },
+  {
+   "depth": 17,
+   "births": 28,
+   "faithful": 21,
+   "faithful_frac": 0.75,
+   "first_tick": 1171,
+   "last_tick": 2300,
+   "copied_mean": 170.11,
+   "copied_min": 6,
+   "copied_max": 612,
+   "parent_age_median": 107.0,
+   "parent_age_min": 7,
+   "parent_age_max": 227
+  },
+  {
+   "depth": 18,
+   "births": 21,
+   "faithful": 17,
+   "faithful_frac": 0.8095,
+   "first_tick": 1185,
+   "last_tick": 2178,
+   "copied_mean": 137.1,
+   "copied_min": 6,
+   "copied_max": 608,
+   "parent_age_median": 60,
+   "parent_age_min": 5,
+   "parent_age_max": 214
+  },
+  {
+   "depth": 19,
+   "births": 17,
+   "faithful": 12,
+   "faithful_frac": 0.7059,
+   "first_tick": 1221,
+   "last_tick": 2206,
+   "copied_mean": 100.59,
+   "copied_min": 6,
+   "copied_max": 344,
+   "parent_age_median": 36,
+   "parent_age_min": 9,
+   "parent_age_max": 214
+  },
+  {
+   "depth": 20,
+   "births": 12,
+   "faithful": 8,
+   "faithful_frac": 0.6667,
+   "first_tick": 1328,
+   "last_tick": 2420,
+   "copied_mean": 226.5,
+   "copied_min": 6,
+   "copied_max": 613,
+   "parent_age_median": 109.5,
+   "parent_age_min": 11,
+   "parent_age_max": 227
+  },
+  {
+   "depth": 21,
+   "births": 8,
+   "faithful": 7,
+   "faithful_frac": 0.875,
+   "first_tick": 1555,
+   "last_tick": 2480,
+   "copied_mean": 179.12,
+   "copied_min": 6,
+   "copied_max": 719,
+   "parent_age_median": 62.5,
+   "parent_age_min": 36,
+   "parent_age_max": 227
+  },
+  {
+   "depth": 22,
+   "births": 7,
+   "faithful": 6,
+   "faithful_frac": 0.8571,
+   "first_tick": 1631,
+   "last_tick": 2693,
+   "copied_mean": 171.71,
+   "copied_min": 6,
+   "copied_max": 570,
+   "parent_age_median": 76,
+   "parent_age_min": 12,
+   "parent_age_max": 214
+  },
+  {
+   "depth": 23,
+   "births": 6,
+   "faithful": 5,
+   "faithful_frac": 0.8333,
+   "first_tick": 1656,
+   "last_tick": 2908,
+   "copied_mean": 220.5,
+   "copied_min": 6,
+   "copied_max": 572,
+   "parent_age_median": 32.5,
+   "parent_age_min": 6,
+   "parent_age_max": 215
+  },
+  {
+   "depth": 24,
+   "births": 5,
+   "faithful": 3,
+   "faithful_frac": 0.6,
+   "first_tick": 1664,
+   "last_tick": 2968,
+   "copied_mean": 37.0,
+   "copied_min": 6,
+   "copied_max": 78,
+   "parent_age_median": 60,
+   "parent_age_min": 8,
+   "parent_age_max": 109
+  },
+  {
+   "depth": 25,
+   "births": 3,
+   "faithful": 1,
+   "faithful_frac": 0.3333,
+   "first_tick": 1899,
+   "last_tick": 2980,
+   "copied_mean": 80.33,
+   "copied_min": 6,
+   "copied_max": 229,
+   "parent_age_median": 107,
+   "parent_age_min": 12,
+   "parent_age_max": 235
+  },
+  {
+   "depth": 26,
+   "births": 2,
+   "faithful": 1,
+   "faithful_frac": 0.5,
+   "first_tick": 2006,
+   "last_tick": 2166,
+   "copied_mean": 119.0,
+   "copied_min": 9,
+   "copied_max": 229,
+   "parent_age_median": 108.0,
+   "parent_age_min": 107,
+   "parent_age_max": 109
+  },
+  {
+   "depth": 27,
+   "births": 1,
+   "faithful": 0,
+   "faithful_frac": 0.0,
+   "first_tick": 2034,
+   "last_tick": 2034,
+   "copied_mean": 14.0,
+   "copied_min": 14,
+   "copied_max": 14,
+   "parent_age_median": 28,
+   "parent_age_min": 28,
+   "parent_age_max": 28
+  }
+ ],
+ "generations_seed": [
+  {
+   "depth": 1,
+   "births": 19359,
+   "faithful": 19247,
+   "first_tick": 107,
+   "last_tick": 18081,
+   "copied_mean": 342.02,
+   "parent_age_median": 213
+  },
+  {
+   "depth": 2,
+   "births": 4344,
+   "faithful": 4317,
+   "first_tick": 320,
+   "last_tick": 18109,
+   "copied_mean": 234.21,
+   "parent_age_median": 107.0
+  },
+  {
+   "depth": 3,
+   "births": 2642,
+   "faithful": 2600,
+   "first_tick": 349,
+   "last_tick": 14335,
+   "copied_mean": 298.54,
+   "parent_age_median": 107.0
+  },
+  {
+   "depth": 4,
+   "births": 1483,
+   "faithful": 978,
+   "first_tick": 455,
+   "last_tick": 11952,
+   "copied_mean": 136.39,
+   "parent_age_median": 28
+  },
+  {
+   "depth": 5,
+   "births": 715,
+   "faithful": 518,
+   "first_tick": 472,
+   "last_tick": 14484,
+   "copied_mean": 153.13,
+   "parent_age_median": 107
+  },
+  {
+   "depth": 6,
+   "births": 468,
+   "faithful": 373,
+   "first_tick": 580,
+   "last_tick": 14596,
+   "copied_mean": 175.34,
+   "parent_age_median": 107.0
+  },
+  {
+   "depth": 7,
+   "births": 350,
+   "faithful": 298,
+   "first_tick": 598,
+   "last_tick": 3635,
+   "copied_mean": 182.06,
+   "parent_age_median": 107.0
+  },
+  {
+   "depth": 8,
+   "births": 281,
+   "faithful": 237,
+   "first_tick": 630,
+   "last_tick": 3744,
+   "copied_mean": 179.36,
+   "parent_age_median": 107
+  },
+  {
+   "depth": 9,
+   "births": 228,
+   "faithful": 185,
+   "first_tick": 747,
+   "last_tick": 3851,
+   "copied_mean": 182.56,
+   "parent_age_median": 107.0
+  },
+  {
+   "depth": 10,
+   "births": 174,
+   "faithful": 146,
+   "first_tick": 760,
+   "last_tick": 3882,
+   "copied_mean": 173.25,
+   "parent_age_median": 107.0
+  },
+  {
+   "depth": 11,
+   "births": 143,
+   "faithful": 112,
+   "first_tick": 813,
+   "last_tick": 3918,
+   "copied_mean": 166.87,
+   "parent_age_median": 71
+  },
+  {
+   "depth": 12,
+   "births": 109,
+   "faithful": 81,
+   "first_tick": 842,
+   "last_tick": 3929,
+   "copied_mean": 168.33,
+   "parent_age_median": 107
+  },
+  {
+   "depth": 13,
+   "births": 105,
+   "faithful": 62,
+   "first_tick": 852,
+   "last_tick": 4148,
+   "copied_mean": 98.47,
+   "parent_age_median": 69
+  },
+  {
+   "depth": 14,
+   "births": 85,
+   "faithful": 65,
+   "first_tick": 959,
+   "last_tick": 4362,
+   "copied_mean": 159.28,
+   "parent_age_median": 107
+  },
+  {
+   "depth": 15,
+   "births": 61,
+   "faithful": 42,
+   "first_tick": 988,
+   "last_tick": 4422,
+   "copied_mean": 145.89,
+   "parent_age_median": 65
+  },
+  {
+   "depth": 16,
+   "births": 43,
+   "faithful": 28,
+   "first_tick": 1105,
+   "last_tick": 4551,
+   "copied_mean": 93.4,
+   "parent_age_median": 50
+  },
+  {
+   "depth": 17,
+   "births": 28,
+   "faithful": 21,
+   "first_tick": 1171,
+   "last_tick": 2300,
+   "copied_mean": 170.11,
+   "parent_age_median": 107.0
+  },
+  {
+   "depth": 18,
+   "births": 21,
+   "faithful": 17,
+   "first_tick": 1185,
+   "last_tick": 2178,
+   "copied_mean": 137.1,
+   "parent_age_median": 60
+  },
+  {
+   "depth": 19,
+   "births": 17,
+   "faithful": 12,
+   "first_tick": 1221,
+   "last_tick": 2206,
+   "copied_mean": 100.59,
+   "parent_age_median": 36
+  },
+  {
+   "depth": 20,
+   "births": 12,
+   "faithful": 8,
+   "first_tick": 1328,
+   "last_tick": 2420,
+   "copied_mean": 226.5,
+   "parent_age_median": 109.5
+  },
+  {
+   "depth": 21,
+   "births": 8,
+   "faithful": 7,
+   "first_tick": 1555,
+   "last_tick": 2480,
+   "copied_mean": 179.12,
+   "parent_age_median": 62.5
+  },
+  {
+   "depth": 22,
+   "births": 7,
+   "faithful": 6,
+   "first_tick": 1631,
+   "last_tick": 2693,
+   "copied_mean": 171.71,
+   "parent_age_median": 76
+  },
+  {
+   "depth": 23,
+   "births": 6,
+   "faithful": 5,
+   "first_tick": 1656,
+   "last_tick": 2908,
+   "copied_mean": 220.5,
+   "parent_age_median": 32.5
+  },
+  {
+   "depth": 24,
+   "births": 5,
+   "faithful": 3,
+   "first_tick": 1664,
+   "last_tick": 2968,
+   "copied_mean": 37.0,
+   "parent_age_median": 60
+  },
+  {
+   "depth": 25,
+   "births": 3,
+   "faithful": 1,
+   "first_tick": 1899,
+   "last_tick": 2980,
+   "copied_mean": 80.33,
+   "parent_age_median": 107
+  },
+  {
+   "depth": 26,
+   "births": 2,
+   "faithful": 1,
+   "first_tick": 2006,
+   "last_tick": 2166,
+   "copied_mean": 119.0,
+   "parent_age_median": 108.0
+  },
+  {
+   "depth": 27,
+   "births": 1,
+   "faithful": 0,
+   "first_tick": 2034,
+   "last_tick": 2034,
+   "copied_mean": 14.0,
+   "parent_age_median": 28
+  }
+ ],
+ "faithful_births_outside_seed_lineage": 1,
+ "faithful_ratio_per_generation": [
+  {
+   "from_depth": 1,
+   "ratio": 0.2243
+  },
+  {
+   "from_depth": 2,
+   "ratio": 0.6023
+  },
+  {
+   "from_depth": 3,
+   "ratio": 0.3762
+  },
+  {
+   "from_depth": 4,
+   "ratio": 0.5297
+  },
+  {
+   "from_depth": 5,
+   "ratio": 0.722
+  },
+  {
+   "from_depth": 6,
+   "ratio": 0.7968
+  },
+  {
+   "from_depth": 7,
+   "ratio": 0.7953
+  },
+  {
+   "from_depth": 8,
+   "ratio": 0.7806
+  },
+  {
+   "from_depth": 9,
+   "ratio": 0.7892
+  },
+  {
+   "from_depth": 10,
+   "ratio": 0.7671
+  },
+  {
+   "from_depth": 11,
+   "ratio": 0.7232
+  },
+  {
+   "from_depth": 12,
+   "ratio": 0.7654
+  },
+  {
+   "from_depth": 13,
+   "ratio": 1.0484
+  },
+  {
+   "from_depth": 14,
+   "ratio": 0.6462
+  },
+  {
+   "from_depth": 15,
+   "ratio": 0.6667
+  },
+  {
+   "from_depth": 16,
+   "ratio": 0.75
+  },
+  {
+   "from_depth": 17,
+   "ratio": 0.8095
+  },
+  {
+   "from_depth": 18,
+   "ratio": 0.7059
+  },
+  {
+   "from_depth": 19,
+   "ratio": 0.6667
+  },
+  {
+   "from_depth": 20,
+   "ratio": 0.875
+  },
+  {
+   "from_depth": 21,
+   "ratio": 0.8571
+  },
+  {
+   "from_depth": 22,
+   "ratio": 0.8333
+  },
+  {
+   "from_depth": 23,
+   "ratio": 0.6
+  },
+  {
+   "from_depth": 24,
+   "ratio": 0.3333
+  },
+  {
+   "from_depth": 25,
+   "ratio": 1.0
+  },
+  {
+   "from_depth": 26,
+   "ratio": 0.0
+  }
+ ],
+ "fecundity_hist_of_dividing_parents": [
+  [
+   0,
+   1353
+  ],
+  [
+   1,
+   29371
+  ]
+ ],
+ "log_rows": 31804,
+ "log_divide_rows": 31804,
+ "most_common_child_genes": [
+  {
+   "hash": "d63dbd3ebc6a4cbb",
+   "births": 29499,
+   "faithful_to_parent": true,
+   "codons": "ATG TTC GGA GCA AAA ATA CTC",
+   "ops": "START SKZ DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "6b2027b9f143ee20",
+   "births": 177,
+   "faithful_to_parent": false,
+   "codons": "ATG TTC GGA GCA AAA",
+   "ops": "START SKZ DIVIDE ALLOC R3"
+  },
+  {
+   "hash": "9a27200abbe7f0bc",
+   "births": 58,
+   "faithful_to_parent": false,
+   "codons": "ATG TTC GGA GCA AAA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA",
+   "ops": "START SKZ DIVIDE ALLOC R3 SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3"
+  },
+  {
+   "hash": "26d34227eae97aba",
+   "births": 57,
+   "faithful_to_parent": false,
+   "codons": "ATG TTC GGA GCA AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA",
+   "ops": "START SKZ DIVIDE ALLOC FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3"
+  },
+  {
+   "hash": "e9af0523d9914d20",
+   "births": 47,
+   "faithful_to_parent": false,
+   "codons": "ATG TTC GGA GCA AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT",
+   "ops": "START SKZ DIVIDE ALLOC FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP"
+  },
+  {
+   "hash": "b67f5e64ca83fe8e",
+   "births": 32,
+   "faithful_to_parent": false,
+   "codons": null,
+   "ops": null
+  },
+  {
+   "hash": "0da1d61889cd536c",
+   "births": 25,
+   "faithful_to_parent": false,
+   "codons": "ATG TTC GAA",
+   "ops": "START SKZ SEEK"
+  },
+  {
+   "hash": "1c6cef83eceff616",
+   "births": 24,
+   "faithful_to_parent": false,
+   "codons": "ATG TTC GGA GCA AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA ATA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA",
+   "ops": "START SKZ DIVIDE ALLOC FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 SKNZ R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3"
+  },
+  {
+   "hash": "c96a0260fc6cffb8",
+   "births": 19,
+   "faithful_to_parent": false,
+   "codons": "ATG TTC GGA GCA AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA",
+   "ops": "START SKZ DIVIDE ALLOC FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3"
+  },
+  {
+   "hash": "4ab590e316e2c1ec",
+   "births": 18,
+   "faithful_to_parent": false,
+   "codons": "ATG TTC AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA",
+   "ops": "START SKZ R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3"
+  },
+  {
+   "hash": "08470707b4fcf0c4",
+   "births": 17,
+   "faithful_to_parent": false,
+   "codons": "ATG TTC",
+   "ops": "START SKZ"
+  },
+  {
+   "hash": "267d934e22d75520",
+   "births": 16,
+   "faithful_to_parent": false,
+   "codons": "ATG TTC GGA GCA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA",
+   "ops": "START SKZ DIVIDE ALLOC R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3"
+  }
+ ],
+ "most_common_unfaithful_child_genes": [
+  {
+   "hash": "6b2027b9f143ee20",
+   "births": 177,
+   "codons": "ATG TTC GGA GCA AAA",
+   "ops": "START SKZ DIVIDE ALLOC R3"
+  },
+  {
+   "hash": "d63dbd3ebc6a4cbb",
+   "births": 129,
+   "codons": "ATG TTC GGA GCA AAA ATA CTC",
+   "ops": "START SKZ DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "9a27200abbe7f0bc",
+   "births": 58,
+   "codons": "ATG TTC GGA GCA AAA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA",
+   "ops": "START SKZ DIVIDE ALLOC R3 SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3"
+  },
+  {
+   "hash": "26d34227eae97aba",
+   "births": 57,
+   "codons": "ATG TTC GGA GCA AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA",
+   "ops": "START SKZ DIVIDE ALLOC FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3"
+  },
+  {
+   "hash": "e9af0523d9914d20",
+   "births": 47,
+   "codons": "ATG TTC GGA GCA AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT",
+   "ops": "START SKZ DIVIDE ALLOC FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP"
+  },
+  {
+   "hash": "b67f5e64ca83fe8e",
+   "births": 32,
+   "codons": null,
+   "ops": null
+  },
+  {
+   "hash": "0da1d61889cd536c",
+   "births": 25,
+   "codons": "ATG TTC GAA",
+   "ops": "START SKZ SEEK"
+  },
+  {
+   "hash": "1c6cef83eceff616",
+   "births": 24,
+   "codons": "ATG TTC GGA GCA AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA ATA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA",
+   "ops": "START SKZ DIVIDE ALLOC FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 SKNZ R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3"
+  },
+  {
+   "hash": "c96a0260fc6cffb8",
+   "births": 19,
+   "codons": "ATG TTC GGA GCA AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT AAT ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA ATA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA",
+   "ops": "START SKZ DIVIDE ALLOC FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP FLIP SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ SKNZ R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3"
+  },
+  {
+   "hash": "4ab590e316e2c1ec",
+   "births": 18,
+   "codons": "ATG TTC AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA",
+   "ops": "START SKZ R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3"
+  },
+  {
+   "hash": "08470707b4fcf0c4",
+   "births": 17,
+   "codons": "ATG TTC",
+   "ops": "START SKZ"
+  },
+  {
+   "hash": "267d934e22d75520",
+   "births": 16,
+   "codons": "ATG TTC GGA GCA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA AAA",
+   "ops": "START SKZ DIVIDE ALLOC R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3 R3"
+  }
+ ],
+ "top_genes_last_census": [
+  {
+   "hash": "0067ce41e80aefaf",
+   "count": 1,
+   "depth": 0,
+   "codons": "ATG TCG TAT ACG TCT CGT GAA GCA CGT GTC ACG ACG TCG AAA TAC ACG",
+   "ops": "START R1 LDA SETQ R1 L1 SEEK ALLOC L1 JNZB SETQ SETQ R1 R3 LDA SETQ"
+  },
+  {
+   "hash": "01264b3ed568a44b",
+   "count": 1,
+   "depth": 0,
+   "codons": "ATG CTG CGC AGA GGC GTT GTC TAT CCC",
+   "ops": "START COPY L1 L1 DIVIDE JNZB JNZB LDA SETP"
+  },
+  {
+   "hash": "03760ae7c4fcd2a3",
+   "count": 1,
+   "depth": 0,
+   "codons": "ATG CAC TGC GAT CGG ACC ATC AGG ACT AAT TAT GTC CGA TTT GCA AAA CTA TTA CCC CTG TTT TAT GAG CAA GCC CTA",
+   "ops": "START STA COPYR L3 L1 SETQ SKNZ L1 SETQ FLIP LDA JNZB L1 SKZ ALLOC R3 COPY COPY SETP COPY SKZ LDA SEEK INC ALLOC COPY"
+  },
+  {
+   "hash": "0846e707b4fcba64",
+   "count": 1,
+   "depth": 0,
+   "codons": "ATG CTC",
+   "ops": "START COPY"
+  },
+  {
+   "hash": "0846f207b4fccd15",
+   "count": 1,
+   "depth": 0,
+   "codons": "ATG ACG",
+   "ops": "START SETQ"
+  },
+  {
+   "hash": "0846f607b4fcd3e1",
+   "count": 1,
+   "depth": 0,
+   "codons": "ATG AGG",
+   "ops": "START L1"
+  },
+  {
+   "hash": "08470507b4fced5e",
+   "count": 1,
+   "depth": 0,
+   "codons": "ATG TGT",
+   "ops": "START COPYR"
+  },
+  {
+   "hash": "08470b07b4fcf790",
+   "count": 1,
+   "depth": 0,
+   "codons": "ATG GAC",
+   "ops": "START L3"
+  },
+  {
+   "hash": "08eb1f28d7fb7fae",
+   "count": 1,
+   "depth": 0,
+   "codons": "ATG GCC CGC TGC GAA TGC CCT AGC TTC GCA CCC TCA GCT GAG TCG",
+   "ops": "START ALLOC L1 COPYR SEEK COPYR SETP R1 SKZ ALLOC SETP R1 ALLOC SEEK R1"
+  },
+  {
+   "hash": "0941d23ce7732cd2",
+   "count": 1,
+   "depth": 0,
+   "codons": "ATG TAC GAT GAG AGA CAT CGA AGA TCG CCA TAC TGG TTT ATC CAT",
+   "ops": "START LDA L3 SEEK L1 STA L1 L1 R1 SETP LDA REWIND SKZ SKNZ STA"
+  }
+ ],
+ "genes_ever_rank1": [
+  {
+   "hash": "d63dbd3ebc6a4cbb",
+   "first_tick": 9,
+   "count_then": 48828,
+   "codons": "ATG TTC GGA GCA AAA ATA CTC",
+   "ops": "START SKZ DIVIDE ALLOC R3 SKNZ COPY"
+  },
+  {
+   "hash": "00fa8a4cc78db1c7",
+   "first_tick": 4969,
+   "count_then": 1,
+   "codons": "ATG ATT CTA TAC TGG GTC AAG GCT GAC GCC TTT CGG AGC AAG",
+   "ops": "START SKNZ COPY LDA REWIND JNZB R3 ALLOC L3 ALLOC SKZ L1 R1 R3"
+  },
+  {
+   "hash": "019b3e2e9cc3ce46",
+   "first_tick": 4969,
+   "count_then": 1,
+   "codons": "ATG CGG AAT TTT AGA TGG TGC GGT AAG CCA CGT GCG GTA GAT GGT TCC CAC GCA",
+   "ops": "START L1 FLIP SKZ L1 REWIND COPYR DIVIDE R3 SETP L1 ALLOC JNZB L3 DIVIDE R1 STA ALLOC"
+  },
+  {
+   "hash": "04b3e68db9dfc958",
+   "first_tick": 4969,
+   "count_then": 1,
+   "codons": "ATG TTC GGA TCT TTG AAG TTA GGA AGG AGC ACG CCC TGT CGC GTG ACC GTA ACG TAC CAC CCG CCG TCG GTT TTA GGA TCG GTG CCG GGC ACA CAG TGT GAG CCA ATT CCA CCG CTT TTG GCC GCA GGT GCG TCT TGC ATA TTA CCC GGT GTC AAT GGA TAT CGG TCC AAA AAT CGG CTC TGG TCT GTA CCT AAA TTG ACT",
+   "ops": "START SKZ DIVIDE R1 COPY R3 COPY DIVIDE L1 R1 SETQ SETP COPYR L1 JNZB SETQ JNZB SETQ LDA STA SETP SETP R1 JNZB COPY DIVIDE R1 JNZB SETP DIVIDE SETQ INC COPYR SEEK SETP SKNZ SETP SETP COPY COPY ALLOC ALLOC DIVIDE ALLOC R1 COPYR SKNZ COPY SETP DIVIDE JNZB FLIP DIVIDE LDA L1 R1 R3 FLIP L1 COPY REWIND R1 JNZB SETP R3 COPY SETQ"
+  },
+  {
+   "hash": "0846dd07b4fca966",
+   "first_tick": 4969,
+   "count_then": 1,
+   "codons": "ATG CAT",
+   "ops": "START STA"
+  },
+  {
+   "hash": "0846e307b4fcb398",
+   "first_tick": 4969,
+   "count_then": 1,
+   "codons": "ATG CGC",
+   "ops": "START L1"
+  },
+  {
+   "hash": "0846ea07b4fcbf7d",
+   "first_tick": 4969,
+   "count_then": 1,
+   "codons": "ATG CTG",
+   "ops": "START COPY"
+  },
+  {
+   "hash": "08470107b4fce692",
+   "first_tick": 4969,
+   "count_then": 1,
+   "codons": "ATG TCT",
+   "ops": "START R1"
+  },
+  {
+   "hash": "08471307b4fd0528",
+   "first_tick": 4969,
+   "count_then": 1,
+   "codons": "ATG GGC",
+   "ops": "START DIVIDE"
+  },
+  {
+   "hash": "08471a07b4fd110d",
+   "first_tick": 4969,
+   "count_then": 1,
+   "codons": "ATG GTG",
+   "ops": "START JNZB"
+  },
+  {
+   "hash": "0bb485b7f3ef8a59",
+   "first_tick": 4969,
+   "count_then": 1,
+   "codons": "ATG TTC AAG GGC CCA CGT TCT AAA GCT CTC CCG GCC CTT GGG TCA AGT ATC TGC AAG CGC GTG CGG TTC GGC TTC ACC TCC ACT AAT AGC TCG CGG AAC ACA AGG GGG GTC TCT GCC ACT CAC AGC AGC ACT AGG CAC AGG TCG ATC GGG ATC TGG CTC CTT CCA TTG GAA TAC GTC CGG GGC TTC GGG TCG CTT ACA GCT AAG",
+   "ops": "START SKZ R3 DIVIDE SETP L1 R1 R3 ALLOC COPY SETP ALLOC COPY DIVIDE R1 R1 SKNZ COPYR R3 L1 JNZB L1 SKZ DIVIDE SKZ SETQ R1 SETQ FLIP R1 R1 L1 FLIP SETQ L1 DIVIDE JNZB R1 ALLOC SETQ STA R1 R1 SETQ L1 STA L1 R1 SKNZ DIVIDE SKNZ REWIND COPY COPY SETP COPY SEEK LDA JNZB L1 DIVIDE SKZ DIVIDE R1 COPY SETQ ALLOC R3"
+  },
+  {
+   "hash": "0846de07b4fcab19",
+   "first_tick": 4999,
+   "count_then": 1,
+   "codons": "ATG CAG",
+   "ops": "START INC"
+  }
+ ]
+}

@@ -1,0 +1,9 @@
+v1 OK hashes=300 census=30 done ticks=300 live=0 births=81 divide_births=77 faithful=71 spontaneous=4 deaths=209 claims=424 copied_cells=21593 
+v2 OK hashes=300 census=30 done ticks=300 live=2 births=69 divide_births=67 faithful=53 spontaneous=2 deaths=195 claims=408 copied_cells=20237 
+v3 OK hashes=300 census=30 done ticks=300 live=0 births=28 divide_births=25 faithful=0 spontaneous=3 deaths=60 claims=179 copied_cells=1235 
+v4 OK hashes=200 census=20 done ticks=200 live=2 births=3 divide_births=0 faithful=0 spontaneous=3 deaths=65 claims=66 copied_cells=950 
+v5 OK hashes=300 census=30 done ticks=300 live=1 births=43 divide_births=38 faithful=33 spontaneous=5 deaths=170 claims=393 copied_cells=14662 
+v6 OK hashes=200 census=20 done ticks=200 live=2 births=3 divide_births=0 faithful=0 spontaneous=3 deaths=1 claims=1 copied_cells=1 
+v7 OK hashes=300 census=30 done ticks=300 live=0 births=75 divide_births=69 faithful=63 spontaneous=6 deaths=203 claims=408 copied_cells=20285 
+v8 OK hashes=400 census=40 done ticks=400 live=2 births=71 divide_births=50 faithful=35 spontaneous=21 deaths=133 claims=343 copied_cells=10575 
+verify-done

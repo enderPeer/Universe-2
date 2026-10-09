@@ -41,6 +41,7 @@ origin branches.
 | `results/isa4_census/`, `results/isa4_exec/` | JSON results with counts, percentages, throughput and host |
 | [`sim/dna_ref.py`](sim/dna_ref.py), [`gpu/dna_world.cu`](gpu/dna_world.cu) | **DNA-1**: the DNA-like machine of [docs/09](docs/09_dna1_spec.md) (4 symbols, complement xor 3, two strands, 1,024-cell slots, the standard genetic code's 64 codons onto 20 operations + STOP, processors with machine-held copy pointers, deterministic ticks). Python reference and CUDA engine agree bit for bit on 17 test worlds; the engine runs 2,999,999,488 cells at 405 ticks/s in 2.6 GB on one RTX 4090. First worlds and reading in [docs/10](docs/10_dna1_results.md). |
 | [`gpu/dna_sweep.cu`](gpu/dna_sweep.cu), [`tools/dna_sweep_verify.py`](tools/dna_sweep_verify.py), [`tools/dna_trace.py`](tools/dna_trace.py) | the DNA-1 **copier sweep**: thousands of single-gene 8 x 256-cell worlds per GPU launch (one thread per world), reduced on the GPU, verified tick by tick against the reference on 5,179 genes; exhaustive over every gene of 2 to 6 codons under both codon tables ([docs/11](docs/11_dna1_copier_sweep.md)); the tracer prints a gene's world tick by tick |
+| [`tools/dna_seeded_report.py`](tools/dna_seeded_report.py), [`tools/dna_slot_video.py`](tools/dna_slot_video.py), `results/dna1_seeded/` | the **seeded worlds** of [docs/12](docs/12_dna1_seeded_world.md): the 7-codon copier seeded by the thousand and by the million into the world engine (unsampled birth logs with lineage depth, capped depth census, top genes with codons, slot-map video); the report tool turns a run into generation tables and decay curves, the video tool renders the slot map |
 | [`docs/08_dna_machine.md`](docs/08_dna_machine.md) | how to build the machine like DNA: complement as repair, pointers in the polymerase, codon layer with degeneracy, regulation by templates, the world; six experiments in order |
 | [`docs/03_resources.md`](docs/03_resources.md) | the workstation and the four cluster nodes as found on 2026-10-09, and how to bound CPU, memory and power on each |
 
@@ -84,6 +85,24 @@ under 2 of 64 seeds, fecundity is always 1. Under the uniform code no string of 
 nonzero letters during the claim tick, which the standard code's spellings (TT?, GG?, GC?) provide and the uniform
 code's 21 meaningful codons (all A or C) cannot. The standard code's degeneracy gives it 3 to 40 times more
 claimers, copiers and dividers per string than the uniform code at every length.
+
+**The DNA-1 seeded worlds** ([docs/12](docs/12_dna1_seeded_world.md)): the 7-codon copier seeded into the world
+engine, 4,096 to 195,312 copies at 10^8 cells and 1,000,000 at 3 x 10^9. **In the world the spec defaults to
+(1,024-cell slots, random soup, lifetime 64) it is sterile**: its head walks 3 cells per loop pass and dies inside
+its own slot, and in soup the first nonzero cell after 6 copies forces an unfaithful DIVIDE; 0 faithful births with
+4,096 and with 1,000,000 seeds, with mutation, with a single strand, with the second sequence. **In the world the
+sweep found it in (256-cell slots, blank tape) it reproduces and every lineage decays geometrically**: 1,000,000
+seeds in the 3 x 10^9-cell world gave 96,404 faithful children, then 31,298, 11,739, 4,658, 1,948, 832, ...,
+extinct after 14 generations (895,900 ticks in 40 minutes, the last 855,000 of them the inflow's background); at
+10^8 cells the ratio per generation is 0.33 to 0.44 at 10 % occupancy and 0.72 to 0.77 at
+50 %, with or without inflow, with or without mutation. Heritability is below 1 because the loop's exit is a
+nonzero cell in the slot after the child's (a property of the neighbourhood, not of the copy), and fecundity is
+exactly 1 (0 parents with two faithful children in 400,000 divisions) because nothing rewinds the template pointer
+after DIVIDE; the 1-in-7 ALLOC draw of docs/11 is not the limit in a big world. Mutation (mu 0.001, 0.01) produced
+only synonymous spellings as reproducing mutants, unrepaired damage at ten times the default rate *raises* the
+heritability (it supplies exit cells), and random inflow organisms revive the gene from dead copier slots 92 times
+in 20,000 ticks. Recommended change for DNA-2: a copy loop that ends on the template (a STOP-codon test under P)
+and a DIVIDE that re-arms P. A slot-map video of one run: `results/dna1_seeded/dna1_seeded_1e8.mp4`.
 
 **Real ISAs.** AArch64 exhaustive over all 2^32 words: **1,526,900,218 valid instructions (35.5509 %)**, 1,298
 mnemonics, 15 minutes on the workstation. Encoding density of other ISAs (16.7 M-word samples, Capstone): ARM32

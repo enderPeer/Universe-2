@@ -1,0 +1,4 @@
+dna_world N=99999744 G=256 S=390624 ticks=20000 seed=1 I=16 T=64 mu=0 D=95 F=95 double=1 code=standard blank=0 n_seed=4096 hash_every=-1 census_every=10 gpu=0
+log_births=s256_soup4096.log log_filter=divide log_every=1 depth_cap=10 top_genes=s256_soup4096.top slot_map=
+seeded 4096 slots with 7 codons, gene hash d63dbd3ebc6a4cbb, expressible=1
+summary ticks=20000 seconds=5.843 ticks_per_second=3423.08 seconds_total=5.930 device_mem_alloc_bytes=135159804 device_mem_used_bytes=140509184 live=72 births=33502 faithful=0 spontaneous=28395 deaths=37526
