@@ -43,10 +43,14 @@ origin branches.
 
 ## First results (2026-10-09)
 
-**2-bit machines, every program of 1 to 8 symbols (87,380), 16 cells, 64 steps:** the skip-and-wrap design S4
-produces 1,906 distinct final tapes with 1-bit cells and 5,688 with 2-bit cells; the Turing-complete P'' design 223
-and 408; a design without control flow 455 and 3,807. Variety at short lengths and expressiveness in the limit are
-different properties; the table search over all four-instruction sets is next.
+**The 2-bit table search** ([docs/06](docs/06_table_search.md)): all 36 operand-free operations, all C(36,4) =
+58,905 four-instruction machines, each run on all 1,398,100 programs of 1 to 10 symbols for 1-bit and 2-bit cells
+(164.7 billion program runs, 11 CPU-core-hours on the four cluster nodes, Intel/AMD overlap identical). The ceiling
+is 1,396,636 distinct programs (1,464 words are repetitions of shorter ones); **12 machines at W = 1 and 47 at
+W = 2 reach it exactly**: every distinct program draws a different tape. All of them are pens (write and move in one
+step) with flips of two different strides, Universe-7's recipe rediscovered by exhaustive search. No machine with a
+conditional, an accumulator or HALT comes close (best 19 to 29 %); Bohm's Turing-complete P'' ranks 24,454th.
+Variety from a blank tape rewards drawing laws; scoring functions on inputs is the next mode.
 
 **Real ISAs.** AArch64 exhaustive over all 2^32 words: **1,526,900,218 valid instructions (35.5509 %)**, 1,298
 mnemonics, 15 minutes on the workstation. Encoding density of other ISAs (16.7 M-word samples, Capstone): ARM32

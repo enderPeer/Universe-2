@@ -6,3 +6,4 @@ __pycache__/
 !results/**/*.json
 .venv/
 scratch/
+results/u2_tables/raw/
