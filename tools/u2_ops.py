@@ -2,7 +2,7 @@
 
 With no operand bits an instruction can only (a) move the head by a fixed stride, (b) change the cell under the
 head, (c) do both, (d) change control flow on the cell's value, or (e) use an implicit accumulator A. This catalog
-lists 36 such operations. A machine (a "table") is any set of four of them, one per symbol 0..3; since relabelling
+lists 36 such operations plus the five of the biological machine (EAT, MATE_A, MATE_B, SLEEP, WASTE). A machine (a "table") is any set of four of them, one per symbol 0..3; since relabelling
 the symbols permutes programs of equal length, only the set matters: C(36, 4) = 58,905 tables.
 
 Machine: ring of 256 cells of W bits, head at cell 0, accumulator A = 0, PC wraps at the program length L
@@ -55,6 +55,12 @@ OPS = [
     ("STA", "acc", "cell = A"),
     ("SWAP", "acc", "exchange A and cell"),
     ("ADDA", "acc", "cell += A (mod 2^W)"),
+    # the biological machine (user design, 2026-10-09): A is the stomach
+    ("EAT", "bio", "A = cell; cell = 0 (eat the cell)"),
+    ("MATE_A", "bio", "cell = cell + A + 1 (mod 2^W), then head += 1 (mate, reading A)"),
+    ("MATE_B", "bio", "cell = A + 1 (mod 2^W), then head += 1 (mate, reading B)"),
+    ("SLEEP", "bio", "if A == 0: skip the next instruction (sleep when no energy)"),
+    ("WASTE", "bio", "cell = all ones; A = 0; then head -= 1 (excrete)"),
 ]
 NAMES = [o[0] for o in OPS]
 INDEX = {n: i for i, n in enumerate(NAMES)}
@@ -138,6 +144,12 @@ def run(table, program, W=1, steps=64, trace=False, init=()):
         elif op == "STA": tape[head] = A
         elif op == "SWAP": tape[head], A = A, v
         elif op == "ADDA": tape[head] = (v + A) & mask
+        elif op == "EAT": A = v; tape[head] = 0
+        elif op == "MATE_A": tape[head] = (v + A + 1) & mask; head = (head + 1) % N
+        elif op == "MATE_B": tape[head] = (A + 1) & mask; head = (head + 1) % N
+        elif op == "SLEEP":
+            if A == 0: pc = (pc + 1) % L
+        elif op == "WASTE": tape[head] = mask; A = 0; head = (head - 1) % N
         done = step
         if halted:
             break

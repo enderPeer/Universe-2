@@ -77,8 +77,8 @@ class Job:
                     prefix = "fn " if self.mode == "fn" else ""
                     cmds.append(f"nice -n 10 ./u2_tables {prefix}{W} {self.L} {STEPS} {start} {count} {threads} > results/{name}.tsv 2> results/{name}.err; echo done >> results/{name}.err")
                 else:
-                    ids = " ".join(str(i) for i in self.ids[start:start + count])
-                    cmds.append(f"for i in {ids}; do nice -n 10 ./u2_tables fn {W} {self.L} {STEPS} $i 1 {threads} 2>> results/{name}.err; done > results/{name}.tsv; echo done >> results/{name}.err")
+                    ids = " ".join(str(i) for i in self.ids[start:start + count])   # whitespace-separated, read by fscanf
+                    cmds.append(f"echo {ids} > results/{name}.ids; nice -n 10 ./u2_tables_v3 fn {W} {self.L} {STEPS} @results/{name}.ids {count} {threads} > results/{name}.tsv 2> results/{name}.err; echo done >> results/{name}.err")
             chain = "; ".join(cmds)
             r = ssh(n, f"cd ~/universe2 && mkdir -p results && (setsid nohup sh -c '{chain}' < /dev/null > /dev/null 2>&1 &); echo launched", timeout=30)
             print(n, r.stdout.strip() or r.stderr.strip(), [self.name(*s) for s in lst])
@@ -119,7 +119,7 @@ class Job:
                 assert ids == expect, f"{n} {name}: ids differ from plan"
                 summary = [ln for ln in err.splitlines() if "secs=" in ln]
                 secs = sum(float(ln.split("secs=")[1].split()[0]) for ln in summary)
-                log[W].append({"node": n, "start": start, "count": count, "secs": round(secs, 1), "runs": len(summary)})
+                log[W].append({"node": n, "start": start, "count": count, "secs": round(secs, 1), "runs": len(summary), "binary": "u2_tables_v3" if self.ids else "u2_tables"})
                 is_overlap = self.ids is None and (start, count) == OVERLAP and n in ("adler40", "knecht24")
                 target = overlap[W].setdefault(n, {}) if is_overlap else rows[W]
                 for ln in lines:

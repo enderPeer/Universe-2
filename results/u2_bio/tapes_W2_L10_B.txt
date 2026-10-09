@@ -1,0 +1,14 @@
+machine	EAT,MATE_B,SLEEP,WASTE
+mode	tapes
+W	2
+L	10
+steps	64
+programs	1398100
+distinct	7740
+after_length	3	9	30	62	186	403	889	1797	3702	7740
+checksum	f7a101f46767c14a
+halted	0
+nonblank	1380904
+secs	0.3
+threads	24
+host	adler40

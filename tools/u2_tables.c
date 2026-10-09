@@ -24,16 +24,18 @@
 #include <unistd.h>
 #include <omp.h>
 
-#define NOPS 36
+#define NOPS 41
+#define NBASE 36   /* table ids rank 4-subsets of the first 36 operations only; the biological operations are used by name */
 #define NCELL 256
 #define MAXL 12
 static const char *NAMES[NOPS] = {
     "R1", "L1", "R2", "L2", "R3", "L3", "INC", "DEC", "FLIP", "NOT", "ZERO", "SET", "SHL",
     "INC_R1", "INC_L1", "FLIP_R1", "FLIP_L1", "FLIP_R2", "FLIP_R3", "SET_R1", "SET_R3", "ZERO_R1", "ZERO_R3",
-    "SKZ", "SKNZ", "JZS", "JNZS", "JNZB", "OPEN", "CLOSE", "HALT", "NOP", "LDA", "STA", "SWAP", "ADDA"};
+    "SKZ", "SKNZ", "JZS", "JNZS", "JNZB", "OPEN", "CLOSE", "HALT", "NOP", "LDA", "STA", "SWAP", "ADDA",
+    "EAT", "MATE_A", "MATE_B", "SLEEP", "WASTE"};
 enum { R1, L1, R2, L2, R3, L3, INC, DEC, FLIP, NOT, ZERO, SET, SHL, INC_R1, INC_L1, FLIP_R1, FLIP_L1, FLIP_R2,
        FLIP_R3, SET_R1, SET_R3, ZERO_R1, ZERO_R3, SKZ, SKNZ, JZS, JNZS, JNZB, OPEN, CLOSE, HALT, NOP, LDA, STA,
-       SWAP, ADDA };
+       SWAP, ADDA, EAT, MATE_A, MATE_B, SLEEP, WASTE };
 
 typedef struct { uint8_t tape[NCELL]; int head, pc, A, halted, steps; } State;
 
@@ -98,6 +100,11 @@ static void run(const int *table, const uint8_t *prog, int L, int W, int steps, 
         case STA: tape[head] = (uint8_t)A; break;
         case SWAP: tape[head] = (uint8_t)A; A = v; break;
         case ADDA: tape[head] = (uint8_t)((v + A) & mask); break;
+        case EAT: A = v; tape[head] = 0; break;                                            /* eat: cell into the stomach, cell emptied */
+        case MATE_A: tape[head] = (uint8_t)((v + A + 1) & mask); head = (head + 1) & 255; break;  /* mate: cell += A + 1, step right */
+        case MATE_B: tape[head] = (uint8_t)((A + 1) & mask); head = (head + 1) & 255; break;      /* mate: cell = A + 1, step right */
+        case SLEEP: if (A == 0) pc = (pc + 1) % L; break;                                  /* sleep: skip next if no energy */
+        case WASTE: tape[head] = mask; A = 0; head = (head - 1) & 255; break;             /* waste: cell = all ones, stomach emptied, step left */
         }
         done = step;
         if (halted) break;
@@ -121,16 +128,16 @@ static uint64_t tape_hash(const uint8_t *tape, int *nonblank)
 /* table_id -> 4 ascending op indices (combinatorial order) */
 static void unrank(long id, int *out)
 {
-    static long C[NOPS + 1][5];
+    static long C[NBASE + 1][5];
     static int init = 0;
     if (!init) {
-        for (int n = 0; n <= NOPS; n++) { C[n][0] = 1; for (int k = 1; k <= 4; k++) C[n][k] = n ? C[n - 1][k - 1] + C[n - 1][k] : 0; }
+        for (int n = 0; n <= NBASE; n++) { C[n][0] = 1; for (int k = 1; k <= 4; k++) C[n][k] = n ? C[n - 1][k - 1] + C[n - 1][k] : 0; }
         init = 1;
     }
     int start = 0;
     for (int k = 4; k >= 1; k--) {
-        for (int v = start; v < NOPS; v++) {
-            long block = C[NOPS - 1 - v][k - 1];
+        for (int v = start; v < NBASE; v++) {
+            long block = C[NBASE - 1 - v][k - 1];
             if (id < block) { out[4 - k] = v; start = v + 1; break; }
             id -= block;
         }
@@ -202,10 +209,111 @@ static void init_vocab(void)
     addv("x%3", f_mod3); addv("x%5", f_mod5); addv("min(x,7)", f_min7); addv("15-x", f_sub_from15); addv("|x-8|", f_absdiff8);
 }
 
+static int find_op(const char *name) { for (int i = 0; i < NOPS; i++) if (strcmp(NAMES[i], name) == 0) return i; return -1; }
+static int parse_ops(const char *text, int *table)
+{
+    char buf[256]; strncpy(buf, text, 255); buf[255] = 0;
+    int n = 0;
+    for (char *tok = strtok(buf, ","); tok && n < 4; tok = strtok(NULL, ",")) { table[n] = find_op(tok); if (table[n] < 0) return 0; n++; }
+    return n == 4;
+}
+/* custom MODE W L steps OPS threads : one explicit machine; MODE = tapes | fn ; all programs of 1..L; exact union */
+static int custom_mode(int argc, char **argv)
+{
+    const char *mode = argv[2];
+    int W = atoi(argv[3]), L = atoi(argv[4]), steps = atoi(argv[5]);
+    int table[4];
+    if (!parse_ops(argv[6], table)) { fprintf(stderr, "unknown operation in %s\n", argv[6]); return 2; }
+    int threads = atoi(argv[7]);
+    int fn = strcmp(mode, "fn") == 0;
+    if (fn) init_vocab();
+    const unsigned BIG = 1u << 26;
+    Slot *global = calloc(BIG, sizeof(Slot));
+    long distinct = 0, after[MAXL + 1] = {0}, halted = 0, nonblank = 0;
+    uint64_t checksum = 0;
+    uint64_t *all = NULL; size_t nall = 0, capall = 0;
+    double t0 = omp_get_wtime();
+    for (int l = 1; l <= L; l++) {
+        long nprog = 1L << (2 * l);
+        uint64_t **vecs = calloc((size_t)threads, sizeof(uint64_t *)); size_t *lens = calloc((size_t)threads, sizeof(size_t));
+        #pragma omp parallel num_threads(threads) reduction(+:halted,nonblank,checksum)
+        {
+            int tid = omp_get_thread_num();
+            Slot *set = calloc(SLOTS, sizeof(Slot));
+            size_t cap = 1 << 12, len = 0; uint64_t *vec = malloc(cap * sizeof(uint64_t));
+            uint8_t prog[MAXL]; State st;
+            #pragma omp for schedule(static)
+            for (long q = 0; q < nprog; q++) {
+                for (int i = 0; i < l; i++) prog[i] = (uint8_t)((q >> (2 * (l - 1 - i))) & 3);
+                uint64_t val;
+                if (fn) val = truth(table, prog, l, W, steps);
+                else { run(table, prog, l, W, steps, &st, NULL, 0); int nb; val = tape_hash(st.tape, &nb); nonblank += nb; halted += st.halted; }
+                checksum += val * 0x9E3779B97F4A7C15ULL;
+                uint64_t h = (val ^ (val >> 31) ^ 0xA5A5A5A5A5A5A5A5ULL) * 0x9E3779B97F4A7C15ULL;
+                if (insert(set, 1, h)) { if (len == cap) { cap *= 2; vec = realloc(vec, cap * sizeof(uint64_t)); } vec[len++] = val; }
+            }
+            vecs[tid] = vec; lens[tid] = len; free(set);
+        }
+        for (int t = 0; t < threads; t++) {
+            for (size_t i = 0; i < lens[t]; i++) {
+                uint64_t val = vecs[t][i];
+                uint64_t h = (val ^ (val >> 31) ^ 0xA5A5A5A5A5A5A5A5ULL) * 0x9E3779B97F4A7C15ULL;
+                uint32_t ix = (uint32_t)(h ^ (h >> 29)) & (BIG - 1);
+                int isnew = 0;
+                for (;;) { if (global[ix].gen != 1) { global[ix].gen = 1; global[ix].h = val; isnew = 1; break; } if (global[ix].h == val) break; ix = (ix + 1) & (BIG - 1); }
+                if (isnew) { distinct++; if (nall == capall) { capall = capall ? capall * 2 : 1 << 16; all = realloc(all, capall * sizeof(uint64_t)); } all[nall++] = val; }
+            }
+            free(vecs[t]);
+        }
+        free(vecs); free(lens);
+        after[l] = distinct;
+        fprintf(stderr, "  L=%d: %ld distinct (%.1f s)\n", l, distinct, omp_get_wtime() - t0);
+    }
+    double secs = omp_get_wtime() - t0;
+    long per_table = 0; for (int l = 1; l <= L; l++) per_table += 1L << (2 * l);
+    printf("machine\t%s,%s,%s,%s\nmode\t%s\nW\t%d\nL\t%d\nsteps\t%d\nprograms\t%ld\ndistinct\t%ld\n", NAMES[table[0]], NAMES[table[1]], NAMES[table[2]], NAMES[table[3]], mode, W, L, steps, per_table, distinct);
+    printf("after_length"); for (int l = 1; l <= L; l++) printf("\t%ld", after[l]); printf("\n");
+    printf("checksum\t%016llx\n", (unsigned long long)checksum);
+    if (!fn) printf("halted\t%ld\nnonblank\t%ld\n", halted, nonblank);
+    else {
+        long bij = 0, consts = 0; uint64_t vmask = 0; long image[17] = {0};
+        for (size_t i = 0; i < nall; i++) {
+            uint64_t tt = all[i]; int seen = 0; for (int x = 0; x < 16; x++) seen |= 1 << nib(tt, x);
+            image[__builtin_popcount(seen)]++;
+            if (seen == 0xFFFF) bij++;
+            if (__builtin_popcount(seen) == 1) consts++;
+            for (int v = 0; v < nvocab; v++) if (VOCAB[v] == tt) vmask |= 1ULL << v;
+        }
+        printf("bijections\t%ld\nconstants\t%ld\nvocab_hits\t%d\nvocab\t", bij, consts, __builtin_popcountll(vmask));
+        for (int v = 0; v < nvocab; v++) if (vmask >> v & 1) printf("%s;", VNAME[v]);
+        printf("\nimage_size_histogram"); for (int k = 1; k <= 16; k++) printf("\t%ld", image[k]); printf("\n");
+    }
+    char host[64] = "?"; gethostname(host, sizeof host);
+    printf("secs\t%.1f\nthreads\t%d\nhost\t%s\n", secs, threads, host);
+    free(global); free(all);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     if (argc >= 2 && strcmp(argv[1], "--list") == 0) {
         for (int i = 0; i < NOPS; i++) printf("%d %s\n", i, NAMES[i]);
+        return 0;
+    }
+    if (argc >= 8 && strcmp(argv[1], "custom") == 0) return custom_mode(argc, argv);
+    if (argc >= 4 && strcmp(argv[1], "--checkops") == 0) {
+        /* --checkops OPS W : reads "steps program" lines, prints state and truth table for the explicit machine */
+        int table[4]; if (!parse_ops(argv[2], table)) return 2; int W = atoi(argv[3]);
+        char line[256];
+        while (fgets(line, sizeof line, stdin)) {
+            int steps; char ps[64]; if (sscanf(line, "%d %63s", &steps, ps) != 2) continue;
+            uint8_t prog[MAXL]; int L = (int)strlen(ps); for (int i = 0; i < L; i++) prog[i] = (uint8_t)(ps[i] - '0');
+            State st; run(table, prog, L, W, steps, &st, NULL, 0);
+            printf("%s head=%d A=%d pc=%d halted=%d steps=%d tape=", ps, st.head, st.A, st.pc, st.halted, st.steps);
+            for (int i = 0; i < NCELL; i++) if (st.tape[i]) printf("%d:%d,", i, st.tape[i]);
+            uint64_t t = truth(table, prog, L, W, steps); printf(" truth=");
+            for (int x = 0; x < 16; x++) printf("%d,", nib(t, x)); printf("\n");
+        }
         return 0;
     }
     if (argc >= 2 && strcmp(argv[1], "--vocab") == 0) {
@@ -281,7 +389,17 @@ int main(int argc, char **argv)
     if (argc >= 8 && strcmp(argv[1], "fn") == 0) {
         /* fn W L steps start count threads: distinct unary 4-bit functions per machine over all programs of 1..L */
         int W = atoi(argv[2]), L = atoi(argv[3]), steps = atoi(argv[4]);
-        long start = atol(argv[5]), count = atol(argv[6]);
+        long start = 0, count = atol(argv[6]);
+        long *idlist = NULL;
+        if (argv[5][0] == '@') {   /* @file: explicit list of table ids, one per line; count = how many to take */
+            FILE *f = fopen(argv[5] + 1, "r");
+            if (!f) { fprintf(stderr, "cannot open %s\n", argv[5] + 1); return 2; }
+            idlist = malloc((size_t)count * sizeof(long));
+            long n = 0;
+            while (n < count && fscanf(f, "%ld", &idlist[n]) == 1) n++;
+            fclose(f);
+            if (n != count) { fprintf(stderr, "id list has %ld entries, expected %ld\n", n, count); return 2; }
+        } else start = atol(argv[5]);
         int threads = atoi(argv[7]);
         init_vocab();
         long per_table = 0;
@@ -294,7 +412,7 @@ int main(int argc, char **argv)
             uint32_t gen = 0;
             #pragma omp for schedule(dynamic, 1)
             for (long t = 0; t < count; t++) {
-                long id = start + t;
+                long id = idlist ? idlist[t] : start + t;
                 int table[4]; unrank(id, table);
                 gen++;
                 long distinct = 0, bij = 0, consts = 0, after[MAXL + 1] = {0};

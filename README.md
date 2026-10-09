@@ -50,7 +50,13 @@ is 1,396,636 distinct programs (1,464 words are repetitions of shorter ones); **
 W = 2 reach it exactly**: every distinct program draws a different tape. All of them are pens (write and move in one
 step) with flips of two different strides, Universe-7's recipe rediscovered by exhaustive search. No machine with a
 conditional, an accumulator or HALT comes close (best 19 to 29 %); Bohm's Turing-complete P'' ranks 24,454th.
-Variety from a blank tape rewards drawing laws; scoring functions on inputs is the next mode.
+Variety from a blank tape rewards drawing laws; the function search ([docs/07](docs/07_function_search.md)) scores
+the same machines by distinct functions of a 4-bit input, Universe-1's measure. Winner: `L1, INC_L1, FLIP_R3, JNZB`
+(a two-instruction conditional loop plus pens). **Over all 4^16 = 2^32 sixteen-symbol programs it computes
+2,930,290 distinct unary functions, 1.6 times the Universe-1 champion's 1,829,051 at the same program size**, with
+64 instead of 256 steps and no register; JC (8,533,818) stays ahead. Every top machine has exactly one conditional;
+the perfect drawing machines compute 5 to 10 functions; Böhm's P'' ranks 2,628th. A proposed biological machine
+(EAT, MATE, SLEEP, WASTE) ranks in the top 10 % for functions but saturates near 16,000.
 
 **Real ISAs.** AArch64 exhaustive over all 2^32 words: **1,526,900,218 valid instructions (35.5509 %)**, 1,298
 mnemonics, 15 minutes on the workstation. Encoding density of other ISAs (16.7 M-word samples, Capstone): ARM32
