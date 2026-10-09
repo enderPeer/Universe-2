@@ -1,0 +1,23 @@
+{
+ "genes": 1807,
+ "ticks": 64,
+ "code": "standard",
+ "soup": false,
+ "W": 8,
+ "G": 256,
+ "T": 64,
+ "I": 16,
+ "seed": 1,
+ "genes_identical": 1807,
+ "hash_ticks_identical": 115648,
+ "hash_ticks_expected": 115648,
+ "mismatches": [],
+ "engine_summary": {
+  "claims": 1724,
+  "copied": 1630,
+  "divides": 1618,
+  "children": 1538,
+  "faithful": 0,
+  "grandchildren": 0
+ }
+}

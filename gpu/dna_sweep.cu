@@ -22,6 +22,7 @@
  *        --genes FILE           one codon string per line (whitespace, comma or contiguous letters), any first codon
  * World: --W 8 --G 256 --ticks 64 --T 64 --I 16 --seed 1 --uniform-code --soup
  * Run:   --chunk 4194304 (worlds per launch) --chunk-start i --chunk-end j --tpb 64 --gpu 0 --no-prefilter
+ *        --slow-seek (SEEK cell by cell instead of 16 cells per word; same result, for checking)
  * Out:   --out summary.json  --log FILE (TSV of the genes selected by --log-mask: bit0 faithful child, bit1 a child
  *        divided in turn, bit2 any child, bit3 divided, bit4 copied a cell, bit5 claimed a slot; default 3)
  *        --records FILE (TSV of every world, small runs only) --hash-ticks FILE (state hash after every tick of every
@@ -146,7 +147,7 @@ struct Rec {
 
 struct SP {
     u64 seed, n_worlds, gene_start, range, rseed;
-    i32 W, G, N, NB, maxk, I, T, ticks, mode, L, prefilter, hash_ticks, soup;
+    i32 W, G, N, NB, maxk, I, T, ticks, mode, L, prefilter, hash_ticks, soup, slow_seek;
     u32 log_mask, log_cap;
     u8 start_codon, stop_codon;
 };
@@ -205,10 +206,51 @@ __device__ __forceinline__ void born(WS &w, i32 s, i32 depth, i32 G)
     w.live[s] = 1; w.pc[s] = 1; w.H[s] = w.P[s] = s * G; w.Q[s] = 0; w.child[s] = -1; w.A[s] = 0; w.age[s] = 0; w.depth[s] = depth; w.copied[s] = 0;
 }
 
+/* bit 2k of the result is set iff 2-bit cell k of v equals p (cells k = 0..31 of a 64-bit word) */
+__device__ __forceinline__ u64 eq_lanes(u64 v, u32 p)
+{
+    u64 x = ~(v ^ ((u64)p * 0x5555555555555555ULL));
+    return x & (x >> 1) & 0x5555555555555555ULL;
+}
+
+/* SEEK, 16 cells per step: the first position h in H+1 .. H+3G (ring) whose cells h, h+1, h+2 read p0, p1, p2 under
+ * the snapshot rule, or -1. Needs G % 16 == 0, so that every 16-cell word lies in one slot and has one source array
+ * (fwd for the own and the claimed child slot and for slots nobody can write this tick, old for the snapped
+ * others), exactly as the per-cell RD() reads them; the two cells after a word come from the next word of the ring
+ * with that word's own source. Same result as the per-cell loop in run_world, which stays as the general path. */
+__device__ __forceinline__ u32 src_word(const u8 *fwd, const u8 *old, const u8 *snap, i32 base, i32 ch_lo, i32 G, i32 widx)
+{
+    i32 s = (widx << 4) / G, sb = s * G;
+    const u8 *a = (sb == base || sb == ch_lo) ? fwd : (snap[s] ? old : fwd);
+    return *(const u32 *)(a + (size_t)widx * 4);
+}
+
+__device__ i32 seek_fast(const u8 *fwd, const u8 *old, const u8 *snap, i32 base, i32 ch_lo, i32 G, i32 N, i32 H, u32 p0, u32 p1, u32 p2)
+{
+    const i32 NW = N >> 4;
+    i32 start = H + 1; if (start >= N) start -= N;
+    i32 wi = start >> 4, off = start & 15, remaining = 3 * G;
+    u32 wcur = src_word(fwd, old, snap, base, ch_lo, G, wi);
+    while (remaining > 0) {
+        i32 wn = wi + 1; if (wn == NW) wn = 0;
+        u32 wnext = src_word(fwd, old, snap, base, ch_lo, G, wn);
+        u64 v = (u64)wcur | ((u64)wnext << 32);
+        u64 m = eq_lanes(v, p0) & (eq_lanes(v, p1) >> 2) & (eq_lanes(v, p2) >> 4);
+        m &= 0xFFFFFFFFULL;                                   /* positions k = 0..15 of this word */
+        m &= ~((1ULL << (2 * off)) - 1);                      /* not before the first candidate */
+        i32 avail = 16 - off;
+        if (remaining < avail) { m &= (1ULL << (2 * (off + remaining))) - 1; avail = remaining; }
+        if (m) { i32 k = (__ffsll((long long)m) - 1) >> 1; return (wi << 4) + k; }
+        remaining -= avail; off = 0; wi = wn; wcur = wnext;
+    }
+    return -1;
+}
+
 /* runs one world; cod[0..L-1] are the codons written to slot 0 (then STOP padding). r must be zeroed by the caller. */
 __device__ void run_world(const SP &P, const u8 *tab, const u8 *xtab, const u8 *cod, i32 L, u8 *fwd, u8 *old, Rec &r, u64 *hash_out, const u8 *soup)
 {
     const i32 W = P.W, G = P.G, N = P.N, NB = P.NB, maxk = P.maxk, I = P.I, T = P.T;
+    const bool fast_seek = (G & 15) == 0 && !P.slow_seek;
     /* initial state: blank or soup, then slot 0 = the gene padded with the lowest STOP codon up to the last usable codon */
     if (soup) for (i32 b = 0; b < NB; b++) fwd[b] = soup[b]; else for (i32 b = 0; b < NB; b++) fwd[b] = 0;
     for (i32 k = 0; k <= maxk; k++) {
@@ -304,6 +346,7 @@ __device__ void run_world(const SP &P, const u8 *tab, const u8 *xtab, const u8 *
                         i32 tb = base + 3 * pc;
                         u32 p0 = get2s(fwd, tb) ^ 3u, p1 = get2s(fwd, tb + 1) ^ 3u, p2 = get2s(fwd, tb + 2) ^ 3u;
                         pc += 1;                                 /* the template is consumed */
+                        if (fast_seek) { i32 f = seek_fast(fwd, old, w.snap, base, ch_lo, G, N, H, p0, p1, p2); if (f >= 0) H = f; break; }
                         i32 h0 = H + 1; if (h0 >= N) h0 -= N;
                         i32 h1 = h0 + 1; if (h1 >= N) h1 -= N;
                         u32 c0 = RD(h0), c1 = RD(h1);
@@ -381,7 +424,8 @@ __global__ void __launch_bounds__(256) k_sweep(SP P, Out O, i32 stride)
     for (int i = threadIdx.x; i < 64; i += blockDim.x) { u8 op = O.table[i]; stab[i] = op; sxtab[i] = (op == START || op == STOP) ? (u8)NOP : op; }
     __syncthreads();
     u8 *fwd = smem + (size_t)threadIdx.x * stride;
-    u8 old[MAXNB];
+    u32 old32[MAXNB / 4];                    /* 4-byte aligned for the word reads of seek_fast */
+    u8 *old = (u8 *)old32;
     u64 tid = (u64)blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < P.n_worlds) {
         u64 widx = P.gene_start + tid;      /* world index within the run */
@@ -495,7 +539,7 @@ static void write_rec(FILE *f, const Rec &r, const char *code, int mode, const s
 int main(int argc, char **argv)
 {
     i64 L = 0, W = 8, G = 256, ticks = 64, T = 64, I = 16, chunk = 1 << 22, chunk_start = 0, chunk_end = -1, tpb = 64, random_n = -1;
-    u64 seed = 1, rseed = 1; bool all = false, uniform = false, soup = false, prefilter = true; int gpu = 0; u32 log_mask = 3;
+    u64 seed = 1, rseed = 1; bool all = false, uniform = false, soup = false, prefilter = true, slow_seek = false; int gpu = 0; u32 log_mask = 3;
     std::string genes_path, out_path, log_path, records_path, hash_path, chunk_log_path;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
@@ -514,6 +558,7 @@ int main(int argc, char **argv)
         else if (a == "--uniform-code") uniform = true;
         else if (a == "--soup") soup = true;
         else if (a == "--no-prefilter") prefilter = false;
+        else if (a == "--slow-seek") slow_seek = true;
         else if (a == "--chunk") chunk = atoll(next());
         else if (a == "--chunk-start") chunk_start = atoll(next());
         else if (a == "--chunk-end") chunk_end = atoll(next());
@@ -542,7 +587,7 @@ int main(int argc, char **argv)
 
     SP P; memset(&P, 0, sizeof P);
     P.seed = seed; P.W = (i32)W; P.G = (i32)G; P.N = (i32)(W * G); P.NB = (P.N + 3) / 4; P.maxk = (i32)(G / 3 - 1); P.I = (i32)I; P.T = (i32)T; P.ticks = (i32)ticks;
-    P.mode = mode; P.L = (i32)L; P.prefilter = prefilter ? 1 : 0; P.hash_ticks = hash_path.empty() ? 0 : 1; P.soup = soup ? 1 : 0;
+    P.mode = mode; P.L = (i32)L; P.prefilter = prefilter ? 1 : 0; P.hash_ticks = hash_path.empty() ? 0 : 1; P.soup = soup ? 1 : 0; P.slow_seek = slow_seek ? 1 : 0;
     P.log_mask = log_mask; P.start_codon = (u8)start_codon; P.stop_codon = (u8)stop_codon; P.rseed = rseed;
     const i32 stride = ((P.NB + 3) & ~3) + 4;      /* 4-byte aligned, one bank offset per thread against conflicts */
 

@@ -1,0 +1,5 @@
+#code	L	glen	gene	codons	ops	claims	copied	divides	children	faithful	births_world	faithful_world	grandchildren	deaths	live_end	maxdepth	first_birth	prefiltered	claims_world	copied_world	intact
+standard	2	2	36	ATG GCA	START ALLOC	1	0	0	0	0	0	0	0	1	0	0	-1	0	1	0	0
+standard	2	2	37	ATG GCC	START ALLOC	1	0	0	0	0	0	0	0	1	0	0	-1	0	1	0	0
+standard	2	2	38	ATG GCG	START ALLOC	1	0	0	0	0	0	0	0	1	0	0	-1	0	1	0	0
+standard	2	2	39	ATG GCT	START ALLOC	1	0	0	0	0	0	0	0	1	0	0	-1	0	1	0	0

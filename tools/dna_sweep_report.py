@@ -32,8 +32,8 @@ def main():
     keys = sorted(set((c, t, e) for c, t, e, _ in runs))
     for code, ticks, extra in keys:
         print("\n### %s code, %d ticks%s\n" % (code, ticks, (" (" + extra + ")") if extra else ""))
-        print("| gene length (codons incl. START) | strings swept | proper genes | claimed a slot | copied a cell | divided | expressible child | faithful child | grandchild | seconds |")
-        print("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
+        print("| gene length (codons incl. START) | strings swept | proper genes | claimed a slot | copied a cell | divided | expressible child | faithful child | intact | grandchild | seconds |")
+        print("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
         for L in sorted(l for c, t, e, l in runs if (c, t, e) == (code, ticks, extra)):
             r = runs[(code, ticks, extra, L)]
             tot = r["total"]
@@ -41,9 +41,10 @@ def main():
             proper = bl.get(str(L), bl.get("%d+" % L, {})).get("strings", 0) if L < 7 else bl.get("7+", {}).get("strings", 0)
             mode = r["params"]["mode"]
             label = "%d%s" % (L, "" if mode == "all" else " (sample of %s)" % fmt(r["worlds"]))
-            print("| %s | %s | %s | %s | %s | %s | %s | %s | %s | %.1f |" % (
+            intact = fmt(tot["intact_any"]) if "intact_any" in tot else "n/a"
+            print("| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %.1f |" % (
                 label, fmt(r["worlds"]), fmt(proper), fmt(tot["claimed"]), fmt(tot["copied_any"]), fmt(tot["divided"]),
-                fmt(tot["children_any"]), fmt(tot["faithful_any"]), fmt(tot["grandchildren_any"]), r["seconds"]))
+                fmt(tot["children_any"]), fmt(tot["faithful_any"]), intact, fmt(tot["grandchildren_any"]), r["seconds"]))
         for L in sorted(l for c, t, e, l in runs if (c, t, e) == (code, ticks, extra)):
             r = runs[(code, ticks, extra, L)]
             tot = r["total"]

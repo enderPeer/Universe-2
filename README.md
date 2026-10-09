@@ -40,6 +40,7 @@ origin branches.
 | [`tools/isa4_exec_probe.py`](tools/isa4_exec_probe.py) | execution census (Unicorn): NANO-style classes and state fingerprints for every decodable word |
 | `results/isa4_census/`, `results/isa4_exec/` | JSON results with counts, percentages, throughput and host |
 | [`sim/dna_ref.py`](sim/dna_ref.py), [`gpu/dna_world.cu`](gpu/dna_world.cu) | **DNA-1**: the DNA-like machine of [docs/09](docs/09_dna1_spec.md) (4 symbols, complement xor 3, two strands, 1,024-cell slots, the standard genetic code's 64 codons onto 20 operations + STOP, processors with machine-held copy pointers, deterministic ticks). Python reference and CUDA engine agree bit for bit on 17 test worlds; the engine runs 2,999,999,488 cells at 405 ticks/s in 2.6 GB on one RTX 4090. First worlds and reading in [docs/10](docs/10_dna1_results.md). |
+| [`gpu/dna_sweep.cu`](gpu/dna_sweep.cu), [`tools/dna_sweep_verify.py`](tools/dna_sweep_verify.py), [`tools/dna_trace.py`](tools/dna_trace.py) | the DNA-1 **copier sweep**: thousands of single-gene 8 x 256-cell worlds per GPU launch (one thread per world), reduced on the GPU, verified tick by tick against the reference on 5,179 genes; exhaustive over every gene of 2 to 6 codons under both codon tables ([docs/11](docs/11_dna1_copier_sweep.md)); the tracer prints a gene's world tick by tick |
 | [`docs/08_dna_machine.md`](docs/08_dna_machine.md) | how to build the machine like DNA: complement as repair, pointers in the polymerase, codon layer with degeneracy, regulation by templates, the world; six experiments in order |
 | [`docs/03_resources.md`](docs/03_resources.md) | the workstation and the four cluster nodes as found on 2026-10-09, and how to bound CPU, memory and power on each |
 
@@ -59,6 +60,22 @@ the same machines by distinct functions of a 4-bit input, Universe-1's measure. 
 64 instead of 256 steps and no register; JC (8,533,818) stays ahead. Every top machine has exactly one conditional;
 the perfect drawing machines compute 5 to 10 functions; Böhm's P'' ranks 2,628th. A proposed biological machine
 (EAT, MATE, SLEEP, WASTE) ranks in the top 10 % for functions but saturates: 16,855 functions over all 5.7 billion programs of up to 16 symbols.
+
+**The DNA-1 copier sweep** ([docs/11](docs/11_dna1_copier_sweep.md)): every gene of 2 to 7 codons (64 + 4,096 +
+262,144 + 16,777,216 + 1,073,741,824 + 68,719,476,736 codon strings after START) alone in a blank 8-slot world with
+mu = 0, under the standard genetic code and a uniform code, verified tick by tick against the reference on 6,219
+genes; the 2^36 strings of length 7 took 28 minutes on four GPUs. **No gene of up to 5 codons copies itself; at 6
+codons exactly 16 strings do**, all spellings of `START R1 ALLOC R3 START INC`, which has no COPY: it rewrites itself
+with INC into `START R3 SKNZ DIVIDE COPY SEEK`, copies that once and stops. **At 7 codons, 4,520 strings copy
+faithfully and 2,304 of them copy the seeded gene intact: every spelling of `START SKZ DIVIDE ALLOC R3 SKNZ COPY`
+and `START ALLOC SKZ DIVIDE R3 SKNZ COPY`**, the first real self-replicators of DNA-1 (the head holds COPY back
+while it reads nonzero cells, copies across the blank neighbouring slot, and divides when it reaches the copy it
+wrote). They reproduce whenever the ALLOC draw gives them the slot two ahead (1 in 7), lineages of depth 3 appear
+under 2 of 64 seeds, fecundity is always 1. Under the uniform code no string of up to 6 codons copies faithfully and
+44 of 2^36 seven-codon strings do, none intact: the intact mechanism needs the gene's own codons to begin with
+nonzero letters during the claim tick, which the standard code's spellings (TT?, GG?, GC?) provide and the uniform
+code's 21 meaningful codons (all A or C) cannot. The standard code's degeneracy gives it 3 to 40 times more
+claimers, copiers and dividers per string than the uniform code at every length.
 
 **Real ISAs.** AArch64 exhaustive over all 2^32 words: **1,526,900,218 valid instructions (35.5509 %)**, 1,298
 mnemonics, 15 minutes on the workstation. Encoding density of other ISAs (16.7 M-word samples, Capstone): ARM32

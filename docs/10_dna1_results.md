@@ -136,4 +136,5 @@ differ only in the last codon, and the inflow creates them again and again.
 
 So the first DNA-1 world is where Universe-1's crawler soup and NANO's alife census were before their sweeps:
 copying exists, faithful copying is a one-in-a-million event among random genes, and no lineage persists. The
-copier sweep (spec section 12, proposed as its own session) is the way to find the genes that do it on purpose.
+copier sweep (spec section 12) is the way to find the genes that do it on purpose: it was run the same day,
+[docs/11](11_dna1_copier_sweep.md).
