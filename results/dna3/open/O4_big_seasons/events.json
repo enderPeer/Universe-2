@@ -185,5 +185,45 @@
   "ops": "START ALLOC COPY TERM DIVIDE HARVEST WAIT HARVEST WAIT JNZB",
   "codons": "ATG GCT CTC TTA GGT AGG AGC AGA AGC GTG",
   "count": 10330
+ },
+ {
+  "tick": 92159,
+  "event": "new operation sequence in the top 10",
+  "ops": "START ALLOC COPY TERM DIVIDE ALLOC WAIT HARVEST WAIT HARVEST",
+  "codons": "ATG GCT CTA TTA GGT GCC AGC AGA AGC AGG",
+  "count": 11535
+ },
+ {
+  "tick": 112639,
+  "event": "new operation sequence in the top 10",
+  "ops": "START ALLOC COPY TERM DIVIDE HARVEST WAIT HARVEST WAIT",
+  "codons": "ATG GCG CTG TTA GGT AGA AGC AGA AGC",
+  "count": 14808
+ },
+ {
+  "tick": 112639,
+  "event": "new operation sequence in the top 10",
+  "ops": "START TERM DIVIDE ALLOC SEEK FLIP WAIT HARVEST WAIT COPY HARVEST",
+  "codons": "ATG TTA GGA GCT GAA AAC AGC AGG AGC CTG AGA",
+  "count": 14313
+ },
+ {
+  "tick": 112639,
+  "event": "longest top-10 gene so far",
+  "length": 11,
+  "ops": "START TERM DIVIDE ALLOC SEEK FLIP WAIT HARVEST WAIT COPY HARVEST"
+ },
+ {
+  "tick": 122879,
+  "event": "new operation sequence in the top 10",
+  "ops": "START ALLOC COPY TERM DIVIDE HARVEST HARVEST HARVEST HARVEST",
+  "codons": "ATG GCT CTT TTA GGT AGA AGA AGA AGA",
+  "count": 13843
+ },
+ {
+  "tick": 153599,
+  "event": "sleepers above 50 %",
+  "count": 2422144,
+  "live": 4671853
  }
 ]

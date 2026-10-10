@@ -21,7 +21,7 @@ specified at design level with predictions. Section 12 lists the decisions that 
 | 2 | the firmament, dividing the waters above from the waters below | a **2D toroidal grid** of slots; a child is placed in a free neighbouring slot; two rows of barrier slots (the firmament) cut the torus into two zones that no lineage can cross | space; lineage patches; isolated populations (allopatry) | implemented, verified |
 | 3 | waters gathered, dry land appears; the earth brings forth plants | **terrain** (sea, land) with different light and inflow; **HARVEST** (photosynthesis) as a new operation; costs per copied cell; maintenance per tick; death by starvation | autotrophs; selection on something other than copying speed; a land/sea ecology | implemented, verified |
 | 4 | lights in the firmament for signs, seasons, days and years | sun height by latitude, **seasons** with opposite phase in the two zones (hemispheres), a moon, stars; **SENSE** (branch on a sky signal) and **WAIT** (sleep) | timing behaviour, dormancy, seasonal strategies | implemented, verified (section 14) |
-| 5 | water creatures and birds | **predation** (energy taken from a neighbour), **motion** (swimming; flying across the firmament), **foreign execution** (a processor may run a neighbour's gene, so parasites can arise) | heterotrophs, trophic levels, migration between hemispheres, parasites | design |
+| 5 | water creatures and birds | **predation** (energy taken from a neighbour), **motion** (swimming; flying across the firmament), **foreign execution** (a processor may run a neighbour's gene, so parasites can arise) | heterotrophs, trophic levels, migration between hemispheres, parasites | implemented, verified (section 15) |
 | 6 | land animals; then humans | **tasks** on a working tape rewarded with energy (stepping stones from the docs/07 function library); **signals** between neighbours; the **interface** for a learned controller (the "human" layer), specified, not built | computation selected by the environment, communication, the slot for learning minds | design |
 | 7 | the work completed; rest | **no design change**: the frozen rule set runs long and unattended with open-endedness measurements (evolutionary activity against a neutral shadow, novelty, complexity) and stated criteria for open-ended against plateau | the test | design |
 
@@ -44,8 +44,8 @@ goes to day 5 with the other interactions.
   `--days` every program behaves exactly as before (verified: section 10). Everything in docs/09 and docs/15 holds
   unless a day below changes it.
 - **Flags.** `--days 1`, `--days 2`, `--days 1,2`, `--days 1,2,3`; `--dna3` = `--days 1,2,3`.
-- **New random streams** (`rnd(t, k, j)` of docs/09 section 7): `rnd(t, s, 2000)` (day 2 ALLOC priority) and
-  `rnd(-2, i, 9)` (day 3 terrain lattice). DNA-1/2 use j = 0 (ALLOC), 1, 2 (damage), 3, 4 + j (inflow), 1000 + c
+- **New random streams** (`rnd(t, k, j)` of docs/09 section 7): `rnd(t, s, 2000)` (day 2 ALLOC and day 5 MOVE
+  priority), `rnd(t, e, 3000)` (day 5 order of eaters) and `rnd(-2, i, 9)` (day 3 terrain lattice). DNA-1/2 use j = 0 (ALLOC), 1, 2 (damage), 3, 4 + j (inflow), 1000 + c
   (mutation); 2000 is above every inflow cell index for G < 1996 and t = -2 is used by nothing else. Day 4 uses no
   random numbers.
 - **Integer arithmetic.** All energy quantities are non-negative integers; `floor` of non-negative operands, so
@@ -231,30 +231,72 @@ are long (each zone's winter) and loses in summer, so its share oscillates with 
 in the two zones; (iii) from the plant seed alone, with mutation, a SENSE-WAIT motif arises and rises in frequency
 first at high latitude (prediction, not a requirement).
 
-## 7. Day 5: creatures of the water and birds of the air (design)
+## 7. Day 5: creatures of the water and birds of the air (implemented, section 15)
 
-- **Predation.** `EAT`: the next codon is the operand, `d = codon mod 8` a neighbour direction. The request is
-  recorded in step 1 and resolved after ALLOC (new step 2b): the eaters of each prey (live at the start of step 2)
-  are ordered by the key of day 2 with j = 3000; each takes `floor(E_prey / 2)` of what is left, of which it gains
-  `floor(eff * taken)` (eff = 1/2: the trophic loss); a prey left below `maint` dies at step 4 as starved. One
-  EAT per processor per tick. Heterotrophs are genes that eat; trophic levels are read from the flows (who eats
-  whose energy) and the ledger gains an "eaten" and a "trophic loss" entry.
-- **Motion.** `MOVE`: operand direction; resolved together with ALLOC requests in step 2 (one grant per free slot,
-  lowest key). A granted move copies the G cells and the processor state into the target, clears the source to blank
-  (all A) and releases any claim. Water animals: MOVE is granted only between sea slots (swimming). Birds: `FLY`, a
-  move of 2 to 4 rows in the operand's direction that may cross the firmament (the only way between the zones),
-  costing `c_fly` units. Prediction: fliers carry lineages between the hemispheres and the two zones' gene pools,
-  separate since day 2, start to mix; whether fliers pay off depends on the seasonal opposition of day 4 (migration
-  to the summer zone).
-- **Interaction: foreign execution.** `EXEC`: operand direction; the processor fetches its next codons from the
-  neighbour's gene (read from the tick-start snapshot, so the snapshot rule keeps the tick order-free) until that
-  gene wraps, then returns to its own codon 1. P, Q, H and the write rule stay its own: a short gene that executes a
-  neighbour's copy loop with P on its own slot copies itself. This is Tierra's parasitism made legal. Prediction:
-  parasites (genes shorter than any self-sufficient replicator, measured by EXEC executions per birth) arise within
-  10^4 to 10^5 ticks in dense plant mats, followed by host genes that do not loop through EXEC-reachable codons
-  (resistance), with Red Queen cycles in parasite frequency.
-- **Acceptance.** Exact specification in a docs/18 before implementation; bit-identical tests as in section 10;
-  energy ledger closes with the two new entries.
+Day 5 needs days 1 to 4. It adds three operations, a processor field, two steps between execution and births, and
+three ledger entries. The design version of this section proposed a blank source after a move, a separate FLY
+operation and resolution after ALLOC; the implemented rules below differ where noted (*changed*).
+
+**Codon table.** EAT takes CCA and CCG from Pro (SETP keeps CCT, CCC), MOVE takes ACA and ACG from Thr (SETQ keeps
+ACT, ACC), EXEC takes GTA and GTG from Val (JNZB keeps GTT, GTC). Uniform code: values 25, 26, 27.
+
+**Parameters** (defaults): `c_move` 2 (energy for a one-slot move), `c_fly` 8 (energy per slot of a flight),
+`eat_shift` 1 (an eater takes floor(rest / 2^eat_shift)), `eat_eff` 8 (it keeps floor(taken * eat_eff / 16)).
+
+**The code being executed.** Every processor gains a field `xs`, the slot whose gene it runs (its own slot at birth;
+hashed as a twelfth little-endian u64 after E). While `xs` is the own slot the gene is fetched live, as before; while
+it is another slot, every codon (instructions and operands, SEEK's template and SENSE's operand included) is read from
+the tick-start snapshot `fwd_old` of that slot, and `len` is that gene's length there. The wrap rule becomes: if
+`pc >= len`, then if `xs` is foreign, `xs` = own slot and `len` = the own gene's length; and `pc = 1`. At the start
+of a processor's tick, if `xs` is foreign: if that slot is not expressible in the snapshot, `xs` = own, `pc = 1`;
+otherwise `len` is its length there, and if `pc >= len` the processor returns home (`xs` = own, `pc = 1`). A write
+of the processor into its own slot (INC, FLIP, STA) recomputes `len` only while it runs its own gene. P, Q, H, A,
+the claimed child and the write rule are always the processor's own.
+
+**Operations.** Each takes the next codon of the code being run as its operand (consumed like SEEK's template; if
+it lies at or beyond `len` the operation is NOP). With `c` the operand and (dx, dy) the neighbour offset number
+`c mod 8` of day 2:
+
+| operation | effect in step 1 |
+|---|---|
+| EAT | if no EAT of this processor has counted yet in this tick and the neighbour slot is live (live flags of the tick start, which step 1 does not change): it becomes this tick's prey of the processor. |
+| MOVE | if `child < 0`: a move request with operand c; an ALLOC request of this processor in this tick is withdrawn; the wrap rule applies and the processor's tick ends. With a claimed child, MOVE does nothing beyond consuming its operand. |
+| EXEC | if the neighbour slot is expressible in the snapshot: `xs` = that slot, `pc = 1`, `len` = its gene's length (the processor continues with that gene's codon 1 in the same tick). |
+
+**Step 2a (new): predation**, on the stores after step 1. For every prey (in any order: the result does not depend on
+it) its eaters are ordered by the key `(rnd(t, e, 3000) >> 32) * 2^32 + e`; starting from the prey's store `rest`,
+each eater in turn takes `x = floor(rest / 2^eat_shift)`, `rest -= x`, and gains `floor(x * eat_eff / 16)`. Then
+every processor's store becomes `min(emax, E - lost as prey + gained as eater)`. Ledger: `eaten` += x, `trophic loss`
++= x minus the gain, and the excess over emax also counts as trophic loss. A prey left with less than `maint` starves
+at step 4.
+
+**Step 2 (ALLOC), extended.** A move request of processor s with operand c has the distance `dist = 1 + ((c >> 3)
+mod 4)` (1 to 4 slots) and the target `t` = s shifted by (dx * dist, dy * dist) on the torus; its cost is `c_move`
+for dist 1 (swimming) and `c_fly * dist` otherwise (flying). The request proposes t if t is not firmament, has no
+processor, is not claimed, the store (after step 2a) holds the cost, and for dist 1 both s and t are sea. Move
+proposals and ALLOC proposals compete for the same slots under day 2's key `(rnd(t, s, 2000) >> 32) * 2^32 + s`
+(a processor makes at most one of the two). Flying is the only way across the firmament.
+
+**Step 2c (new): moves.** Every granted move copies the G cells of s (both strands) to t and moves the processor:
+slot = t, H and P shifted by (t - s) * G (mod N), Q = 0, child = -1, copied = 0, E -= cost (ledger `movement`),
+xs = t if it was s, otherwise unchanged; the clade label moves with it. The source slot is dead and keeps its cells
+(a shell; *changed*: not blanked, so the old gene remains material for read-through and the inflow). Births of step
+3 marked by a processor that moved later in the same tick use the parent's values as they were (its depth, its
+endowment, its gene in the old slot).
+
+**Ledger.** On day 5 the census ledger has twelve entries: the nine of day 1, then `eaten` (moved from prey to eater,
+not part of the balance), `trophic loss` and `movement` (both subtracted in the balance):
+energy_total = energy_init + passive + harvest + spontaneous - instructions - copy - maintenance - dead -
+lost_endowments - trophic_loss - movement.
+
+**Census.** After the day-4 keys: `"eaters"`, `"movers"`, `"execers"` (live genes containing EAT, MOVE, EXEC) and
+`"foreign"` (live processors running a neighbour's gene at the census).
+
+**Predictions, written before the open run of section 15.** (i) Heterotrophs arise from plants by mutation (one EAT
+codon in the loop) and persist at a low share, because a ninth-shaded plant's store is small; (ii) parasites (genes
+that EXEC a neighbour and carry no complete copy loop of their own) arise within 10^5 ticks in dense plant mats;
+(iii) fliers are rare without a reason to cross, but where one zone is empty (O1) a lineage that flies across has a
+free hemisphere.
 
 ## 8. Day 6: land animals, and humans (design; the human layer is an interface only)
 
@@ -681,3 +723,70 @@ watch at the tick given.
 Next steps for these worlds: test the WAIT hypothesis by tracing a `HARVEST WAIT` gene against the same gene
 without WAIT in one world (the trace tools of docs/11 apply), Bedau activity against a neutral shadow (day 7), and
 day 5 (fliers to cross the firmament, predators, parasites).
+
+## 15. Day 5 implemented; the open worlds later
+
+### 15.1 Verification
+
+Day 5 as specified in section 7 is in both programs (`--days 1,2,3,4,5`; the engine's predation runs one thread per
+prey and applies losses and gains in a second kernel, moves run one thread per mover). Six configurations were added:
+plants with mu 0.02 (eaters, movers and EXEC arise by mutation), a world of hand-written eaters (`START HARVEST EAT
+<N> ALLOC COPY TERM DIVIDE`), swimmers (`MOVE <AGA>`: one slot east), fliers without shading (`MOVE <CTA>`: four slots
+south, c_fly 3), EXEC carriers with eat_shift 2, eat_eff 12, c_move 1, and the uniform code at G = 255. They exercise
+the new paths (in the eater world 135,232 units changed hands by predation, the swimmers spent 19,952 units on moves,
+up to 75 processors ran a neighbour's gene at once). **25 of 25 configurations identical on every tick, 11,500 tick
+hashes, 1,150 census lines, 21,634 birth rows, on an RTX 3060 and again on the RTX 4090.** The reference's outputs of
+the 19 earlier configurations did not change. The ledger with the three new entries closes in every census line
+(reference check over 3,072 ticks and all engine census lines of the worlds below).
+
+### 15.2 O5: the day-5 world
+
+`O5_day5`, started 2026-10-10 22:01 UTC on an RTX 3060 with the same world as O1 (10^8 cells, shading, T = 0,
+days 1 to 5) but seeded with 4,096 *plants* (`ATG AGA GCT CTT TTA GGT`) in the sea; census every 10,240 ticks.
+
+| tick | alive | zone 0 / 1 | with EAT | with MOVE | with EXEC | running a neighbour's gene | with WAIT |
+|---:|---:|---|---:|---:|---:|---:|---:|
+| 10,239 | 64,934 | 45,218 / 19,716 | 163 | 140 | 380 | 242 | 99 |
+| 30,719 | 162,649 | 100,926 / 61,723 | 3,664 | **146,500** | 51,218 | 200 | 387 |
+| 61,439 | 142,142 | 80,247 / 61,895 | 14,408 | 54,586 | 30,167 | | 5,771 |
+| 102,399 | 199,845 | 114,378 / 85,467 | 78,253 | 128,856 | 6,432 | | 58,241 |
+| 153,599 | 179,441 | 89,060 / 90,381 | **145,687** | 64,892 | 2,920 | 172 | 101,271 |
+
+1. **Dispersal came first.** By tick 30,719, 90 % of the organisms carry MOVE. The leading form appended
+   `HARVEST MOVE JNZB` to the plant: the operand GTC (or GTT) decodes to a flight of two slots south-west (south), so
+   every pass of the loop throws the organism two slots on, like a seed carried by the wind. In the pictures the
+   movers form diagonal streaks along their flight directions (`animals_t51199.png`). The share then fell back to
+   36 %.
+2. **Then predation took over.** Eaters rose from 163 (tick 10,239) to 14,433 (51,199) and 145,687 (153,599): 81 % of
+   the organisms. They are all still plants (179,420 of 179,441 carry HARVEST): mixotrophs that harvest light and eat
+   their neighbours, e.g. `START HARVEST ALLOC COPY TERM DIVIDE HARVEST EAT L1 HARVEST EAT R1 HARVEST`. In the last
+   census interval an organism gained on average 0.74 units of passive light and 5.42 of HARVEST per tick and took
+   2.28 from its neighbours (1.19 of which were lost as trophic loss): about 37 % of the light income now passes
+   through predation. Pure heterotrophs (EAT without HARVEST) did not appear.
+3. **Hunters.** Organisms with EAT and MOVE (magenta in `animals_t153599.png`) hold large regions; plain plants
+   (green) survive in a few refuges.
+4. **Parasites, so far, no.** EXEC carriers rose to 51,218 (tick 30,719) but at most a few hundred processors run a
+   neighbour's gene at any census: most EXEC codons sit at the end of a gene where their operand lies beyond the gene
+   and they do nothing; the carriers fell to 2,920. Prediction (ii) of section 7 (parasites within 10^5 ticks) has not
+   come true in this world by tick 153,599.
+5. **Crossing the firmament: not measured yet.** Both zones were seeded, so a crossing does not show in the zone
+   counts; whether any lineage crossed by flight needs the clade map of both sides compared over time.
+
+### 15.3 The day-4 worlds later
+
+| world | tick | alive | zone 0 / zone 1 | with WAIT | with SENSE | on land | distinct genes | deepest lineage |
+|---|---:|---:|---|---:|---:|---:|---:|---:|
+| O1_seasons | 573,439 | 271,790 | 135,909 / 135,881 | 210,909 | 23,426 | 158,629 | 27,108 | 1,968 |
+| O2_soup | 614,399 | 258,185 | 145,890 / 112,295 | 189,073 | 13,284 | 162,963 | 19,907 | 2,929 |
+| O4_big_seasons (3 x 10^9) | 184,319 | 5,829,121 | 3,642,111 / 2,187,010 | 3,498,777 | 115,415 | 3,364,666 | 255,739 | 2,382 |
+
+- **A second origin of life in the empty hemisphere (O1).** Zone 0, barren since an early winter (section 14.4),
+  held 5,616 depth-0 organisms at tick 296,959; then 9,003 at 307,199, 31,849 at 337,919, 55,849 at 358,399, and
+  135,909 at 573,439, while the depth-0 sitters fell from 5,555 to 633 as the new lineage displaced them. Nothing can
+  cross the firmament on day 4, so the lineage arose in zone 0 itself from the inflow; its genes have a design of their
+  own (`START HARVEST ALLOC TERM DIVIDE JNZB COPY`, `ATG AGG GCT TTG GGC GTG CTG`, in the top 10 from tick 307,199),
+  unlike any gene of zone 1. At tick 573,439 each hemisphere is held by a single founder lineage
+  (`O1_seasons/clade_t573439.png`: green above, pink below): two biospheres with independent origins. The founding
+  event has not been traced instruction by instruction.
+- **WAIT stays and grows**: 78 % of O1 (210,909), 73 % of O2, 60 % of O4. The populations still grow (O1 115,846 at
+  tick 204,799, 271,790 at 573,439), now in both zones.

@@ -128,8 +128,12 @@ decisions listed for the user. **Without a fixed lifetime** (energy alone ends l
 sea fills with organisms that never starve, turnover drops 30-fold and evolution stops. Shading (light shared with
 the live neighbours) restores turnover through starvation; **day 4 is now implemented** (seasons of opposite phase
 in the two hemispheres, latitude, moon, stars, SENSE and WAIT), with checkpoints for open-ended runs; 19 of 19
-configurations identical on every tick on an RTX 3060 and on the RTX 4090. Open-ended worlds are running
-(docs/17 section 14).
+configurations identical on every tick on an RTX 3060 and on the RTX 4090. **Day 5 is implemented** too (EAT,
+MOVE with swimming and flights across the firmament, EXEC of a neighbour's gene; 25 of 25 configurations identical
+on both GPU types). Open-ended worlds are running (docs/17 sections 14 and 15): WAIT spreads in long `HARVEST WAIT`
+genes; one hemisphere died, stayed empty for 300,000 ticks behind the firmament and was refilled by a second,
+independent origin of life; in the day-5 world dispersal by flight spread first (90 % of organisms) and then
+predation (81 %), all of them mixotrophic plants that eat their neighbours.
 
 **Real ISAs.** AArch64 exhaustive over all 2^32 words: **1,526,900,218 valid instructions (35.5509 %)**, 1,298
 mnemonics, 15 minutes on the workstation. Encoding density of other ISAs (16.7 M-word samples, Capstone): ARM32

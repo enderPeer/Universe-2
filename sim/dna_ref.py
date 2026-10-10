@@ -49,9 +49,11 @@ COMP_TABLE = bytes((b ^ 3) if b < 4 else b for b in range(256))   # comp(s) = s 
 
 # operation codes (the order is irrelevant; MEANINGS below carries the table order of docs/09 section 3)
 NOP, START, STOP, COPY, R1, L1, JNZB, SETP, SETQ, ALLOC, DIVIDE, SKNZ, SKZ, LDA, STA, INC, FLIP, R3, L3, SEEK, \
-    COPYR, REWIND, TERM, HARVEST, SENSE, WAIT = range(26)  # TERM only under --dna2 (docs/15), HARVEST day 3, SENSE/WAIT day 4 (docs/17)
+    COPYR, REWIND, TERM, HARVEST, SENSE, WAIT, EAT, MOVE, EXEC = range(29)  # TERM only under --dna2 (docs/15), HARVEST day 3,
+                                                                         # SENSE/WAIT day 4, EAT/MOVE/EXEC day 5 (docs/17)
 OP_NAMES = ["NOP", "START", "STOP", "COPY", "R1", "L1", "JNZB", "SETP", "SETQ", "ALLOC", "DIVIDE", "SKNZ", "SKZ",
-            "LDA", "STA", "INC", "FLIP", "R3", "L3", "SEEK", "COPYR", "REWIND", "TERM", "HARVEST", "SENSE", "WAIT"]
+            "LDA", "STA", "INC", "FLIP", "R3", "L3", "SEEK", "COPYR", "REWIND", "TERM", "HARVEST", "SENSE", "WAIT", "EAT", "MOVE",
+            "EXEC"]
 OP_INDEX = {n: i for i, n in enumerate(OP_NAMES)}
 
 # docs/09 section 3, row by row (codons, amino acid, operation). The row order is the "table order" of the
@@ -161,6 +163,24 @@ def dna3_day4_table(table, uniform):
             v = codon_value(cod)
             assert t[v] == R1
             t[v] = op
+    return t
+
+
+DNA3_DAY5_CODONS = (("CCA", "CCG", "SETP", "EAT"), ("ACA", "ACG", "SETQ", "MOVE"), ("GTA", "GTG", "JNZB", "EXEC"))
+
+
+def dna3_day5_table(table, uniform):
+    """docs/17 day 5: EAT on CCA, CCG (Pro keeps CCT, CCC for SETP), MOVE on ACA, ACG (Thr keeps ACT, ACC for SETQ),
+    EXEC on GTA, GTG (Val keeps GTT, GTC for JNZB); uniform code: codon values 25, 26, 27."""
+    t = list(table)
+    if uniform:
+        t[25], t[26], t[27] = EAT, MOVE, EXEC
+        return t
+    for a, b, old, new in DNA3_DAY5_CODONS:
+        for cod in (a, b):
+            v = codon_value(cod)
+            assert t[v] == OP_INDEX[old]
+            t[v] = OP_INDEX[new]
     return t
 
 
@@ -321,7 +341,7 @@ class World:
                  W=0, firm=1, day_len=32, light_len=None, lmax=16, emax=1024, eshift=4, e_seed=512, e_spont=128,
                  g_pass=16, gp_sea=8, gp_land=0, gh_sea=16, gh_land=32, c_copy=1, maint=1, inflow_land=False,
                  land_cell=32, land_thr=32768, year_days=16, moon_days=8, season_amp=None, lat_amp=8, lmoon=1,
-                 shade=False):
+                 shade=False, c_move=2, c_fly=8, eat_shift=1, eat_eff=8):
         if G < 6:
             raise ValueError("G must be at least 6 (two codons)")                      # [13: Limits]
         if N % G:
@@ -339,14 +359,16 @@ class World:
         self.table = uniform_table() if uniform else standard_table()
         # docs/17: DNA-3 days; every day implies DNA-2, day 3 needs days 1 and 2
         days = tuple(sorted(set(days)))
-        if any(d not in (1, 2, 3, 4) for d in days):
-            raise ValueError("only days 1 to 4 are implemented")
+        if any(d not in (1, 2, 3, 4, 5) for d in days):
+            raise ValueError("only days 1 to 5 are implemented")
+        if 5 in days and not all(d in days for d in (1, 2, 3, 4)):
+            raise ValueError("day 5 needs days 1 to 4")
         if 3 in days and not (1 in days and 2 in days):
             raise ValueError("day 3 needs days 1 and 2")
         if 4 in days and not (1 in days and 2 in days and 3 in days):
             raise ValueError("day 4 needs days 1, 2 and 3")
         self.days = days
-        self.d1, self.d2, self.d3, self.d4 = 1 in days, 2 in days, 3 in days, 4 in days
+        self.d1, self.d2, self.d3, self.d4, self.d5 = 1 in days, 2 in days, 3 in days, 4 in days, 5 in days
         dna2 = dna2 or bool(days)
         self.dna2 = dna2
         if dna2:
@@ -355,6 +377,11 @@ class World:
             self.table = dna3_table(self.table, uniform)
         if self.d4:
             self.table = dna3_day4_table(self.table, uniform)
+        if self.d5:
+            self.table = dna3_day5_table(self.table, uniform)
+        if min(c_move, c_fly, eat_shift, eat_eff) < 0 or eat_eff > 16:
+            raise ValueError("bad day-5 parameters")
+        self.c_move, self.c_fly, self.eat_shift, self.eat_eff = c_move, c_fly, eat_shift, eat_eff
         light_len = day_len // 2 if light_len is None else light_len
         if self.d1:
             if day_len < 1 or not 0 <= light_len <= day_len:
@@ -431,7 +458,8 @@ class World:
         # docs/17 energy ledger (cumulative), in this order: passive light, HARVEST, spontaneous births' energy, spent
         # on instructions, on copied cells, on maintenance, lost with the dead, lost endowments (child not born),
         # light wasted on full stores (not part of the balance)
-        self.ledger = [0] * 9
+        self.ledger = [0] * 12                  # day 5 adds: eaten (moved, not lost), trophic loss, movement
+        self.xs = [0] * S                       # docs/17 day 5: the slot whose gene the processor executes
         self.energy_init = 0
         self.starved = 0
         self.claimed_by = [-1] * S              # parent slot that holds the claim on this slot, or -1
@@ -489,6 +517,7 @@ class World:
     # -- helpers ---------------------------------------------------------------------------------------------
     def born(self, s, depth):
         """A new processor in slot s with the initial values of section 4."""
+        self.xs[s] = s
         self.alive[s] = 1
         self.live.add(s)
         self.pc[s] = 1
@@ -519,6 +548,8 @@ class World:
                       self.A[s], self.age[s], self.depth[s], self.copied[s])
             if d1:
                 out += pe(self.E[s])
+            if self.d5:
+                out += pe(self.xs[s])           # docs/17 day 5: the executed slot, a twelfth field
         out += struct.pack("<4Q", self.births, self.faithful, self.spontaneous, self.deaths)
         if self.d3:
             out += pe(self.starved)
@@ -597,7 +628,7 @@ class World:
                                                               self.sky(t, (self.R // 2 + self.R // 4) * self.W)[0]]
             out["energy_total"] = sum(self.E[s] for s in self.live)
             out["energy_init"] = self.energy_init
-            out["ledger"] = list(self.ledger)
+            out["ledger"] = list(self.ledger[:12 if self.d5 else 9])
         if self.d2 and self.firm:
             z = [0, 0]
             for s in self.live:
@@ -610,6 +641,11 @@ class World:
         if self.d4:                                     # docs/17 day 4
             out["sensers"] = sum(1 for s in self.live if self.has_op(s, SENSE))
             out["sleepers"] = sum(1 for s in self.live if self.has_op(s, WAIT))
+        if self.d5:                                     # docs/17 day 5
+            out["eaters"] = sum(1 for s in self.live if self.has_op(s, EAT))
+            out["movers"] = sum(1 for s in self.live if self.has_op(s, MOVE))
+            out["execers"] = sum(1 for s in self.live if self.has_op(s, EXEC))
+            out["foreign"] = sum(1 for s in self.live if self.xs[s] != s)
         out["hash"] = None if state_hash is None else "%016x" % state_hash
         return out
 
@@ -634,6 +670,10 @@ class World:
         win = 3 * G + 2                         # SEEK window: candidates H+1 .. H+3G, each needs 3 cells
         alloc_req = []                          # requesting slots, increasing
         marked = []                             # (parent, child) pairs marked by DIVIDE, increasing parent
+        d5 = self.d5
+        eat_req = {}                            # docs/17 day 5: eater slot -> prey slot
+        move_req = {}                           # docs/17 day 5: mover slot -> operand codon
+        xs_ = self.xs
 
         # 1. execute
         if live:
@@ -648,6 +688,19 @@ class World:
                 else:
                     ch_lo = ch_hi = -1          # an empty range: no cell satisfies ch_lo <= x < ch_hi
                 L = gene_len(fwd, is_stop, base, maxc)
+                # docs/17 day 5: the code being executed: own gene (live) or a neighbour's (tick-start snapshot)
+                xs = xs_[s] if d5 else s
+                csrc, cb0 = fwd, base
+                if xs != s:
+                    if is_expressible(fwd_old, self.table, is_stop, xs * G, maxc):
+                        csrc, cb0 = fwd_old, xs * G
+                        L = gene_len(fwd_old, is_stop, cb0, maxc)
+                        if pc >= L:             # the foreign gene got shorter: home
+                            xs, csrc, cb0, pc = s, fwd, base, 1
+                            L = gene_len(fwd, is_stop, base, maxc)
+                    else:                       # the foreign gene is gone: home
+                        xs, pc = s, 1
+                ate = False
                 requested = False
                 budget = I
                 if d1:
@@ -679,8 +732,8 @@ class World:
                             break
                         E -= 1
                         ledger[3] += 1
-                    cb = base + 3 * pc
-                    op = xtable[fwd[cb] * 16 + fwd[cb + 1] * 4 + fwd[cb + 2]]
+                    cb = cb0 + 3 * pc
+                    op = xtable[csrc[cb] * 16 + csrc[cb + 1] * 4 + csrc[cb + 2]]
                     pc += 1
                     if op == COPY or op == COPYR:
                         if dna2 and child < 0:
@@ -752,7 +805,8 @@ class World:
                             v = A if op == STA else ((fwd[H] + 1) & 3 if op == INC else fwd[H] ^ 1)
                             fwd[H] = v
                             rev[H] = v ^ 3
-                            L = gene_len(fwd, is_stop, base, maxc)                      # [13: Degenerate genes]
+                            if xs == s:         # docs/17 day 5: only the code being executed sets L
+                                L = gene_len(fwd, is_stop, base, maxc)                  # [13: Degenerate genes]
                         elif ch_lo <= H < ch_hi:
                             v = A if op == STA else ((fwd[H] + 1) & 3 if op == INC else fwd[H] ^ 1)
                             fwd[H] = v
@@ -764,8 +818,8 @@ class World:
                         H = (H - 3) % N
                     elif op == SEEK:
                         if pc < L:              # the template codon lies inside the gene
-                            tb = base + 3 * pc
-                            pat = bytes((fwd[tb] ^ 3, fwd[tb + 1] ^ 3, fwd[tb + 2] ^ 3))
+                            tb = cb0 + 3 * pc
+                            pat = bytes((csrc[tb] ^ 3, csrc[tb + 1] ^ 3, csrc[tb + 2] ^ 3))
                             pc += 1             # the template is consumed
                             w = snapshot_window(fwd, fwd_old, N, H + 1, win, ((base, own_hi), (ch_lo, ch_hi)))
                             d = w.find(pat)
@@ -793,16 +847,50 @@ class World:
                         # docs/17 day 4: the next codon is the operand (consumed); skip the codon after it if the
                         # sky channel (operand mod 4) is nonzero; NOP when the operand lies beyond the gene end
                         if pc < L:
-                            ob = base + 3 * pc
-                            c = fwd[ob] * 16 + fwd[ob + 1] * 4 + fwd[ob + 2]
+                            ob = cb0 + 3 * pc
+                            c = csrc[ob] * 16 + csrc[ob + 1] * 4 + csrc[ob + 2]
                             pc += 1
                             if chan[c & 3]:
                                 pc += 1
                     elif op == WAIT:
                         # docs/17 day 4: the tick ends after this instruction (the wrap rule still applies)
                         if pc >= L:
+                            if xs != s:
+                                xs, csrc, cb0 = s, fwd, base
+                                L = gene_len(fwd, is_stop, base, maxc)
                             pc = 1
                         break
+                    elif op == EAT or op == MOVE or op == EXEC:
+                        # docs/17 day 5: the next codon is the operand (consumed); NOP if it lies beyond the code's end
+                        if pc < L:
+                            ob = cb0 + 3 * pc
+                            c = csrc[ob] * 16 + csrc[ob + 1] * 4 + csrc[ob + 2]
+                            pc += 1
+                            dx, dy = NEIGHBOURS[c & 7]
+                            if op == EAT:
+                                # one EAT per tick, aimed at a neighbour that is alive (live flags of the tick start)
+                                nb = ((s // self.W + dy) % self.R) * self.W + (s % self.W + dx) % self.W
+                                if not ate and alive[nb]:
+                                    ate = True
+                                    eat_req[s] = nb
+                            elif op == EXEC:
+                                # run the neighbour's gene from its codon 1 (read from the tick-start snapshot)
+                                nb = ((s // self.W + dy) % self.R) * self.W + (s % self.W + dx) % self.W
+                                if is_expressible(fwd_old, self.table, is_stop, nb * G, maxc):
+                                    xs, csrc, cb0, pc = nb, fwd_old, nb * G, 1
+                                    L = gene_len(fwd_old, is_stop, cb0, maxc)
+                            elif child < 0:
+                                # MOVE: a request resolved in step 2; it withdraws this tick's ALLOC and ends the tick
+                                move_req[s] = c
+                                if requested:
+                                    alloc_req.remove(s)
+                                    requested = False
+                                if pc >= L:
+                                    if xs != s:
+                                        xs, csrc, cb0 = s, fwd, base
+                                        L = gene_len(fwd, is_stop, base, maxc)
+                                    pc = 1
+                                break
                     elif op == HARVEST:
                         # docs/17 day 3: once per tick, light times the terrain's HARVEST gain
                         if not harvested:
@@ -816,10 +904,39 @@ class World:
                             ledger[8] += g - add
                     # NOP: nothing
                     if pc >= L:
+                        if xs != s:             # docs/17 day 5: the foreign gene wrapped: home, own codon 1
+                            xs, csrc, cb0 = s, fwd, base
+                            L = gene_len(fwd, is_stop, base, maxc)
                         pc = 1
                 pc_[s] = pc; H_[s] = H; P_[s] = P; Q_[s] = Q; child_[s] = child; A_[s] = A; copied_[s] = copied
                 if d1:
                     E_[s] = E
+                if d5:
+                    xs_[s] = xs
+
+        # 2a. docs/17 day 5: predation, on the stores after step 1; every prey's eaters in increasing key order
+        if eat_req:
+            E0 = {x: E_[x] for x in live}
+            loss, gain = {}, {}
+            by_prey = {}
+            for e, pr in eat_req.items():
+                by_prey.setdefault(pr, []).append((((rnd(seed, t, e, 3000) >> 32) << 32) | e, e))
+            for pr in sorted(by_prey):
+                rem = E0[pr]
+                for _key, e in sorted(by_prey[pr]):
+                    x = rem >> self.eat_shift
+                    rem -= x
+                    gn = (x * self.eat_eff) >> 4
+                    gain[e] = gn
+                    ledger[9] += x
+                    ledger[10] += x - gn
+                loss[pr] = E0[pr] - rem
+            for x in sorted(set(loss) | set(gain)):
+                v = E0[x] - loss.get(x, 0) + gain.get(x, 0)
+                if v > emax:
+                    ledger[10] += v - emax
+                    v = emax
+                E_[x] = v
 
         # 2. resolve ALLOC: increasing slot order, so the lowest requester takes a contested candidate
         Sm1 = S - 1
@@ -829,6 +946,24 @@ class World:
             # the requester with the lowest key (rnd(t, s, 2000) >> 32) * 2^32 + s
             W, R = self.W, self.R
             best = {}
+            move_cost = {}
+            for s in sorted(move_req):
+                # docs/17 day 5: a move of 1 to 4 slots in direction c mod 8; one slot = swimming (sea to sea, c_move),
+                # more = flying (any target but the firmament, c_fly per slot); the target must be free and the store
+                # must hold the cost
+                c = move_req[s]
+                dist = 1 + ((c >> 3) & 3)
+                dx, dy = NEIGHBOURS[c & 7]
+                tg = ((s // W + dy * dist) % R) * W + (s % W + dx * dist) % W
+                cost = self.c_move if dist == 1 else self.c_fly * dist
+                if terrain[tg] == FIRMAMENT or alive[tg] or claimed_by[tg] >= 0 or E_[s] < cost:
+                    continue
+                if dist == 1 and (terrain[s] != SEA or terrain[tg] != SEA):
+                    continue
+                key = ((rnd(seed, t, s, 2000) >> 32) << 32) | s
+                if tg not in best or key < best[tg][0]:
+                    best[tg] = (key, s)
+                move_cost[s] = cost
             for s in alloc_req:
                 x, y = s % W, s // W
                 r = rnd(seed, t, s, 0) & 7
@@ -840,13 +975,40 @@ class World:
                         if c not in best or key < best[c][0]:
                             best[c] = (key, s)
                         break
+            moves = []
             for c in sorted(best):
                 s = best[c][1]
+                if s in move_cost and s in move_req:
+                    moves.append((s, c))
+                    continue
                 claimed_by[c] = s
                 child_[s] = c
                 Q_[s] = c * G
                 copied_[s] = 0
                 self.claims += 1
+            # 2c. docs/17 day 5: granted moves, in increasing source slot: the G cells and the processor go to the
+            # target; H and P move with it; the source keeps its cells (a shell) and is dead
+            for s, c in sorted(moves):
+                sb, tb = s * G, c * G
+                fwd[tb:tb + G] = fwd[sb:sb + G]
+                rev[tb:tb + G] = rev[sb:sb + G]
+                sh = (c - s) * G
+                self.pc[c] = pc_[s]
+                self.H[c] = (H_[s] + sh) % N
+                self.P[c] = (P_[s] + sh) % N
+                self.Q[c] = 0
+                child_[c] = -1
+                self.A[c] = self.A[s]
+                self.age[c] = self.age[s]
+                self.depth[c] = self.depth[s]
+                copied_[c] = 0
+                E_[c] = E_[s] - move_cost[s]
+                ledger[11] += move_cost[s]
+                xs_[c] = c if xs_[s] == s else xs_[s]
+                alive[s] = 0
+                live.discard(s)
+                alive[c] = 1
+                live.add(c)
         else:
           for s in alloc_req:
             cand = (s + 1 + rnd(seed, t, s, 0) % Sm1) % S
@@ -997,6 +1159,10 @@ def main(argv=None):
     g3.add_argument("--c-copy", type=int, default=1, help="day 3: energy per copied cell")
     g3.add_argument("--maint", type=int, default=1, help="day 3: maintenance per tick")
     g3.add_argument("--inflow-land", action="store_true", help="day 3: inflow also refills land slots")
+    g3.add_argument("--c-move", type=int, default=2, help="day 5: energy for a one-slot move (swimming)")
+    g3.add_argument("--c-fly", type=int, default=8, help="day 5: energy per slot of a flight (2 to 4 slots)")
+    g3.add_argument("--eat-shift", type=int, default=1, help="day 5: an eater takes floor(prey store / 2^eat-shift)")
+    g3.add_argument("--eat-eff", type=int, default=8, help="day 5: the eater keeps eat-eff / 16 of what it takes")
     g3.add_argument("--shade", action="store_true", help="day 3 option (docs/17 section 14): light gains times (9 - live neighbours) / 9")
     g3.add_argument("--land-cell", type=int, default=32, help="day 3: terrain noise lattice spacing in slots")
     g3.add_argument("--land-thr", type=int, default=32768, help="day 3: land where the noise >= land-thr / 65536")
@@ -1026,7 +1192,7 @@ def main(argv=None):
               g_pass=a.g_pass, gp_sea=a.gp_sea, gp_land=a.gp_land, gh_sea=a.gh_sea, gh_land=a.gh_land,
               c_copy=a.c_copy, maint=a.maint, inflow_land=a.inflow_land, land_cell=a.land_cell, land_thr=a.land_thr,
               year_days=a.year_days, moon_days=a.moon_days, season_amp=a.season_amp, lat_amp=a.lat_amp, lmoon=a.lmoon,
-              shade=a.shade)
+              shade=a.shade, c_move=a.c_move, c_fly=a.c_fly, eat_shift=a.eat_shift, eat_eff=a.eat_eff)
     t_init = time.perf_counter() - t0
     params = {"N": w.N, "G": w.G, "S": w.S, "ticks": a.ticks, "seed": w.seed, "I": w.I, "T": w.T, "mu": w.mu,
               "D": w.D, "F": w.F, "double": w.double, "code": "uniform" if a.uniform_code else "standard", "dna2": w.dna2,
@@ -1042,6 +1208,8 @@ def main(argv=None):
                           firmament=sum(1 for x in w.terrain if x == FIRMAMENT))
         if w.d3:
             params.update(gh=list(w.gh), c_copy=w.c_copy, maint=w.maint, inflow_land=w.inflow_land, shade=w.shade)
+        if w.d5:
+            params.update(c_move=w.c_move, c_fly=w.c_fly, eat_shift=w.eat_shift, eat_eff=w.eat_eff)
         if w.d4:
             params.update(year_days=w.year_days, moon_days=w.moon_days, season_amp=w.season_amp, lat_amp=w.lat_amp,
                           lmoon=w.lmoon)

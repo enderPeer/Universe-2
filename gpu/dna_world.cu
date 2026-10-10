@@ -78,7 +78,7 @@ typedef uint64_t u64; typedef int64_t i64; typedef uint32_t u32; typedef int32_t
 
 /* ---------------------------------------------------------------- operations and the codon table (section 3) */
 enum Op : u8 { NOP = 0, START, STOP, COPY, R1, L1, R3, L3, JNZB, SETP, SETQ, ALLOC, DIVIDE, SKNZ, SKZ, LDA, STA,
-               INC, FLIP, SEEK, COPYR, REWIND, TERM, HARVEST, SENSE, WAIT, N_OPS };   /* SENSE, WAIT: day 4 */   /* TERM only under --dna2 (docs/15), HARVEST on day 3 (docs/17) */
+               INC, FLIP, SEEK, COPYR, REWIND, TERM, HARVEST, SENSE, WAIT, EAT, MOVE, EXEC, N_OPS };   /* SENSE, WAIT: day 4; EAT, MOVE, EXEC: day 5 */   /* TERM only under --dna2 (docs/15), HARVEST on day 3 (docs/17) */
 
 /* letters ACGT, U read as T, case-insensitive (section 13 "Genome argument") */
 static int letter(char c) { switch (c) { case 'A': case 'a': return 0; case 'C': case 'c': return 1; case 'G': case 'g': return 2;
@@ -96,6 +96,18 @@ static void build_table_dna1(u8 *table, bool uniform);
 /* docs/15 fix 1: under --dna2 TERM takes TTA and TTG from Leu (COPY keeps CTT CTC CTA CTG); under the uniform code
  * it takes codon value 21, the first NOP */
 static void build_table(u8 *table, bool uniform, bool dna2, bool day3);
+static void build_table(u8 *table, bool uniform, bool dna2, bool day3, bool day4);
+/* docs/17 day 5: EAT on CCA, CCG (from Pro/SETP), MOVE on ACA, ACG (from Thr/SETQ), EXEC on GTA, GTG (from Val/JNZB);
+ * uniform code 25, 26, 27 */
+static void build_table(u8 *table, bool uniform, bool dna2, bool day3, bool day4, bool day5)
+{
+    build_table(table, uniform, dna2, day3, day4);
+    if (!day5) return;
+    if (uniform) { table[25] = EAT; table[26] = MOVE; table[27] = EXEC; return; }
+    const char *cod[6] = { "CCA", "CCG", "ACA", "ACG", "GTA", "GTG" };
+    const u8 old[3] = { SETP, SETQ, JNZB }, nw[3] = { EAT, MOVE, EXEC };
+    for (int i = 0; i < 6; i++) { int v = codon_value(cod[i]); if (table[v] != old[i / 2]) { fprintf(stderr, "day 5 table error\n"); exit(1); } table[v] = nw[i / 2]; }
+}
 static void build_table(u8 *table, bool uniform, bool dna2, bool day3, bool day4)
 {
     build_table(table, uniform, dna2, day3);
@@ -180,13 +192,14 @@ struct Params {
     i64 day_len, light_len, lmax, emax, eshift, e_seed, e_spont, gp[2], gh[2], c_copy, maint;
     int inflow_land;
     int d4, shade;            /* docs/17 day 4; section 14 shading (a day-3 option) */
+    int d5; i64 c_move, c_fly, eat_shift, eat_eff;   /* docs/17 day 5 */
     i64 year_days, moon_days, season_amp, lat_amp, lmoon;
     i64 W, R, firm;
 };
 
 /* the ten 64-bit fields of section 4 in the hash order of section 8, then the docs/17 day-1 energy store E
  * (hashed only on day 1) */
-struct Proc { i64 slot, pc, H, P, Q, child, A, age, depth, copied, E; };
+struct Proc { i64 slot, pc, H, P, Q, child, A, age, depth, copied, E, xs; };   /* xs: day 5, the slot whose gene runs */
 
 /* one birth of this tick; depth = the child's lineage depth, page = the parent's age at the division (before step
  * 4), copied = cells the parent wrote into the child since the claim; a spontaneous birth has parent -1, page -1,
@@ -215,7 +228,9 @@ struct World {
     u64 *claim64;             /* day-2 ALLOC: lowest key per candidate (atomicMin) */
     i32 *alloc_cand;          /* day-2 ALLOC: the candidate each requester proposed, or -1 */
     i32 *clade;               /* output only (slot map): slot of the depth-0 ancestor, not hashed, not in the reference */
-    u64 *cens_acc;            /* census accumulators: energy, zone 0, zone 1, live on land, harvesters */
+    u64 *cens_acc;            /* census accumulators: energy, zone 0, zone 1, live on land, harvesters, ... */
+    i32 *eat_target, *move_op, *move_to;   /* day 5: prey of this tick's EAT, MOVE operand, granted move target */
+    i64 *e_loss, *e_gain, *move_cost;      /* day 5: predation results, cost of a proposed move */
 };
 
 /* ---------------------------------------------------------------- 2-bit cell access (section 1 layout) */
@@ -354,6 +369,15 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam0)
 #define RD(i)       ((IN_OWN(i) || IN_CHILD(i)) ? get2(w.fwd, (u64)(i)) : get2(w.fwd_old, (u64)(i)))
 #define WR(i, v)    do { set2(w.fwd, (u64)(i), (v), P.atomic_writes); set2(w.rev, (u64)(i), (v) ^ 3u, P.atomic_writes); } while (0)
     i64 len = gene_len(w.fwd, base, table, maxk);
+    /* docs/17 day 5: the code being executed: own gene (live) or a neighbour's (tick-start snapshot) */
+    i64 xs = P.d5 ? p.xs : s; const u8 *csrc = w.fwd; i64 cb0 = base; bool ate = false;
+    if (xs != s) {
+        if (expressible(w.fwd_old, (u64)xs * G, table, maxk)) {
+            csrc = w.fwd_old; cb0 = xs * G; len = gene_len(w.fwd_old, (u64)cb0, table, maxk);
+            if (p.pc >= len) { xs = s; csrc = w.fwd; cb0 = base; p.pc = 1; len = gene_len(w.fwd, base, table, maxk); }
+        } else { xs = s; p.pc = 1; }
+    }
+#define GO_HOME() do { xs = s; csrc = w.fwd; cb0 = base; len = gene_len(w.fwd, base, table, maxk); } while (0)
     i64 budget = P.I;
     int ter = 0; bool harvested = false;
     i64 lam = lam0, shade_k = 9; u32 chan[4] = { 0, 0, 0, 0 };
@@ -373,12 +397,22 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam0)
     for (i64 n = 0; n < budget; n++) {
         if (P.d1) { if (p.E < 1) break; p.E -= 1; l_instr += 1; }
         u32 op = NOP;
-        if (p.pc >= 0 && p.pc <= maxk) op = table[codon_at(w.fwd, base, p.pc)];   /* gene fetched live */
+        if (p.pc >= 0 && p.pc <= maxk) op = table[codon_at(csrc, (u64)cb0, p.pc)];   /* own gene live, a foreign one from the snapshot */
         p.pc += 1;
         bool stall = false, wait_end = false;
         switch (op) {
         case SENSE:    /* docs/17 day 4: operand consumed; skip the next codon if the operand's sky channel is nonzero */
-            if (p.pc < len) { u32 c = codon_at(w.fwd, base, p.pc); p.pc += 1; if (chan[c & 3u]) p.pc += 1; }
+            if (p.pc < len) { u32 c = codon_at(csrc, (u64)cb0, p.pc); p.pc += 1; if (chan[c & 3u]) p.pc += 1; }
+            break;
+        case EAT: case MOVE: case EXEC:   /* docs/17 day 5: operand consumed; NOP if it lies beyond the code's end */
+            if (p.pc < len) {
+                u32 c = codon_at(csrc, (u64)cb0, p.pc); p.pc += 1;
+                i64 x = s % P.W, y = s / P.W, nb = ((y + NB_DY[c & 7u] + P.R) % P.R) * P.W + (x + NB_DX[c & 7u] + P.W) % P.W;
+                if (op == EAT) { if (!ate && w.live[nb]) { ate = true; w.eat_target[s] = (i32)nb; } }
+                else if (op == EXEC) {
+                    if (expressible(w.fwd_old, (u64)nb * G, table, maxk)) { xs = nb; csrc = w.fwd_old; cb0 = nb * G; len = gene_len(w.fwd_old, (u64)cb0, table, maxk); p.pc = 1; }
+                } else if (p.child < 0) { w.move_op[s] = (i32)c; w.alloc_req[s] = 0; wait_end = true; }   /* MOVE ends the tick */
+            }
             break;
         case WAIT: wait_end = true; break;             /* docs/17 day 4: the tick ends after this instruction */
         case NOP: case START: case STOP: break;
@@ -391,7 +425,7 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam0)
                 u32 v = get2(w.fwd, (u64)p.H);
                 v = op == INC ? (v + 1) & 3u : op == FLIP ? v ^ 1u : (u32)p.A;
                 WR(p.H, v);
-                if (IN_OWN(p.H)) len = gene_len(w.fwd, base, table, maxk);   /* the own gene may have changed */
+                if (IN_OWN(p.H) && xs == s) len = gene_len(w.fwd, base, table, maxk);   /* the own gene may have changed */
             }
             break;
         case LDA: p.A = RD(p.H); break;
@@ -403,7 +437,7 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam0)
         case REWIND: p.P = base; if (cbase >= 0) p.Q = cbase; break;
         case SEEK: {
             if (p.pc >= len) break;                       /* template beyond the gene end: NOP */
-            u32 tc = codon_at(w.fwd, base, p.pc);         /* the template codon, consumed */
+            u32 tc = codon_at(csrc, (u64)cb0, p.pc);      /* the template codon, consumed */
             p.pc += 1;
             u32 t0 = (tc >> 4) ^ 3u, t1 = ((tc >> 2) & 3u) ^ 3u, t2 = (tc & 3u) ^ 3u;
             for (i64 d = 1; d <= 3 * G; d++) {
@@ -427,7 +461,7 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam0)
                 p.E += add; l_harv += (u64)add; l_waste += (u64)(g - add);
             }
             break;
-        case ALLOC: if (p.child < 0) w.alloc_req[s] = 1; break;
+        case ALLOC: if (p.child < 0 && !(P.d5 && w.move_op[s] >= 0)) w.alloc_req[s] = 1; break;
         case COPY: case COPYR:
             if (P.dna2 && p.child < 0) break;              /* docs/15 fix 3: no claimed child, nothing happens */
             if (p.child >= 0 && IN_CHILD(p.Q)) {
@@ -452,9 +486,11 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam0)
             break;
         }
         if (stall) break;                                 /* the tick ends before the wrap rule, as in the reference */
-        if (p.pc >= len) p.pc = 1;                        /* the gene loops, skipping START */
+        if (p.pc >= len) { if (xs != s) GO_HOME(); p.pc = 1; }   /* the gene loops, skipping START; a foreign gene returns home */
         if (wait_end) break;
     }
+    if (P.d5) p.xs = xs;
+#undef GO_HOME
     w.proc[s] = p;
 #undef IN_OWN
 #undef IN_CHILD
@@ -465,6 +501,49 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam0)
         warp_add(&w.ledger[0], l_pass); warp_add(&w.ledger[1], l_harv); warp_add(&w.ledger[3], l_instr);
         warp_add(&w.ledger[4], l_copy); warp_add(&w.ledger[8], l_waste);
     }
+}
+
+/* docs/17 day 5, step 2a: predation on the stores after step 1. One thread per prey: its eaters (neighbours whose EAT
+ * aimed at it) in increasing key (rnd(t, e, 3000) >> 32) * 2^32 + e take floor(rest / 2^eat_shift) each and keep
+ * floor(x * eat_eff / 16); losses and gains are applied afterwards (k_eat_apply), so the order of threads is irrelevant */
+__global__ void k_eat(World w, Params P, i64 t)
+{
+    i64 pr = (i64)blockIdx.x * blockDim.x + threadIdx.x;
+    u64 eaten = 0, lost = 0;
+    if (pr < P.S && w.live[pr]) {
+        i64 x = pr % P.W, y = pr / P.W; u64 key[8]; i64 who[8]; int n = 0;
+        for (int d = 0; d < 8; d++) {
+            i64 e = ((y + NB_DY[d] + P.R) % P.R) * P.W + (x + NB_DX[d] + P.W) % P.W;
+            if (w.eat_target[e] == (i32)pr) {
+                bool dup = false; for (int k = 0; k < n; k++) dup |= who[k] == e;   /* a 3-wide torus can repeat a neighbour */
+                if (!dup) { key[n] = ((rnd(P.seed, t, (u64)e, 3000) >> 32) << 32) | (u64)e; who[n] = e; n++; }
+            }
+        }
+        if (n) {
+            for (int i = 1; i < n; i++) for (int j = i; j > 0 && key[j - 1] > key[j]; j--) { u64 a = key[j]; key[j] = key[j - 1]; key[j - 1] = a; i64 b = who[j]; who[j] = who[j - 1]; who[j - 1] = b; }
+            i64 rem = w.proc[pr].E;
+            for (int k = 0; k < n; k++) {
+                i64 xx = rem >> P.eat_shift; rem -= xx; i64 g = (xx * P.eat_eff) >> 4;
+                w.e_gain[who[k]] = g; eaten += (u64)xx; lost += (u64)(xx - g);
+            }
+            w.e_loss[pr] = w.proc[pr].E - rem;
+        }
+    }
+    warp_add(&w.ledger[9], eaten); warp_add(&w.ledger[10], lost);
+}
+__global__ void k_eat_apply(World w, Params P)
+{
+    i64 s = (i64)blockIdx.x * blockDim.x + threadIdx.x;
+    u64 over = 0;
+    if (s < P.S) {
+        w.eat_target[s] = -1;
+        if (w.e_loss[s] || w.e_gain[s]) {
+            i64 v = w.proc[s].E - w.e_loss[s] + w.e_gain[s];
+            if (v > P.emax) { over = (u64)(v - P.emax); v = P.emax; }
+            w.proc[s].E = v; w.e_loss[s] = 0; w.e_gain[s] = 0;
+        }
+    }
+    warp_add(&w.ledger[10], over);
 }
 
 /* step 2a: every requesting processor proposes its candidate; the lowest slot index wins (unsigned atomicMin
@@ -478,7 +557,19 @@ __device__ inline u64 alloc_key(const Params &P, i64 t, i64 s) { return ((rnd(P.
 __global__ void k_alloc_propose(World w, Params P, i64 t)
 {
     i64 s = (i64)blockIdx.x * blockDim.x + threadIdx.x;
-    if (s >= P.S || !w.live[s] || !w.alloc_req[s]) return;
+    if (s >= P.S || !w.live[s]) return;
+    if (P.d5 && w.move_op[s] >= 0) {   /* docs/17 day 5: a move of 1 to 4 slots; 1 = swim (sea to sea), more = fly */
+        u32 c = (u32)w.move_op[s]; i64 dist = 1 + ((c >> 3) & 3u), x = s % P.W, y = s / P.W;
+        i64 tg = ((y + NB_DY[c & 7u] * dist) % P.R + P.R) % P.R * P.W + ((x + NB_DX[c & 7u] * dist) % P.W + P.W) % P.W;
+        i64 cost = dist == 1 ? P.c_move : P.c_fly * dist;
+        w.alloc_cand[s] = -1;
+        if (w.terrain[tg] == 2 || w.live[tg] || w.claimed_by[tg] >= 0 || w.proc[s].E < cost) return;
+        if (dist == 1 && (w.terrain[s] != 0 || w.terrain[tg] != 0)) return;
+        w.alloc_cand[s] = (i32)tg; w.move_cost[s] = cost;
+        atomicMin((unsigned long long *)&w.claim64[tg], (unsigned long long)alloc_key(P, t, s));
+        return;
+    }
+    if (!w.alloc_req[s]) return;
     if (P.d2) {
         i64 x = s % P.W, y = s / P.W; u32 r = (u32)(rnd(P.seed, t, (u64)s, 0) & 7u); i32 cand = -1;
         for (int i = 0; i < 8; i++) {
@@ -498,7 +589,13 @@ __global__ void k_alloc_propose(World w, Params P, i64 t)
 __global__ void k_alloc_grant(World w, Params P, i64 t)
 {
     i64 s = (i64)blockIdx.x * blockDim.x + threadIdx.x;
-    if (s >= P.S || !w.live[s] || !w.alloc_req[s]) return;
+    if (s >= P.S || !w.live[s]) return;
+    if (P.d5 && w.move_op[s] >= 0) {
+        i32 c = w.alloc_cand[s]; w.move_op[s] = -1;
+        if (c >= 0 && w.claim64[c] == alloc_key(P, t, s)) w.move_to[s] = c;
+        return;
+    }
+    if (!w.alloc_req[s]) return;
     w.alloc_req[s] = 0;
     if (P.d2) {
         i32 c = w.alloc_cand[s];
@@ -515,6 +612,29 @@ __global__ void k_alloc_grant(World w, Params P, i64 t)
     }
 }
 
+/* docs/17 day 5, step 2c: granted moves: the G cells and the processor go to the target, H and P move with it, the
+ * source keeps its cells (a shell) and is dead. Sources are live and targets were free, so movers never overlap. */
+__global__ void k_move(World w, Params P)
+{
+    i64 s = (i64)blockIdx.x * blockDim.x + threadIdx.x;
+    u64 spent = 0;
+    if (s < P.S && w.move_to[s] >= 0) {
+        i64 c = w.move_to[s]; w.move_to[s] = -1;
+        u64 sb = (u64)s * P.G, tb = (u64)c * P.G;
+        for (i64 j = 0; j < P.G; j++) {
+            set2(w.fwd, tb + j, get2(w.fwd, sb + j), P.atomic_writes);
+            set2(w.rev, tb + j, get2(w.rev, sb + j), P.atomic_writes);
+        }
+        Proc q = w.proc[s];
+        i64 sh = (c - s) * P.G, N = (i64)P.N;
+        q.slot = c; q.H = ((q.H + sh) % N + N) % N; q.P = ((q.P + sh) % N + N) % N; q.Q = 0; q.child = -1; q.copied = 0;
+        q.E -= w.move_cost[s]; spent = (u64)w.move_cost[s];
+        q.xs = q.xs == s ? c : q.xs;
+        w.proc[c] = q; w.live[s] = 0; w.live[c] = 1; w.clade[c] = w.clade[s];
+    }
+    warp_add(&w.ledger[11], spent);
+}
+
 /* step 3: births from DIVIDE marks; the claim on the child is released either way */
 __global__ void k_births(World w, Params P, i64 t)
 {
@@ -528,7 +648,7 @@ __global__ void k_births(World w, Params P, i64 t)
         return;
     }
     Proc q; q.slot = c; q.pc = 1; q.H = c * P.G; q.P = c * P.G; q.Q = 0; q.child = -1; q.A = 0; q.age = 0;
-    q.depth = w.proc[s].depth + 1; q.copied = 0; q.E = P.d1 ? w.div_energy[s] : 0;
+    q.depth = w.proc[s].depth + 1; q.copied = 0; q.E = P.d1 ? w.div_energy[s] : 0; q.xs = c;
     w.proc[c] = q; w.live[c] = 1; w.clade[c] = w.clade[s];
     u64 ph = gene_hash(w.fwd, (u64)s * P.G, w.table, P.maxk), ch = gene_hash(w.fwd, (u64)c * P.G, w.table, P.maxk);
     w.ghash[c] = ch;
@@ -630,7 +750,7 @@ __global__ void k_inflow_births(World w, Params P, i64 t)
     u64 base = (u64)d * P.G;
     if (!expressible(w.fwd, base, w.table, P.maxk)) return;
     Proc q; q.slot = d; q.pc = 1; q.H = (i64)base; q.P = (i64)base; q.Q = 0; q.child = -1; q.A = 0;
-    q.age = 0; q.depth = 0; q.copied = 0; q.E = P.d1 ? P.e_spont : 0;
+    q.age = 0; q.depth = 0; q.copied = 0; q.E = P.d1 ? P.e_spont : 0; q.xs = d;
     w.proc[d] = q; w.live[d] = 1; w.clade[d] = (i32)d;
     if (P.d1 && P.e_spont) atomicAdd((unsigned long long *)&w.ledger[2], (unsigned long long)P.e_spont);
     u64 ch = gene_hash(w.fwd, base, w.table, P.maxk);
@@ -644,7 +764,7 @@ __global__ void k_inflow_births(World w, Params P, i64 t)
 __global__ void k_census(World w, Params P)
 {
     i64 s = (i64)blockIdx.x * blockDim.x + threadIdx.x;
-    u64 e = 0, z0 = 0, z1 = 0, ll = 0, hv = 0, sn = 0, sl = 0;
+    u64 e = 0, z0 = 0, z1 = 0, ll = 0, hv = 0, sn = 0, sl = 0, ea = 0, mv = 0, ex = 0, fo = 0;
     if (s < P.S) {
         if (w.live[s]) {
             w.cens_depth[s] = (i32)w.proc[s].depth; w.ghash[s] = gene_hash(w.fwd, (u64)s * P.G, w.table, P.maxk);
@@ -652,12 +772,15 @@ __global__ void k_census(World w, Params P)
             if (s / P.W < P.R / 2) z0 = 1; else z1 = 1;
             if (P.d3) { ll = w.terrain[s] == 1; hv = has_harvest(w.fwd, (u64)s * P.G, w.table, P.maxk); }
             if (P.d4) { sn = has_op(w.fwd, (u64)s * P.G, w.table, P.maxk, SENSE); sl = has_op(w.fwd, (u64)s * P.G, w.table, P.maxk, WAIT); }
+            if (P.d5) { u64 b = (u64)s * P.G; ea = has_op(w.fwd, b, w.table, P.maxk, EAT); mv = has_op(w.fwd, b, w.table, P.maxk, MOVE);
+                        ex = has_op(w.fwd, b, w.table, P.maxk, EXEC); fo = w.proc[s].xs != s; }
         }
         else w.cens_depth[s] = w.claimed_by[s] >= 0 ? -2 : -1;
     }
     if (P.d1 || P.d2) {   /* docs/17 census additions (W = 1, R = 2 without day 2 keeps the division harmless) */
         warp_add(&w.cens_acc[0], e); warp_add(&w.cens_acc[1], z0); warp_add(&w.cens_acc[2], z1);
         warp_add(&w.cens_acc[3], ll); warp_add(&w.cens_acc[4], hv); warp_add(&w.cens_acc[5], sn); warp_add(&w.cens_acc[6], sl);
+        warp_add(&w.cens_acc[7], ea); warp_add(&w.cens_acc[8], mv); warp_add(&w.cens_acc[9], ex); warp_add(&w.cens_acc[10], fo);
     }
 }
 
@@ -673,6 +796,11 @@ __global__ void k_slotmap(World w, Params P, int mode, u8 *out)
     else if (mode == 2) b = (u8)(1 + splitmix64((u64)(u32)w.clade[s]) % 253);
     else if (mode == 3) { i64 e = w.proc[s].E * 253 / (P.emax + 1); b = (u8)(1 + (e > 252 ? 252 : e)); }
     else if (mode == 4) b = has_harvest(w.fwd, (u64)s * P.G, w.table, P.maxk) ? 2 : 1;
+    else if (mode == 6) {   /* animals (docs/17 day 5): 1 + EAT + 2 MOVE + 4 EXEC + 8 running a neighbour's gene now */
+        u64 base = (u64)s * P.G;
+        b = (u8)(1 + (has_op(w.fwd, base, w.table, P.maxk, EAT) ? 1 : 0) + (has_op(w.fwd, base, w.table, P.maxk, MOVE) ? 2 : 0)
+                 + (has_op(w.fwd, base, w.table, P.maxk, EXEC) ? 4 : 0) + (w.proc[s].xs != s ? 8 : 0));
+    }
     else {   /* traits (docs/17 section 14): 1 + HARVEST + 2 SENSE + 4 WAIT */
         u64 base = (u64)s * P.G;
         b = (u8)(1 + (has_op(w.fwd, base, w.table, P.maxk, HARVEST) ? 1 : 0) + (has_op(w.fwd, base, w.table, P.maxk, SENSE) ? 2 : 0)
@@ -703,7 +831,7 @@ static void make_terrain(std::vector<u8> &ter, u64 seed, i64 S, i64 W, i64 firm,
 }
 
 static const char *OP_NAMES[N_OPS] = { "NOP", "START", "STOP", "COPY", "R1", "L1", "R3", "L3", "JNZB", "SETP", "SETQ", "ALLOC",
-                                       "DIVIDE", "SKNZ", "SKZ", "LDA", "STA", "INC", "FLIP", "SEEK", "COPYR", "REWIND", "TERM", "HARVEST", "SENSE", "WAIT" };
+                                       "DIVIDE", "SKNZ", "SKZ", "LDA", "STA", "INC", "FLIP", "SEEK", "COPYR", "REWIND", "TERM", "HARVEST", "SENSE", "WAIT", "EAT", "MOVE", "EXEC" };
 
 /* ---------------------------------------------------------------- host side */
 static inline u64 fnv_bytes(u64 h, const u8 *p, u64 n) { for (u64 i = 0; i < n; i++) h = (h ^ p[i]) * 1099511628211ULL; return h; }
@@ -756,8 +884,8 @@ static u64 state_hash(Host &h)
     x = fnv_bytes(x, h.rev.data(), h.nbytes);
     for (i64 s = 0; s < h.P.S; s++) if (h.live[s]) {
         const Proc &p = h.proc[s];
-        const i64 f[11] = { p.slot, p.pc, p.H, p.P, p.Q, p.child, p.A, p.age, p.depth, p.copied, p.E };
-        for (int i = 0; i < (h.P.d1 ? 11 : 10); i++) x = fnv_u64le(x, (u64)f[i]);   /* docs/17: E on day 1 */
+        const i64 f[12] = { p.slot, p.pc, p.H, p.P, p.Q, p.child, p.A, p.age, p.depth, p.copied, p.E, p.xs };
+        for (int i = 0; i < (h.P.d5 ? 12 : h.P.d1 ? 11 : 10); i++) x = fnv_u64le(x, (u64)f[i]);   /* docs/17: E on day 1, xs on day 5 */
     }
     for (int i = 0; i < (h.P.d3 ? 5 : 4); i++) x = fnv_u64le(x, h.counters[i]);   /* docs/17: starved on day 3 */
     return x;
@@ -772,8 +900,8 @@ static void dump_state(Host &h, const char *path)
     fwrite(h.rev.data(), 1, h.nbytes, f);
     for (i64 s = 0; s < h.P.S; s++) if (h.live[s]) {
         const Proc &p = h.proc[s];
-        const i64 v[11] = { p.slot, p.pc, p.H, p.P, p.Q, p.child, p.A, p.age, p.depth, p.copied, p.E };
-        for (int i = 0; i < (h.P.d1 ? 11 : 10); i++) put_u64le(f, (u64)v[i]);
+        const i64 v[12] = { p.slot, p.pc, p.H, p.P, p.Q, p.child, p.A, p.age, p.depth, p.copied, p.E, p.xs };
+        for (int i = 0; i < (h.P.d5 ? 12 : h.P.d1 ? 11 : 10); i++) put_u64le(f, (u64)v[i]);
     }
     for (int i = 0; i < (h.P.d3 ? 5 : 4); i++) put_u64le(f, h.counters[i]);
     fclose(f);
@@ -782,7 +910,7 @@ static void dump_state(Host &h, const char *path)
 /* census (step 8) as one JSON object; since-last counters are relative to prev[] */
 static std::string census_json(Host &h, i64 tick, const u64 prev[5], bool have_hash, u64 hash)
 {
-    if (h.P.d1 || h.P.d2) CUDA_CHECK(cudaMemset(h.w.cens_acc, 0, 7 * sizeof(u64)));
+    if (h.P.d1 || h.P.d2) CUDA_CHECK(cudaMemset(h.w.cens_acc, 0, 11 * sizeof(u64)));
     k_census<<<(unsigned)((h.P.S + 255) / 256), 256>>>(h.w, h.P);
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaMemcpy(h.depth.data(), h.w.cens_depth, h.P.S * sizeof(i32), cudaMemcpyDeviceToHost));
@@ -844,7 +972,7 @@ static std::string census_json(Host &h, i64 tick, const u64 prev[5], bool have_h
     js += "]";
     if (h.depth_cap > 0) { snprintf(buf, sizeof buf, ", \"max_depth\": %d", max_depth); js += buf; }
     if (h.P.d1 || h.P.d2) {   /* docs/17 census additions, the reference's key order */
-        u64 acc[7], led[9];
+        u64 acc[11], led[12];
         CUDA_CHECK(cudaMemcpy(acc, h.w.cens_acc, sizeof acc, cudaMemcpyDeviceToHost));
         CUDA_CHECK(cudaMemcpy(led, h.w.ledger, sizeof led, cudaMemcpyDeviceToHost));
         if (h.P.d1) {
@@ -855,13 +983,15 @@ static std::string census_json(Host &h, i64 tick, const u64 prev[5], bool have_h
             } else { snprintf(buf, sizeof buf, ", \"light\": %lld", (long long)lam); js += buf; }
             snprintf(buf, sizeof buf, ", \"energy_total\": %llu, \"energy_init\": %llu, \"ledger\": [",
                      (unsigned long long)acc[0], (unsigned long long)h.energy_init); js += buf;
-            for (int i = 0; i < 9; i++) { snprintf(buf, sizeof buf, "%s%llu", i ? ", " : "", (unsigned long long)led[i]); js += buf; }
+            for (int i = 0; i < (h.P.d5 ? 12 : 9); i++) { snprintf(buf, sizeof buf, "%s%llu", i ? ", " : "", (unsigned long long)led[i]); js += buf; }
             js += "]";
         }
         if (h.P.d2 && h.P.firm) { snprintf(buf, sizeof buf, ", \"zone_live\": [%llu, %llu]", (unsigned long long)acc[1], (unsigned long long)acc[2]); js += buf; }
         if (h.P.d3) { snprintf(buf, sizeof buf, ", \"starved_total\": %llu, \"live_land\": %llu, \"harvesters\": %llu", (unsigned long long)h.counters[4],
                                (unsigned long long)acc[3], (unsigned long long)acc[4]); js += buf; }
         if (h.P.d4) { snprintf(buf, sizeof buf, ", \"sensers\": %llu, \"sleepers\": %llu", (unsigned long long)acc[5], (unsigned long long)acc[6]); js += buf; }
+        if (h.P.d5) { snprintf(buf, sizeof buf, ", \"eaters\": %llu, \"movers\": %llu, \"execers\": %llu, \"foreign\": %llu", (unsigned long long)acc[7],
+                               (unsigned long long)acc[8], (unsigned long long)acc[9], (unsigned long long)acc[10]); js += buf; }
     }
     js += ", \"hash\": ";
     if (have_hash) { snprintf(buf, sizeof buf, "\"%016llx\"", (unsigned long long)hash); js += buf; } else js += "null";
@@ -885,7 +1015,7 @@ static void write_slot(Host &h, u64 base, const std::vector<u8> &vals, i64 ncell
  * tick to the next: both strands, the live flags, the processors, the claims, the counters, and the output-only
  * ledger, clade map and seeded energy. Header: "DNA3CKPT", version 1, N, G, S, seed, a flag word, the next tick. */
 static const char CKPT_MAGIC[8] = { 'D', 'N', 'A', '3', 'C', 'K', 'P', 'T' };
-static u64 ckpt_flags(const Params &P, bool uniform) { return (u64)P.dna2 | (u64)P.d1 << 1 | (u64)P.d2 << 2 | (u64)P.d3 << 3 | (u64)P.d4 << 4 | (u64)P.shade << 5 | (u64)uniform << 6; }
+static u64 ckpt_flags(const Params &P, bool uniform) { return (u64)P.dna2 | (u64)P.d1 << 1 | (u64)P.d2 << 2 | (u64)P.d3 << 3 | (u64)P.d4 << 4 | (u64)P.shade << 5 | (u64)uniform << 6 | (u64)P.d5 << 7; }
 static void write_checkpoint(Host &h, const std::string &path, i64 t_next, bool uniform)
 {
     const World &w = h.w; const Params &P = h.P; i64 S = P.S;
@@ -893,7 +1023,7 @@ static void write_checkpoint(Host &h, const std::string &path, i64 t_next, bool 
     std::string tmp = path + ".tmp";
     FILE *f = fopen(tmp.c_str(), "wb");
     if (!f) { fprintf(stderr, "cannot write %s\n", tmp.c_str()); return; }
-    u64 hd[7] = { 1, P.N, (u64)P.G, (u64)S, P.seed, ckpt_flags(P, uniform), (u64)t_next };
+    u64 hd[7] = { 2, P.N, (u64)P.G, (u64)S, P.seed, ckpt_flags(P, uniform), (u64)t_next };
     fwrite(CKPT_MAGIC, 1, 8, f); fwrite(hd, 8, 7, f);
     CUDA_CHECK(cudaMemcpy(buf.data(), w.fwd, h.nbytes, cudaMemcpyDeviceToHost)); fwrite(buf.data(), 1, h.nbytes, f);
     CUDA_CHECK(cudaMemcpy(buf.data(), w.rev, h.nbytes, cudaMemcpyDeviceToHost)); fwrite(buf.data(), 1, h.nbytes, f);
@@ -902,8 +1032,8 @@ static void write_checkpoint(Host &h, const std::string &path, i64 t_next, bool 
     std::vector<i32> v32((size_t)S);
     CUDA_CHECK(cudaMemcpy(v32.data(), w.claimed_by, S * 4, cudaMemcpyDeviceToHost)); fwrite(v32.data(), 4, S, f);
     CUDA_CHECK(cudaMemcpy(v32.data(), w.clade, S * 4, cudaMemcpyDeviceToHost)); fwrite(v32.data(), 4, S, f);
-    u64 led[9]; CUDA_CHECK(cudaMemcpy(led, w.ledger, sizeof led, cudaMemcpyDeviceToHost));
-    fwrite(h.counters, 8, 5, f); fwrite(led, 8, 9, f); fwrite(&h.energy_init, 8, 1, f);
+    u64 led[12]; CUDA_CHECK(cudaMemcpy(led, w.ledger, sizeof led, cudaMemcpyDeviceToHost));
+    fwrite(h.counters, 8, 5, f); fwrite(led, 8, 12, f); fwrite(&h.energy_init, 8, 1, f);
     fclose(f);
     if (rename(tmp.c_str(), path.c_str()) != 0) fprintf(stderr, "cannot rename %s\n", tmp.c_str());
 }
@@ -913,7 +1043,7 @@ static i64 read_checkpoint(Host &h, const std::string &path, bool uniform)
     FILE *f = fopen(path.c_str(), "rb");
     if (!f) { fprintf(stderr, "cannot read %s\n", path.c_str()); exit(1); }
     char mg[8]; u64 hd[7];
-    if (fread(mg, 1, 8, f) != 8 || memcmp(mg, CKPT_MAGIC, 8) || fread(hd, 8, 7, f) != 7 || hd[0] != 1) { fprintf(stderr, "%s is not a checkpoint\n", path.c_str()); exit(1); }
+    if (fread(mg, 1, 8, f) != 8 || memcmp(mg, CKPT_MAGIC, 8) || fread(hd, 8, 7, f) != 7 || hd[0] != 2) { fprintf(stderr, "%s is not a version-2 checkpoint (Proc with xs)\n", path.c_str()); exit(1); }
     if (hd[1] != P.N || hd[2] != (u64)P.G || hd[3] != (u64)S || hd[4] != P.seed || hd[5] != ckpt_flags(P, uniform)) {
         fprintf(stderr, "checkpoint %s was written with other N, G, seed or days\n", path.c_str()); exit(1); }
     auto rd = [&](void *p, size_t sz, size_t n) { if (fread(p, sz, n, f) != n) { fprintf(stderr, "short checkpoint %s\n", path.c_str()); exit(1); } };
@@ -925,7 +1055,7 @@ static i64 read_checkpoint(Host &h, const std::string &path, bool uniform)
     std::vector<i32> v32((size_t)S);
     rd(v32.data(), 4, S); CUDA_CHECK(cudaMemcpy(w.claimed_by, v32.data(), S * 4, cudaMemcpyHostToDevice));
     rd(v32.data(), 4, S); CUDA_CHECK(cudaMemcpy(w.clade, v32.data(), S * 4, cudaMemcpyHostToDevice));
-    u64 led[9]; rd(h.counters, 8, 5); rd(led, 8, 9); rd(&h.energy_init, 8, 1);
+    u64 led[12]; rd(h.counters, 8, 5); rd(led, 8, 12); rd(&h.energy_init, 8, 1);
     CUDA_CHECK(cudaMemcpy(w.ledger, led, sizeof led, cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(w.counters, h.counters, sizeof h.counters, cudaMemcpyHostToDevice));
     fclose(f);
@@ -953,10 +1083,11 @@ int main(int argc, char **argv)
     std::string log_path, top_path, map_path; int log_filter = 0; i64 log_every = 1, depth_cap = 0;   /* filter: 0 divide, 1 faithful, 2 all */
     bool log_codons = false; double max_seconds = 0;
     /* docs/17 (DNA-3), the reference's defaults */
-    bool day[5] = { false, false, false, false, false }; std::string seed_slots_arg, seed_terrain = "any", map_mode_arg = "depth";
+    bool day[6] = { false, false, false, false, false, false }; std::string seed_slots_arg, seed_terrain = "any", map_mode_arg = "depth";
     i64 day_len = 32, light_len = -1, lmax = 16, emax = 1024, eshift = 4, e_seed = 512, e_spont = 128, g_pass = 16, Wg = 0, firm = 1;
     i64 gp_sea = 8, gp_land = 0, gh_sea = 16, gh_land = 32, c_copy = 1, maint = 1, land_cell = 32, land_thr = 32768; bool inflow_land = false;
     i64 year_days = 16, moon_days = 8, season_amp = -1, lat_amp = 8, lmoon = 1; bool shade = false;
+    i64 c_move = 2, c_fly = 8, eat_shift = 1, eat_eff = 8;
     std::string ckpt_path, resume_path; i64 ckpt_every = 0;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
@@ -996,14 +1127,18 @@ int main(int argc, char **argv)
         else if (a == "--top-genes") top_path = next();
         else if (a == "--slot-map") map_path = next();
         else if (a == "--dna3") day[1] = day[2] = day[3] = true;
-        else if (a == "--days") { std::string v = next(); for (char c : v) { if (c >= '1' && c <= '4') day[c - '0'] = true;
-                                  else if (c != ',' && c != ' ') { fprintf(stderr, "only days 1 to 4 are implemented\n"); return 1; } } }
+        else if (a == "--days") { std::string v = next(); for (char c : v) { if (c >= '1' && c <= '5') day[c - '0'] = true;
+                                  else if (c != ',' && c != ' ') { fprintf(stderr, "only days 1 to 5 are implemented\n"); return 1; } } }
         else if (a == "--year-days") year_days = atoll(next());
         else if (a == "--moon-days") moon_days = atoll(next());
         else if (a == "--season-amp") season_amp = atoll(next());
         else if (a == "--lat-amp") lat_amp = atoll(next());
         else if (a == "--lmoon") lmoon = atoll(next());
         else if (a == "--shade") shade = true;
+        else if (a == "--c-move") c_move = atoll(next());
+        else if (a == "--c-fly") c_fly = atoll(next());
+        else if (a == "--eat-shift") eat_shift = atoll(next());
+        else if (a == "--eat-eff") eat_eff = atoll(next());
         else if (a == "--checkpoint") ckpt_path = next();
         else if (a == "--checkpoint-every") ckpt_every = atoll(next());
         else if (a == "--resume") resume_path = next();
@@ -1044,6 +1179,9 @@ int main(int argc, char **argv)
     bool d1 = day[1], d2 = day[2], d3 = day[3], d4 = day[4];
     if (d3 && !(d1 && d2)) { fprintf(stderr, "day 3 needs days 1 and 2\n"); return 1; }
     if (d4 && !(d1 && d2 && d3)) { fprintf(stderr, "day 4 needs days 1, 2 and 3\n"); return 1; }
+    bool d5 = day[5];
+    if (d5 && !d4) { fprintf(stderr, "day 5 needs days 1 to 4\n"); return 1; }
+    if (std::min({ c_move, c_fly, eat_shift, eat_eff }) < 0 || eat_eff > 16) { fprintf(stderr, "bad day-5 parameters\n"); return 1; }
     if (shade && !d3) { fprintf(stderr, "--shade is a day-3 option\n"); return 1; }
     if (d1 || d2 || d3) dna2 = true;
     if (light_len < 0) light_len = day_len / 2;
@@ -1071,9 +1209,10 @@ int main(int argc, char **argv)
     P.d1 = d1; P.d2 = d2; P.d3 = d3; P.day_len = day_len; P.light_len = light_len; P.lmax = lmax; P.emax = emax; P.eshift = eshift;
     P.e_seed = e_seed; P.e_spont = e_spont; P.gp[0] = d3 ? gp_sea : g_pass; P.gp[1] = d3 ? gp_land : g_pass; P.gh[0] = gh_sea; P.gh[1] = gh_land;
     P.c_copy = c_copy; P.maint = maint; P.inflow_land = inflow_land ? 1 : 0; P.W = Wg; P.R = Rg; P.firm = firm;
+    P.d5 = d5; P.c_move = c_move; P.c_fly = c_fly; P.eat_shift = eat_shift; P.eat_eff = eat_eff;
     P.d4 = d4; P.shade = shade; P.year_days = year_days; P.moon_days = moon_days; P.season_amp = season_amp; P.lat_amp = lat_amp; P.lmoon = lmoon;
     if (d2) make_terrain(h.terrain, seed, S, Wg, firm, d3, land_cell, land_thr); else h.terrain.assign((size_t)S, 0);
-    u8 *table = h.table; build_table(table, uniform, dna2, d3, d4);
+    u8 *table = h.table; build_table(table, uniform, dna2, d3, d4, d5);
     h.depth_cap = depth_cap;
 
     CUDA_CHECK(cudaSetDevice(gpu));
@@ -1091,8 +1230,13 @@ int main(int argc, char **argv)
     dalloc((void **)&w.div_copied, S * sizeof(i32));
     dalloc((void **)&w.ghash, S * sizeof(u64)); dalloc((void **)&w.cens_depth, S * sizeof(i32));
     dalloc((void **)&w.counters, 5 * sizeof(u64)); dalloc((void **)&w.table, 64);
-    dalloc((void **)&w.terrain, S); dalloc((void **)&w.div_energy, S * sizeof(i64)); dalloc((void **)&w.ledger, 9 * sizeof(u64));
-    dalloc((void **)&w.clade, S * sizeof(i32)); dalloc((void **)&w.cens_acc, 7 * sizeof(u64));
+    dalloc((void **)&w.terrain, S); dalloc((void **)&w.div_energy, S * sizeof(i64)); dalloc((void **)&w.ledger, 12 * sizeof(u64));
+    if (d5) {
+        dalloc((void **)&w.eat_target, S * 4); dalloc((void **)&w.move_op, S * 4); dalloc((void **)&w.move_to, S * 4);
+        dalloc((void **)&w.e_loss, S * 8); dalloc((void **)&w.e_gain, S * 8); dalloc((void **)&w.move_cost, S * 8);
+        CUDA_CHECK(cudaMemset(w.eat_target, 0xFF, S * 4)); CUDA_CHECK(cudaMemset(w.move_op, 0xFF, S * 4)); CUDA_CHECK(cudaMemset(w.move_to, 0xFF, S * 4));
+    }
+    dalloc((void **)&w.clade, S * sizeof(i32)); dalloc((void **)&w.cens_acc, 11 * sizeof(u64));
     if (d2) { dalloc((void **)&w.claim64, S * sizeof(u64)); dalloc((void **)&w.alloc_cand, S * sizeof(i32)); CUDA_CHECK(cudaMemset(w.claim64, 0xFF, S * sizeof(u64))); }
     CUDA_CHECK(cudaMemcpy(w.terrain, h.terrain.data(), S, cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemset(w.claimed_by, 0xFF, S * sizeof(i32)));
@@ -1126,8 +1270,8 @@ int main(int argc, char **argv)
         for (size_t i = 0, j; (j = m.find(',', i)) != std::string::npos; i = j + 1) {
             std::string mm = m.substr(i, j - i); if (mm.empty()) continue;
             if (mm == "depth") { h.map_f = fopen(map_path.c_str(), resume_path.empty() ? "wb" : "ab"); if (!h.map_f) { fprintf(stderr, "cannot write %s\n", map_path.c_str()); return 1; } continue; }
-            int code = mm == "gene" ? 1 : mm == "clade" ? 2 : mm == "energy" ? 3 : mm == "plant" ? 4 : mm == "traits" ? 5 : -1;
-            if (code < 0) { fprintf(stderr, "--slot-map-mode: depth, gene, clade, energy, plant, traits\n"); return 1; }
+            int code = mm == "gene" ? 1 : mm == "clade" ? 2 : mm == "energy" ? 3 : mm == "plant" ? 4 : mm == "traits" ? 5 : mm == "animals" ? 6 : -1;
+            if (code < 0) { fprintf(stderr, "--slot-map-mode: depth, gene, clade, energy, plant, traits, animals\n"); return 1; }
             std::string fn = map_path + "." + mm; FILE *f = fopen(fn.c_str(), resume_path.empty() ? "wb" : "ab");   /* resumed runs append */ if (!f) { fprintf(stderr, "cannot write %s\n", fn.c_str()); return 1; }
             h.map_modes.push_back(code); h.map_files.push_back(f);
         }
@@ -1148,6 +1292,7 @@ int main(int argc, char **argv)
                 (long long)lmax, (long long)emax, (long long)eshift, (long long)e_seed, (long long)e_spont, (long long)P.gp[0], (long long)P.gp[1], (long long)gh_sea, (long long)gh_land,
                 (long long)c_copy, (long long)maint, inflow_land ? 1 : 0, (long long)Wg, (long long)Rg, (long long)firm, (long long)nland, (long long)nfirm);
     }
+    if (d5) fprintf(stderr, "day5=1 c_move=%lld c_fly=%lld eat_shift=%lld eat_eff=%lld\n", (long long)c_move, (long long)c_fly, (long long)eat_shift, (long long)eat_eff);
     if (d4 || shade)
         fprintf(stderr, "day4=%d year_days=%lld moon_days=%lld season_amp=%lld lat_amp=%lld lmoon=%lld shade=%d\n", d4 ? 1 : 0, (long long)year_days,
                 (long long)moon_days, (long long)season_amp, (long long)lat_amp, (long long)lmoon, shade ? 1 : 0);
@@ -1222,7 +1367,7 @@ int main(int argc, char **argv)
             i64 s = chosen[k]; u64 base = (u64)s * G;
             write_slot(h, base, vals, 3 * (P.maxk + 1));   /* the G mod 3 trailing cells keep their soup content */
             Proc q; q.slot = s; q.pc = 1; q.H = (i64)base; q.P = (i64)base; q.Q = 0; q.child = -1; q.A = 0; q.age = 0; q.depth = 0; q.copied = 0;
-            q.E = d1 ? e_seed : 0; if (d1) h.energy_init += (u64)e_seed;
+            q.E = d1 ? e_seed : 0; q.xs = s; if (d1) h.energy_init += (u64)e_seed;
             i32 cl = (i32)s; CUDA_CHECK(cudaMemcpy(w.clade + s, &cl, sizeof cl, cudaMemcpyHostToDevice));
             u8 one = 1;
             CUDA_CHECK(cudaMemcpy(w.proc + s, &q, sizeof q, cudaMemcpyHostToDevice));
@@ -1269,10 +1414,12 @@ int main(int argc, char **argv)
         CUDA_CHECK(cudaMemcpyAsync(w.fwd_old, w.fwd, h.nbytes, cudaMemcpyDeviceToDevice));   /* snapshot for reads */
         i64 lam = d1 ? (t % day_len < light_len ? lmax : 0) : 0;                           /* docs/17 day 1 */
         k_execute<<<sgrid, 256>>>(w, P, t, lam);                                            /* 1 */
+        if (d5) { k_eat<<<sgrid, 256>>>(w, P, t); k_eat_apply<<<sgrid, 256>>>(w, P); }    /* 2a, day 5 */
         k_alloc_propose<<<sgrid, 256>>>(w, P, t);                                           /* 2 */
         k_alloc_grant<<<sgrid, 256>>>(w, P, t);
         CUDA_CHECK(cudaMemsetAsync(w.claim, 0xFF, S * sizeof(i32)));
         if (d2) CUDA_CHECK(cudaMemsetAsync(w.claim64, 0xFF, S * sizeof(u64)));
+        if (d5) k_move<<<sgrid, 256>>>(w, P);                                               /* 2c, day 5 */
         k_births<<<sgrid, 256>>>(w, P, t);                                                  /* 3 */
         k_deaths<<<sgrid, 256>>>(w, P);                                                     /* 4 */
         if (D > 0) {                                        /* a grid of 0 blocks is an invalid launch */

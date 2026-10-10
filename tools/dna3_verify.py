@@ -20,6 +20,10 @@ REF = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sim", "dna
 REPL = "ATG GCT CTT TTA GGT"            # the DNA-2 5-codon replicator (docs/15)
 PLANT = "ATG AGA GCT CTT TTA GGT"       # the same with HARVEST after START (docs/17 day 3)
 SLEEPER = "ATG AGA AGT AAA AGC GCT CTT TTA GGT"   # START HARVEST SENSE <sun> WAIT ALLOC COPY TERM DIVIDE (day 4)
+EATER = "ATG AGA CCA AAA GCT CTT TTA GGT"        # START HARVEST EAT <N> ALLOC COPY TERM DIVIDE (day 5)
+SWIMMER = "ATG AGA ACA AGA GCT CTT TTA GGT"      # START HARVEST MOVE <AGA: 1 slot east> ALLOC COPY TERM DIVIDE
+FLIER = "ATG AGA ACA CTA GCT CTT TTA GGT"        # START HARVEST MOVE <CTA: 4 slots south> ALLOC COPY TERM DIVIDE
+EXECER = "ATG AGA GTA AAG GCT CTT TTA GGT"       # START HARVEST EXEC <AAG: the east neighbour> ALLOC COPY TERM DIVIDE
 
 CONFIGS = [
     ("dna1_t1", "--N 16384 --G 256 --ticks 200 --seed 1"),
@@ -55,6 +59,19 @@ CONFIGS = [
                      "--n-seed 16 --genome 'AAA CCG CCT AAA CGA AGA AAG CCC AGC'"),
     ("day4_g255_single_soup", "--days 1,2,3,4 --shade --T 0 --W 16 --land-cell 8 --N 65280 --G 255 --ticks 600 --seed 47 "
                               "--no-double --D 20 --F 6 --e-spont 300 --inflow-land --day-len 20 --light-len 12 --year-days 6"),
+    # docs/17 day 5
+    ("day5_plant_mu", "--days 1,2,3,4,5 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 1200 --seed 5 --mu 0.02 "
+                      "--n-seed 16 --seed-terrain sea --genome '%s'" % PLANT),
+    ("day5_eater", "--days 1,2,3,4,5 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 53 --mu 0.005 "
+                   "--n-seed 64 --genome '%s'" % EATER),
+    ("day5_swimmer", "--days 1,2,3,4,5 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 59 --n-seed 32 "
+                     "--seed-terrain sea --genome '%s'" % SWIMMER),
+    ("day5_flier_noshade", "--days 1,2,3,4,5 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 61 --n-seed 32 --c-fly 3 "
+                           "--genome '%s'" % FLIER),
+    ("day5_execer_eat2", "--days 1,2,3,4,5 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 67 --mu 0.01 "
+                         "--eat-shift 2 --eat-eff 12 --c-move 1 --n-seed 64 --genome '%s'" % EXECER),
+    ("day5_uniform_g255", "--days 1,2,3,4,5 --uniform-code --shade --T 0 --W 16 --land-cell 8 --N 65280 --G 255 --ticks 600 "
+                          "--seed 71 --mu 0.02 --F 4 --n-seed 16 --genome 'AAA CCG CTT AAA AGA AAG CCC AGC'"),
 ]
 
 
