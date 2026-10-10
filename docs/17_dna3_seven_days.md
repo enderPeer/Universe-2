@@ -20,7 +20,7 @@ specified at design level with predictions. Section 12 lists the decisions that 
 | 1 | light, separated from darkness; evening and morning | a clock and a light cycle; **energy**: light fills a per-organism store, every instruction burns one unit, the store sets how fast an organism runs | time with a phase; a resource; rate of living set by income | implemented, verified |
 | 2 | the firmament, dividing the waters above from the waters below | a **2D toroidal grid** of slots; a child is placed in a free neighbouring slot; two rows of barrier slots (the firmament) cut the torus into two zones that no lineage can cross | space; lineage patches; isolated populations (allopatry) | implemented, verified |
 | 3 | waters gathered, dry land appears; the earth brings forth plants | **terrain** (sea, land) with different light and inflow; **HARVEST** (photosynthesis) as a new operation; costs per copied cell; maintenance per tick; death by starvation | autotrophs; selection on something other than copying speed; a land/sea ecology | implemented, verified |
-| 4 | lights in the firmament for signs, seasons, days and years | sun height by latitude, **seasons** with opposite phase in the two zones (hemispheres), a moon, stars; **SENSE** (branch on a sky signal) and **WAIT** (sleep) | timing behaviour, dormancy, seasonal strategies | specified exactly |
+| 4 | lights in the firmament for signs, seasons, days and years | sun height by latitude, **seasons** with opposite phase in the two zones (hemispheres), a moon, stars; **SENSE** (branch on a sky signal) and **WAIT** (sleep) | timing behaviour, dormancy, seasonal strategies | implemented, verified (section 14) |
 | 5 | water creatures and birds | **predation** (energy taken from a neighbour), **motion** (swimming; flying across the firmament), **foreign execution** (a processor may run a neighbour's gene, so parasites can arise) | heterotrophs, trophic levels, migration between hemispheres, parasites | design |
 | 6 | land animals; then humans | **tasks** on a working tape rewarded with energy (stepping stones from the docs/07 function library); **signals** between neighbours; the **interface** for a learned controller (the "human" layer), specified, not built | computation selected by the environment, communication, the slot for learning minds | design |
 | 7 | the work completed; rest | **no design change**: the frozen rule set runs long and unattended with open-endedness measurements (evolutionary activity against a neutral shadow, novelty, complexity) and stated criteria for open-ended against plateau | the test | design |
@@ -182,7 +182,7 @@ that selection can find. emax never bound in these worlds.
 single strand. (ii) The ledger closes. (iii) A plant seeded in the sea colonises the land; the non-plant seed cannot
 live on land (gp_land 0); whether plants evolve from the non-plant seed is the experiment of section 11.3.
 
-## 6. Day 4: sun, moon and stars (specified, not implemented)
+## 6. Day 4: sun, moon and stars (implemented after the first version of this note, section 14)
 
 Day 4 needs days 1, 2 and 3. It replaces lambda(t) by a light lambda(t, s) that depends on the slot, and adds two
 operations.
@@ -220,8 +220,9 @@ channel 3 stars = 0 while the sun is up, else `1 + floor(3 y / R)` (the pole sta
 So `SENSE <sun> WAIT` sleeps in the dark and `SENSE <sun> WAIT X` does X only in the dark; both polarities need
 no further operation.
 
-**Census.** After the day-3 keys: `"sensers"` (live genes containing SENSE), `"sleepers"` (containing WAIT). No new
-hashed state (the calendar is a function of t).
+**Census.** After the day-3 keys: `"sensers"` (live genes containing SENSE), `"sleepers"` (containing WAIT). On day
+4 the census key `"light"` becomes a list of two: lambda at column 0 of row R/4 and of row R/2 + R/4 (the middle of
+each zone). No new hashed state (the calendar is a function of t).
 
 **Acceptance test (day 4).** (i) Identical on every tick, with day lengths and lights checked against a table of
 (t, s) values printed by the reference; (ii) a hand-written sleeper `START HARVEST SENSE <AAA> WAIT ALLOC COPY TERM
@@ -558,7 +559,7 @@ land) and `big_clade_t39999_crop.png`.
    but not its north one. Keep it (simple, verified) or give each processor a second head direction?
 10. **Neighbourhood**: eight neighbours give square fronts (chessboard metric); four give diamonds; a hexagonal grid
     would be closest to isotropic. Keep eight?
-11. **Energy defaults** (eshift 4, 32-tick days, gp_sea 8, gp_land 0, gh 16/32, c_copy 1, maint 1, T 64): keep the
+11. *(Answered by the user on 2026-10-10: no fixed lifetime; see section 14.)* **Energy defaults** (eshift 4, 32-tick days, gp_sea 8, gp_land 0, gh 16/32, c_copy 1, maint 1, T 64): keep the
     age limit alongside energy, or let energy alone end lives (T = 0 with maintenance)?
 
 ## 13. Reproduction
@@ -578,7 +579,105 @@ at 3 x 10^9): knecht24 `~/universe2/dna3/` (dna_world3 for sm_86, `runs/`), adle
 for sm_89, `big/`).
 
 
-## 14. Without a fixed lifetime (in progress)
+## 14. Without a fixed lifetime: shading, day 4, open-ended worlds
 
-The user asked (2026-10-10, evening) for worlds without a fixed lifetime (energy alone ends lives), checked tick by
-tick, run open-ended, and for day 4 to be built next. Results follow in this section.
+After the first version of this note the user asked for worlds without a fixed lifetime (energy alone ends lives),
+every tick checked, open-ended runs, day 4 built next, and pictures checked for emergent behaviour.
+
+### 14.1 Without the age limit the day-3 world freezes
+
+The A5 world (non-plant seed, days 1 to 3) with `--T 0` (`results/dna3/no_lifetime/C1_T0.*`, 20,000 ticks): the
+non-plants fill the sea by tick ~2,000 and, fed by the passive light, never starve; from then on 165,722 to 170,847
+organisms hold the world (the sea has 166,343 slots), births fall from 55,591 per 100 ticks to **about 17,600 per 100
+ticks, all of them replacements of starved organisms at the coast**, lineages stop at depth 21 and the 300 plant
+mutants never spread (with T = 64 the plants took 99.7 % of the world, section 11.3: 5,309 births per tick against 176
+here). The same happens with day 4 switched on (reference, 32 x 32 slots: 956 alive and 0 to 3 deaths per 128
+ticks after tick 900): stores carry plants through the longest winter night. A full world has no turnover, and
+without turnover evolution stops. For energy to end lives, a crowded slot must earn less.
+
+### 14.2 Shading (a day-3 option, exact)
+
+`--shade` (needs day 3): before its first instruction of tick t, a processor counts the live processors n (0 .. 8)
+among its eight grid neighbours, read from the live flags at the start of the tick (before step 1, so the count is
+the same in every execution order); every light gain of this processor in this tick, the passive gain and HARVEST,
+becomes `floor(g * (9 - n) / 9)` (g as in sections 3 and 5). Light is shared with the neighbours' canopy: an
+organism alone keeps all of it, one in a full patch a ninth. No new state; hash and census unchanged.
+
+Reference, 32 x 32 slots, T = 0: with shading the plant world of days 1 to 3 holds 562 to 629 of 960 slots with
+1,094 to 1,411 births per 256 ticks, every death a starvation; with day 4 the populations of the two hemispheres swing
+with their seasons in opposite phase (zone 0: 334 alive in its summer, 93 in its winter).
+
+### 14.3 Day 4 implemented; verification; checkpoints
+
+Day 4 is implemented as specified in section 6 (`World.sky` in the reference, `sky()` in the engine, SENSE on AGT,
+WAIT on AGC, census keys `sensers`, `sleepers` and the two-zone `light`), together with shading. Six configurations
+were added to `tools/dna3_verify.py`: shading with T = 0 on the non-plant (`shade_T0_nonplant`), the plant on days 1
+to 4 (`day4_plant`), the hand-written sleeper with an odd calendar (4-day years, 3-day moons, season amplitude 6,
+latitude amplitude 12, moonlight 2, mu 0.01), day 4 without shading and with T = 64, day 4 under the uniform code
+(`AAA CCG CCT AAA CGA AGA AAG CCC AGC`), and an unseeded single-strand G = 255 world with 20-tick days. **19 of 19
+configurations identical on every tick, 7,300 tick hashes, 730 census lines, 18,828 birth rows**, on an RTX 3060
+(`results/dna3/verify/`) and again on the RTX 4090 (`results/dna3/verify_4090/`): the sm_86 and sm_89 builds give
+the same states. The reference's outputs of the 13 earlier configurations are byte-identical to the committed ones.
+
+Open-ended runs need **checkpoints**. `--checkpoint FILE --checkpoint-every K` writes, every K ticks (a multiple of
+the census interval) and at the last tick, both strands, the live flags, the processors, the claims, the counters,
+the ledger, the clade map and the seeded energy; `--resume FILE` continues from it (N, G, seed, code and days must
+match; the census, top-gene and slot-map files are appended to). Test: 600 ticks straight against 300 ticks, a
+checkpoint and 300 resumed ticks of a day-4 world, every tick hashed: **all 612 output lines identical**.
+`tools/dna3_open.sh` runs a world with no planned end (10^12 ticks) and resumes from its checkpoint whenever it is
+started again. A new output-only slot-map mode `traits` (1 + HARVEST + 2 SENSE + 4 WAIT per organism) shows sleepers
+in the pictures. One bug was found on the way: the engine's operation-name table lacked SENSE and WAIT, so the first
+day-4 runs with `--top-genes` crashed on the first gene containing them (output only; fixed before the runs below).
+
+### 14.4 Open-ended worlds
+
+Four worlds were started on 2026-10-10 at about 21:41 UTC with no planned end (`tools/dna3_open.sh`; all with
+T = 0 and shading, mu 0.001, 256-cell slots, census and slot-map frames every 10,240 ticks = 20 years of 512 ticks,
+so every census sees the same season; checkpoints every 102,400 ticks). They keep running after this note;
+`tools/dna3_watch.py` pulls their census series, top genes and latest frames and lists emergence events into
+`results/dna3/open/<name>/` (timeline.png, plant/traits/clade pictures, events.json). Numbers below are from the
+watch at the tick given.
+
+| world | where | days | start | tick | alive | zone 0 / zone 1 | plants | with WAIT | with SENSE | on land |
+|---|---|---|---|---:|---:|---|---:|---:|---:|---:|
+| O1_seasons | 10^8 cells, RTX 3060 | 1-4 | 4,096 non-plant seeds in the sea | 204,799 | 115,846 | 4,676 / 111,170 | 114,559 | 88,138 | 18,695 | 76,000 |
+| O2_soup | 10^8, RTX 3060 | 1-4, F 4,000 | unseeded | 40,959 | 42,549 | 17,833 / 24,716 | 39,902 | 7,043 | 4,906 | 3,799 |
+| O3_noseasons | 10^8, RTX 3060 | 1-3 | 4,096 non-plant seeds | 20,479 | 235,114 | 113,396 / 121,718 | 232,552 | - | - | 126,180 |
+| O4_big_seasons | 3 x 10^9, RTX 4090 | 1-4 | 1,000,000 non-plant seeds | 81,919 | 1,963,951 | 1,339,312 / 624,639 | 1,940,912 | 234,147 | 21,065 | 271,949 |
+
+**What emerged (seen in the pictures and the series; one world each, so each is an observation, not a rate):**
+
+1. **A crash, then slow adaptive growth instead of an equilibrium.** With energy as the only killer the seeded
+   population crashes in its first year (O1: 12,208 alive at tick 127, 360 at tick 511, with 38,950 starvations; the
+   non-plants cannot live on a ninth of the sea's passive light in a full patch) and then grows for 200,000 ticks
+   as plants and new designs spread: 1,864 at tick 10,239, 43,620 at 102,399, 115,846 at 204,799 (O1); 205,472 to
+   1,963,951 between ticks 10,239 and 81,919 at 3 x 10^9 (O4). With T = 64 (section 11) every world reached its
+   ceiling within a few thousand ticks and then drifted.
+2. **WAIT spreads, and genes get longer.** In both seasonal worlds the share of organisms carrying WAIT rises after
+   about 70,000 ticks: O1 9 % at tick 61,439, 46 % at 102,399, 76 % at 204,799; O4 2 % at 61,439, 12 % at 81,919
+   (234,147 carriers). The leading genes grow from 6 to 15 to 19 codons with repeated `HARVEST WAIT` pairs, e.g.
+   `START ALLOC COPY TERM DIVIDE LDA HARVEST ALLOC SKNZ SKZ STA WAIT ALLOC HARVEST WAIT HARVEST WAIT HARVEST WAIT`
+   (O1, tick 204,799) and `START ALLOC COPY TERM DIVIDE WAIT HARVEST WAIT HARVEST` (O4, tick 81,919, the most common
+   gene, 27,999 carriers). WAIT here is mostly not used as a night switch (SENSE stays at 16 % in O1 and 1 % in O4);
+   the instructions spent per organism and tick stay at 3.8 to 4.1 in O1 while WAIT rises from 9 % to 76 %, so it does
+   not simply save energy either. A hypothesis, not yet tested: a tick ends at each WAIT, so `HARVEST WAIT` pairs
+   spread over the loop make every tick contain exactly one HARVEST however few instructions the store allows,
+   i.e. WAIT aligns the gene with the clock. Diversity stays high: 19,884 distinct genes in O1 at tick 204,799,
+   120,279 in O4 at 81,919; the most common gene holds 4 % of O1 and 1.4 % of O4.
+3. **A hemisphere died and stays empty.** In O1 the lineages of zone 0 died out in an early winter (before tick
+   10,239); since nothing crosses the firmament, zone 0 has held only depth-0 organisms (random inflow genes that
+   never reproduce, 4,676 at tick 204,799) ever since, while zone 1 fills up (`O1_seasons/traits_t204799.png`: the
+   upper half dark, the lower half a mosaic of plant territories). At 3 x 10^9 cells both zones survived. Day 5's
+   fliers are the designed way back.
+4. **Territories.** Without seasons (O3) founder lineages hold large solid territories with sharp borders
+   (`O3_noseasons/clade_t20479.png`), unlike the fine patches of the T = 64 worlds (section 11.2): an organism keeps
+   its slot until it starves, so a lineage that holds ground keeps it, and borders move only by starvation.
+5. **Life begins as a plant again.** The unseeded seasonal soup (O2, F 4,000) has self-made plant lineages by tick
+   10,239 (13,840 plants of 18,285 alive) and WAIT and SENSE carriers among them (`O2_soup/traits_t40959.png`:
+   yellow plant+WAIT and white plant+SENSE+WAIT clusters).
+6. **An artifact to know about:** with T = 0 a random inflow gene that cannot copy but can live on the sea's
+   passive light sits in its slot forever. These depth-0 sitters accumulate (4,634 in O1, all in the sea).
+
+Next steps for these worlds: test the WAIT hypothesis by tracing a `HARVEST WAIT` gene against the same gene
+without WAIT in one world (the trace tools of docs/11 apply), Bedau activity against a neutral shadow (day 7), and
+day 5 (fliers to cross the firmament, predators, parasites).

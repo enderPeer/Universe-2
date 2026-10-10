@@ -124,7 +124,12 @@ evolve from the non-plant DNA-2 replicator**: HARVEST enters the gene by read-th
 material, harvesters take the land (where the non-plant cannot live) and then the sea, 348,514 of 349,582 organisms
 at tick 99,999, streamlined to `START ALLOC COPY TERM DIVIDE HARVEST`. Days 4 (seasons, moon, stars, SENSE and
 WAIT) to 7 (the frozen long run with evolutionary activity against a neutral shadow) are specified, with eleven
-decisions listed for the user.
+decisions listed for the user. **Without a fixed lifetime** (energy alone ends lives) the day-3 world freezes: the
+sea fills with organisms that never starve, turnover drops 30-fold and evolution stops. Shading (light shared with
+the live neighbours) restores turnover through starvation; **day 4 is now implemented** (seasons of opposite phase
+in the two hemispheres, latitude, moon, stars, SENSE and WAIT), with checkpoints for open-ended runs; 19 of 19
+configurations identical on every tick on an RTX 3060 and on the RTX 4090. Open-ended worlds are running
+(docs/17 section 14).
 
 **Real ISAs.** AArch64 exhaustive over all 2^32 words: **1,526,900,218 valid instructions (35.5509 %)**, 1,298
 mnemonics, 15 minutes on the workstation. Encoding density of other ISAs (16.7 M-word samples, Capstone): ARM32

@@ -4,7 +4,7 @@ The engine writes, at every census, one byte per slot to RUN.map.<mode> (modes g
 day 2, the terrain once to RUN.map.terrain (0 sea, 1 land, 2 firmament). Map bytes: 0 dead, 255 dead but claimed as
 a child, 1 .. 254 live: gene = 1 + gene hash mod 253, clade = 1 + splitmix64(founder slot) mod 253 (the founder is
 the depth-0 ancestor: a seed or a spontaneous organism), energy = 1 + E * 253 / (emax + 1), plant = 2 for a gene
-with a HARVEST codon, 1 otherwise. Slot s is at column s mod W, row s div W.
+with a HARVEST codon, 1 otherwise, traits = 1 + HARVEST + 2 SENSE + 4 WAIT (white: a plant that senses and waits). Slot s is at column s mod W, row s div W.
 
   python tools/dna3_maps.py stats RUN --W 640 [--mode clade] [--every 1] > RUN.spatial.json
   python tools/dna3_maps.py png RUN --W 640 --mode clade --frame 199 --out pic.png [--scale 1] [--crop x0,y0,w,h]
@@ -78,6 +78,15 @@ def palette(mode):
     if mode == "plant":
         pal[1] = (200, 90, 220)    # no HARVEST codon
         pal[2] = (70, 230, 70)     # plant
+    elif mode == "traits":                          # 1 + HARVEST + 2 SENSE + 4 WAIT
+        pal[1] = (200, 90, 220)    # none
+        pal[2] = (70, 230, 70)     # plant
+        pal[3] = (90, 160, 255)    # SENSE only
+        pal[4] = (40, 200, 255)    # plant + SENSE
+        pal[5] = (255, 140, 0)     # WAIT only
+        pal[6] = (255, 230, 0)     # plant + WAIT
+        pal[7] = (255, 60, 60)     # SENSE + WAIT
+        pal[8] = (255, 255, 255)   # plant + SENSE + WAIT: a sleeper plant
     elif mode == "energy":
         for b in range(1, 255):
             f = (b - 1) / 252.0

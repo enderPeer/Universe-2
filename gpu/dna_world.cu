@@ -78,7 +78,7 @@ typedef uint64_t u64; typedef int64_t i64; typedef uint32_t u32; typedef int32_t
 
 /* ---------------------------------------------------------------- operations and the codon table (section 3) */
 enum Op : u8 { NOP = 0, START, STOP, COPY, R1, L1, R3, L3, JNZB, SETP, SETQ, ALLOC, DIVIDE, SKNZ, SKZ, LDA, STA,
-               INC, FLIP, SEEK, COPYR, REWIND, TERM, HARVEST, N_OPS };   /* TERM only under --dna2 (docs/15), HARVEST on day 3 (docs/17) */
+               INC, FLIP, SEEK, COPYR, REWIND, TERM, HARVEST, SENSE, WAIT, N_OPS };   /* SENSE, WAIT: day 4 */   /* TERM only under --dna2 (docs/15), HARVEST on day 3 (docs/17) */
 
 /* letters ACGT, U read as T, case-insensitive (section 13 "Genome argument") */
 static int letter(char c) { switch (c) { case 'A': case 'a': return 0; case 'C': case 'c': return 1; case 'G': case 'g': return 2;
@@ -95,6 +95,17 @@ static int codon_value(const char *s)   /* "ATG" -> 16*a + 4*b + c, -1 if malfor
 static void build_table_dna1(u8 *table, bool uniform);
 /* docs/15 fix 1: under --dna2 TERM takes TTA and TTG from Leu (COPY keeps CTT CTC CTA CTG); under the uniform code
  * it takes codon value 21, the first NOP */
+static void build_table(u8 *table, bool uniform, bool dna2, bool day3);
+static void build_table(u8 *table, bool uniform, bool dna2, bool day3, bool day4)
+{
+    build_table(table, uniform, dna2, day3);
+    if (!day4) return;
+    /* docs/17 day 4: SENSE on AGT, WAIT on AGC, taken from Ser (R1 keeps TCT TCC TCA TCG); uniform code 23, 24 */
+    if (uniform) { table[23] = SENSE; table[24] = WAIT; return; }
+    int a = codon_value("AGT"), b = codon_value("AGC");
+    if (table[a] != R1 || table[b] != R1) { fprintf(stderr, "day 4 table error\n"); exit(1); }
+    table[a] = SENSE; table[b] = WAIT;
+}
 static void build_table(u8 *table, bool uniform, bool dna2, bool day3)
 {
     build_table_dna1(table, uniform);
@@ -168,6 +179,8 @@ struct Params {
     int d1, d2, d3;
     i64 day_len, light_len, lmax, emax, eshift, e_seed, e_spont, gp[2], gh[2], c_copy, maint;
     int inflow_land;
+    int d4, shade;            /* docs/17 day 4; section 14 shading (a day-3 option) */
+    i64 year_days, moon_days, season_amp, lat_amp, lmoon;
     i64 W, R, firm;
 };
 
@@ -261,9 +274,43 @@ __host__ __device__ inline u64 gene_hash(const u8 *f, u64 base, const u8 *table,
 /* ---------------------------------------------------------------- kernels */
 __device__ inline i64 modN(i64 x, i64 N) { x %= N; return x < 0 ? x + N : x; }
 
+/* docs/17 day 2: neighbour offsets N, NE, E, SE, S, SW, W, NW (y grows downwards) */
+__constant__ int NB_DX[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
+__constant__ int NB_DY[8] = { -1, -1, 0, 1, 1, 1, 0, -1 };
+
 /* sum over the 32 lanes of a warp; every lane of the warp must call it */
 __device__ inline u64 warp_sum64(u64 v) { for (int o = 16; o > 0; o >>= 1) v += __shfl_down_sync(0xffffffffu, v, o); return v; }
 __device__ inline void warp_add(u64 *dst, u64 v) { v = warp_sum64(v); if ((threadIdx.x & 31) == 0 && v) atomicAdd((unsigned long long *)dst, (unsigned long long)v); }
+
+/* docs/17 day 4: light of slot s at tick t and the four sky channels (sun, moon, season, stars), exactly as
+ * sim/dna_ref.py World.sky */
+__host__ __device__ inline i64 tri(i64 u, i64 P) { i64 v = 4 * u - 2 * P; return P - (v < 0 ? -v : v); }
+__host__ __device__ inline i64 sky(const Params &P, i64 t, i64 s, u32 ch[4])
+{
+    i64 Py = P.year_days, Pm = P.moon_days, R = P.R, d = t / P.day_len, phi = t % P.day_len, y = s / P.W;
+    i64 sy = tri(d % Py, Py) + Py;
+    i64 sz = y < R / 2 ? 2 * Py - sy : sy;
+    i64 Lz = P.light_len - P.season_amp + (P.season_amp * sz) / Py;
+    bool up = phi < Lz;
+    i64 ys = R / 4 + ((R / 2) * sy) / (2 * Py);
+    i64 dy = y - ys; if (dy < 0) dy = -dy;
+    i64 dist = dy < R - dy ? dy : R - dy;
+    i64 fac = 16 - (P.lat_amp * dist) / (R / 2);
+    i64 ml = ((tri(d % Pm, Pm) + Pm) * 3 + Pm) / (2 * Pm);
+    ch[0] = !up ? 0u : fac >= 14 ? 3u : fac >= 11 ? 2u : 1u;
+    ch[1] = (u32)ml;
+    ch[2] = (u32)((4 * sz) / (2 * Py + 1));
+    ch[3] = up ? 0u : (u32)(1 + (3 * y) / R);
+    return up ? (P.lmax * fac) / 16 : P.lmoon * ml;
+}
+
+/* docs/17 days 3 and 4: the gene of slot base (codons 1 .. len-1) contains a codon of operation op */
+__host__ __device__ inline bool has_op(const u8 *f, u64 base, const u8 *table, i64 maxk, u32 opc)
+{
+    if (table[codon_at(f, base, 0)] == STOP) return false;
+    for (i64 k = 1; k <= maxk; k++) { u32 op = table[codon_at(f, base, k)]; if (op == STOP) return false; if (op == opc) return true; }
+    return false;
+}
 
 /* docs/17 day 3: the gene of slot base (codons 1 .. len-1) contains a HARVEST codon */
 __host__ __device__ inline bool has_harvest(const u8 *f, u64 base, const u8 *table, i64 maxk)
@@ -291,7 +338,7 @@ __global__ void k_init(World w, Params P, u64 nbytes, int blank)
 /* step 1: one thread per slot, I instructions of its processor. docs/17 day 1: first the passive light, then a
  * budget of min(I, E >> eshift) instructions at one energy unit each; day 3: HARVEST and the cost of copied cells.
  * Every thread of the grid runs to the end (no early return) so that the warp reductions of the ledger are legal. */
-__global__ void k_execute(World w, Params P, i64 t, i64 lam)
+__global__ void k_execute(World w, Params P, i64 t, i64 lam0)
 {
     i64 s = (i64)blockIdx.x * blockDim.x + threadIdx.x;
     u64 l_pass = 0, l_harv = 0, l_instr = 0, l_copy = 0, l_waste = 0;
@@ -309,9 +356,17 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam)
     i64 len = gene_len(w.fwd, base, table, maxk);
     i64 budget = P.I;
     int ter = 0; bool harvested = false;
+    i64 lam = lam0, shade_k = 9; u32 chan[4] = { 0, 0, 0, 0 };
     if (P.d1) {
         ter = w.terrain[s] == 1 ? 1 : 0;
-        i64 g = (lam * P.gp[ter]) >> 4, add = g < P.emax - p.E ? g : P.emax - p.E;
+        if (P.d4) lam = sky(P, t, s, chan);           /* docs/17 day 4: light and sky channels of this slot */
+        i64 g = (lam * P.gp[ter]) >> 4;
+        if (P.shade) {                                /* docs/17 section 14: (9 - live neighbours) / 9 */
+            i64 x = s % P.W, y = s / P.W, nl = 0;
+            for (int d = 0; d < 8; d++) nl += w.live[((y + NB_DY[d] + P.R) % P.R) * P.W + (x + NB_DX[d] + P.W) % P.W];
+            shade_k = 9 - nl; g = (g * shade_k) / 9;
+        }
+        i64 add = g < P.emax - p.E ? g : P.emax - p.E;
         p.E += add; l_pass += (u64)add; l_waste += (u64)(g - add);
         budget = p.E >> P.eshift; if (budget > P.I) budget = P.I;
     }
@@ -320,8 +375,12 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam)
         u32 op = NOP;
         if (p.pc >= 0 && p.pc <= maxk) op = table[codon_at(w.fwd, base, p.pc)];   /* gene fetched live */
         p.pc += 1;
-        bool stall = false;
+        bool stall = false, wait_end = false;
         switch (op) {
+        case SENSE:    /* docs/17 day 4: operand consumed; skip the next codon if the operand's sky channel is nonzero */
+            if (p.pc < len) { u32 c = codon_at(w.fwd, base, p.pc); p.pc += 1; if (chan[c & 3u]) p.pc += 1; }
+            break;
+        case WAIT: wait_end = true; break;             /* docs/17 day 4: the tick ends after this instruction */
         case NOP: case START: case STOP: break;
         case R1: p.H += 1; if (p.H >= N) p.H -= N; break;
         case L1: p.H -= 1; if (p.H < 0) p.H += N; break;
@@ -363,7 +422,8 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam)
         case HARVEST:  /* docs/17 day 3: once per tick, light times the terrain's HARVEST gain */
             if (!harvested) {
                 harvested = true;
-                i64 g = (lam * P.gh[ter]) >> 4, add = g < P.emax - p.E ? g : P.emax - p.E;
+                i64 g = (lam * P.gh[ter]) >> 4; if (P.shade) g = (g * shade_k) / 9;
+                i64 add = g < P.emax - p.E ? g : P.emax - p.E;
                 p.E += add; l_harv += (u64)add; l_waste += (u64)(g - add);
             }
             break;
@@ -393,6 +453,7 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam)
         }
         if (stall) break;                                 /* the tick ends before the wrap rule, as in the reference */
         if (p.pc >= len) p.pc = 1;                        /* the gene loops, skipping START */
+        if (wait_end) break;
     }
     w.proc[s] = p;
 #undef IN_OWN
@@ -408,8 +469,6 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam)
 
 /* step 2a: every requesting processor proposes its candidate; the lowest slot index wins (unsigned atomicMin
  * against the sentinel 0xFFFFFFFF, which no slot index reaches since S < 2^31) */
-__constant__ int NB_DX[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
-__constant__ int NB_DY[8] = { -1, -1, 0, 1, 1, 1, 0, -1 };
 
 /* docs/17 day 2: the requester scans its eight neighbours from direction rnd(t, s, 0) mod 8 on the state after step
  * 1 and proposes the first free one (not live, not claimed, not firmament); the lowest key
@@ -585,19 +644,20 @@ __global__ void k_inflow_births(World w, Params P, i64 t)
 __global__ void k_census(World w, Params P)
 {
     i64 s = (i64)blockIdx.x * blockDim.x + threadIdx.x;
-    u64 e = 0, z0 = 0, z1 = 0, ll = 0, hv = 0;
+    u64 e = 0, z0 = 0, z1 = 0, ll = 0, hv = 0, sn = 0, sl = 0;
     if (s < P.S) {
         if (w.live[s]) {
             w.cens_depth[s] = (i32)w.proc[s].depth; w.ghash[s] = gene_hash(w.fwd, (u64)s * P.G, w.table, P.maxk);
             e = (u64)w.proc[s].E;
             if (s / P.W < P.R / 2) z0 = 1; else z1 = 1;
             if (P.d3) { ll = w.terrain[s] == 1; hv = has_harvest(w.fwd, (u64)s * P.G, w.table, P.maxk); }
+            if (P.d4) { sn = has_op(w.fwd, (u64)s * P.G, w.table, P.maxk, SENSE); sl = has_op(w.fwd, (u64)s * P.G, w.table, P.maxk, WAIT); }
         }
         else w.cens_depth[s] = w.claimed_by[s] >= 0 ? -2 : -1;
     }
     if (P.d1 || P.d2) {   /* docs/17 census additions (W = 1, R = 2 without day 2 keeps the division harmless) */
         warp_add(&w.cens_acc[0], e); warp_add(&w.cens_acc[1], z0); warp_add(&w.cens_acc[2], z1);
-        warp_add(&w.cens_acc[3], ll); warp_add(&w.cens_acc[4], hv);
+        warp_add(&w.cens_acc[3], ll); warp_add(&w.cens_acc[4], hv); warp_add(&w.cens_acc[5], sn); warp_add(&w.cens_acc[6], sl);
     }
 }
 
@@ -612,7 +672,12 @@ __global__ void k_slotmap(World w, Params P, int mode, u8 *out)
     else if (mode == 1) b = (u8)(1 + w.ghash[s] % 253);
     else if (mode == 2) b = (u8)(1 + splitmix64((u64)(u32)w.clade[s]) % 253);
     else if (mode == 3) { i64 e = w.proc[s].E * 253 / (P.emax + 1); b = (u8)(1 + (e > 252 ? 252 : e)); }
-    else b = has_harvest(w.fwd, (u64)s * P.G, w.table, P.maxk) ? 2 : 1;
+    else if (mode == 4) b = has_harvest(w.fwd, (u64)s * P.G, w.table, P.maxk) ? 2 : 1;
+    else {   /* traits (docs/17 section 14): 1 + HARVEST + 2 SENSE + 4 WAIT */
+        u64 base = (u64)s * P.G;
+        b = (u8)(1 + (has_op(w.fwd, base, w.table, P.maxk, HARVEST) ? 1 : 0) + (has_op(w.fwd, base, w.table, P.maxk, SENSE) ? 2 : 0)
+                 + (has_op(w.fwd, base, w.table, P.maxk, WAIT) ? 4 : 0));
+    }
     out[s] = b;
 }
 
@@ -638,7 +703,7 @@ static void make_terrain(std::vector<u8> &ter, u64 seed, i64 S, i64 W, i64 firm,
 }
 
 static const char *OP_NAMES[N_OPS] = { "NOP", "START", "STOP", "COPY", "R1", "L1", "R3", "L3", "JNZB", "SETP", "SETQ", "ALLOC",
-                                       "DIVIDE", "SKNZ", "SKZ", "LDA", "STA", "INC", "FLIP", "SEEK", "COPYR", "REWIND", "TERM", "HARVEST" };
+                                       "DIVIDE", "SKNZ", "SKZ", "LDA", "STA", "INC", "FLIP", "SEEK", "COPYR", "REWIND", "TERM", "HARVEST", "SENSE", "WAIT" };
 
 /* ---------------------------------------------------------------- host side */
 static inline u64 fnv_bytes(u64 h, const u8 *p, u64 n) { for (u64 i = 0; i < n; i++) h = (h ^ p[i]) * 1099511628211ULL; return h; }
@@ -717,7 +782,7 @@ static void dump_state(Host &h, const char *path)
 /* census (step 8) as one JSON object; since-last counters are relative to prev[] */
 static std::string census_json(Host &h, i64 tick, const u64 prev[5], bool have_hash, u64 hash)
 {
-    if (h.P.d1 || h.P.d2) CUDA_CHECK(cudaMemset(h.w.cens_acc, 0, 5 * sizeof(u64)));
+    if (h.P.d1 || h.P.d2) CUDA_CHECK(cudaMemset(h.w.cens_acc, 0, 7 * sizeof(u64)));
     k_census<<<(unsigned)((h.P.S + 255) / 256), 256>>>(h.w, h.P);
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaMemcpy(h.depth.data(), h.w.cens_depth, h.P.S * sizeof(i32), cudaMemcpyDeviceToHost));
@@ -779,12 +844,16 @@ static std::string census_json(Host &h, i64 tick, const u64 prev[5], bool have_h
     js += "]";
     if (h.depth_cap > 0) { snprintf(buf, sizeof buf, ", \"max_depth\": %d", max_depth); js += buf; }
     if (h.P.d1 || h.P.d2) {   /* docs/17 census additions, the reference's key order */
-        u64 acc[5], led[9];
+        u64 acc[7], led[9];
         CUDA_CHECK(cudaMemcpy(acc, h.w.cens_acc, sizeof acc, cudaMemcpyDeviceToHost));
         CUDA_CHECK(cudaMemcpy(led, h.w.ledger, sizeof led, cudaMemcpyDeviceToHost));
         if (h.P.d1) {
             i64 lam = tick % h.P.day_len < h.P.light_len ? h.P.lmax : 0;
-            snprintf(buf, sizeof buf, ", \"light\": %lld, \"energy_total\": %llu, \"energy_init\": %llu, \"ledger\": [", (long long)lam,
+            if (h.P.d4) {   /* day 4: the light at column 0 of the middle row of each zone */
+                u32 ch[4]; i64 l0 = sky(h.P, tick, (h.P.R / 4) * h.P.W, ch), l1 = sky(h.P, tick, (h.P.R / 2 + h.P.R / 4) * h.P.W, ch);
+                snprintf(buf, sizeof buf, ", \"light\": [%lld, %lld]", (long long)l0, (long long)l1); js += buf;
+            } else { snprintf(buf, sizeof buf, ", \"light\": %lld", (long long)lam); js += buf; }
+            snprintf(buf, sizeof buf, ", \"energy_total\": %llu, \"energy_init\": %llu, \"ledger\": [",
                      (unsigned long long)acc[0], (unsigned long long)h.energy_init); js += buf;
             for (int i = 0; i < 9; i++) { snprintf(buf, sizeof buf, "%s%llu", i ? ", " : "", (unsigned long long)led[i]); js += buf; }
             js += "]";
@@ -792,6 +861,7 @@ static std::string census_json(Host &h, i64 tick, const u64 prev[5], bool have_h
         if (h.P.d2 && h.P.firm) { snprintf(buf, sizeof buf, ", \"zone_live\": [%llu, %llu]", (unsigned long long)acc[1], (unsigned long long)acc[2]); js += buf; }
         if (h.P.d3) { snprintf(buf, sizeof buf, ", \"starved_total\": %llu, \"live_land\": %llu, \"harvesters\": %llu", (unsigned long long)h.counters[4],
                                (unsigned long long)acc[3], (unsigned long long)acc[4]); js += buf; }
+        if (h.P.d4) { snprintf(buf, sizeof buf, ", \"sensers\": %llu, \"sleepers\": %llu", (unsigned long long)acc[5], (unsigned long long)acc[6]); js += buf; }
     }
     js += ", \"hash\": ";
     if (have_hash) { snprintf(buf, sizeof buf, "\"%016llx\"", (unsigned long long)hash); js += buf; } else js += "null";
@@ -809,6 +879,57 @@ static void write_slot(Host &h, u64 base, const std::vector<u8> &vals, i64 ncell
     for (i64 j = 0; j < ncells; j++) { set2_plain(f.data(), base - b0 * 4 + j, vals[j]); set2_plain(r.data(), base - b0 * 4 + j, vals[j] ^ 3u); }
     CUDA_CHECK(cudaMemcpy(h.w.fwd + b0, f.data(), n, cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(h.w.rev + b0, r.data(), n, cudaMemcpyHostToDevice));
+}
+
+/* docs/17 section 14: checkpoint and resume (open-ended runs). The file holds everything that survives from one
+ * tick to the next: both strands, the live flags, the processors, the claims, the counters, and the output-only
+ * ledger, clade map and seeded energy. Header: "DNA3CKPT", version 1, N, G, S, seed, a flag word, the next tick. */
+static const char CKPT_MAGIC[8] = { 'D', 'N', 'A', '3', 'C', 'K', 'P', 'T' };
+static u64 ckpt_flags(const Params &P, bool uniform) { return (u64)P.dna2 | (u64)P.d1 << 1 | (u64)P.d2 << 2 | (u64)P.d3 << 3 | (u64)P.d4 << 4 | (u64)P.shade << 5 | (u64)uniform << 6; }
+static void write_checkpoint(Host &h, const std::string &path, i64 t_next, bool uniform)
+{
+    const World &w = h.w; const Params &P = h.P; i64 S = P.S;
+    std::vector<u8> buf((size_t)h.nbytes);
+    std::string tmp = path + ".tmp";
+    FILE *f = fopen(tmp.c_str(), "wb");
+    if (!f) { fprintf(stderr, "cannot write %s\n", tmp.c_str()); return; }
+    u64 hd[7] = { 1, P.N, (u64)P.G, (u64)S, P.seed, ckpt_flags(P, uniform), (u64)t_next };
+    fwrite(CKPT_MAGIC, 1, 8, f); fwrite(hd, 8, 7, f);
+    CUDA_CHECK(cudaMemcpy(buf.data(), w.fwd, h.nbytes, cudaMemcpyDeviceToHost)); fwrite(buf.data(), 1, h.nbytes, f);
+    CUDA_CHECK(cudaMemcpy(buf.data(), w.rev, h.nbytes, cudaMemcpyDeviceToHost)); fwrite(buf.data(), 1, h.nbytes, f);
+    std::vector<u8> live((size_t)S); CUDA_CHECK(cudaMemcpy(live.data(), w.live, S, cudaMemcpyDeviceToHost)); fwrite(live.data(), 1, S, f);
+    std::vector<Proc> pr((size_t)S); CUDA_CHECK(cudaMemcpy(pr.data(), w.proc, S * sizeof(Proc), cudaMemcpyDeviceToHost)); fwrite(pr.data(), sizeof(Proc), S, f);
+    std::vector<i32> v32((size_t)S);
+    CUDA_CHECK(cudaMemcpy(v32.data(), w.claimed_by, S * 4, cudaMemcpyDeviceToHost)); fwrite(v32.data(), 4, S, f);
+    CUDA_CHECK(cudaMemcpy(v32.data(), w.clade, S * 4, cudaMemcpyDeviceToHost)); fwrite(v32.data(), 4, S, f);
+    u64 led[9]; CUDA_CHECK(cudaMemcpy(led, w.ledger, sizeof led, cudaMemcpyDeviceToHost));
+    fwrite(h.counters, 8, 5, f); fwrite(led, 8, 9, f); fwrite(&h.energy_init, 8, 1, f);
+    fclose(f);
+    if (rename(tmp.c_str(), path.c_str()) != 0) fprintf(stderr, "cannot rename %s\n", tmp.c_str());
+}
+static i64 read_checkpoint(Host &h, const std::string &path, bool uniform)
+{
+    World &w = h.w; const Params &P = h.P; i64 S = P.S;
+    FILE *f = fopen(path.c_str(), "rb");
+    if (!f) { fprintf(stderr, "cannot read %s\n", path.c_str()); exit(1); }
+    char mg[8]; u64 hd[7];
+    if (fread(mg, 1, 8, f) != 8 || memcmp(mg, CKPT_MAGIC, 8) || fread(hd, 8, 7, f) != 7 || hd[0] != 1) { fprintf(stderr, "%s is not a checkpoint\n", path.c_str()); exit(1); }
+    if (hd[1] != P.N || hd[2] != (u64)P.G || hd[3] != (u64)S || hd[4] != P.seed || hd[5] != ckpt_flags(P, uniform)) {
+        fprintf(stderr, "checkpoint %s was written with other N, G, seed or days\n", path.c_str()); exit(1); }
+    auto rd = [&](void *p, size_t sz, size_t n) { if (fread(p, sz, n, f) != n) { fprintf(stderr, "short checkpoint %s\n", path.c_str()); exit(1); } };
+    std::vector<u8> buf((size_t)h.nbytes);
+    rd(buf.data(), 1, h.nbytes); CUDA_CHECK(cudaMemcpy(w.fwd, buf.data(), h.nbytes, cudaMemcpyHostToDevice));
+    rd(buf.data(), 1, h.nbytes); CUDA_CHECK(cudaMemcpy(w.rev, buf.data(), h.nbytes, cudaMemcpyHostToDevice));
+    std::vector<u8> live((size_t)S); rd(live.data(), 1, S); CUDA_CHECK(cudaMemcpy(w.live, live.data(), S, cudaMemcpyHostToDevice));
+    std::vector<Proc> pr((size_t)S); rd(pr.data(), sizeof(Proc), S); CUDA_CHECK(cudaMemcpy(w.proc, pr.data(), S * sizeof(Proc), cudaMemcpyHostToDevice));
+    std::vector<i32> v32((size_t)S);
+    rd(v32.data(), 4, S); CUDA_CHECK(cudaMemcpy(w.claimed_by, v32.data(), S * 4, cudaMemcpyHostToDevice));
+    rd(v32.data(), 4, S); CUDA_CHECK(cudaMemcpy(w.clade, v32.data(), S * 4, cudaMemcpyHostToDevice));
+    u64 led[9]; rd(h.counters, 8, 5); rd(led, 8, 9); rd(&h.energy_init, 8, 1);
+    CUDA_CHECK(cudaMemcpy(w.ledger, led, sizeof led, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(w.counters, h.counters, sizeof h.counters, cudaMemcpyHostToDevice));
+    fclose(f);
+    return (i64)hd[6];
 }
 
 static void usage()
@@ -832,9 +953,11 @@ int main(int argc, char **argv)
     std::string log_path, top_path, map_path; int log_filter = 0; i64 log_every = 1, depth_cap = 0;   /* filter: 0 divide, 1 faithful, 2 all */
     bool log_codons = false; double max_seconds = 0;
     /* docs/17 (DNA-3), the reference's defaults */
-    bool day[4] = { false, false, false, false }; std::string seed_slots_arg, seed_terrain = "any", map_mode_arg = "depth";
+    bool day[5] = { false, false, false, false, false }; std::string seed_slots_arg, seed_terrain = "any", map_mode_arg = "depth";
     i64 day_len = 32, light_len = -1, lmax = 16, emax = 1024, eshift = 4, e_seed = 512, e_spont = 128, g_pass = 16, Wg = 0, firm = 1;
     i64 gp_sea = 8, gp_land = 0, gh_sea = 16, gh_land = 32, c_copy = 1, maint = 1, land_cell = 32, land_thr = 32768; bool inflow_land = false;
+    i64 year_days = 16, moon_days = 8, season_amp = -1, lat_amp = 8, lmoon = 1; bool shade = false;
+    std::string ckpt_path, resume_path; i64 ckpt_every = 0;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         auto next = [&]() -> const char * { if (i + 1 >= argc) usage(); return argv[++i]; };
@@ -873,8 +996,17 @@ int main(int argc, char **argv)
         else if (a == "--top-genes") top_path = next();
         else if (a == "--slot-map") map_path = next();
         else if (a == "--dna3") day[1] = day[2] = day[3] = true;
-        else if (a == "--days") { std::string v = next(); for (char c : v) { if (c >= '1' && c <= '3') day[c - '0'] = true;
-                                  else if (c != ',' && c != ' ') { fprintf(stderr, "only days 1, 2 and 3 are implemented\n"); return 1; } } }
+        else if (a == "--days") { std::string v = next(); for (char c : v) { if (c >= '1' && c <= '4') day[c - '0'] = true;
+                                  else if (c != ',' && c != ' ') { fprintf(stderr, "only days 1 to 4 are implemented\n"); return 1; } } }
+        else if (a == "--year-days") year_days = atoll(next());
+        else if (a == "--moon-days") moon_days = atoll(next());
+        else if (a == "--season-amp") season_amp = atoll(next());
+        else if (a == "--lat-amp") lat_amp = atoll(next());
+        else if (a == "--lmoon") lmoon = atoll(next());
+        else if (a == "--shade") shade = true;
+        else if (a == "--checkpoint") ckpt_path = next();
+        else if (a == "--checkpoint-every") ckpt_every = atoll(next());
+        else if (a == "--resume") resume_path = next();
         else if (a == "--seed-slots") seed_slots_arg = next();
         else if (a == "--seed-terrain") { seed_terrain = next(); if (seed_terrain != "any" && seed_terrain != "sea" && seed_terrain != "land") usage(); }
         else if (a == "--slot-map-mode") map_mode_arg = next();
@@ -909,10 +1041,15 @@ int main(int argc, char **argv)
     if (n_seed > 0 && genome.empty()) { fprintf(stderr, "--n-seed needs --genome\n"); return 1; }
     if (n_seed > S) { fprintf(stderr, "--n-seed larger than S\n"); return 1; }
     /* docs/17: every day implies --dna2; day 3 needs days 1 and 2; the reference's checks */
-    bool d1 = day[1], d2 = day[2], d3 = day[3];
+    bool d1 = day[1], d2 = day[2], d3 = day[3], d4 = day[4];
     if (d3 && !(d1 && d2)) { fprintf(stderr, "day 3 needs days 1 and 2\n"); return 1; }
+    if (d4 && !(d1 && d2 && d3)) { fprintf(stderr, "day 4 needs days 1, 2 and 3\n"); return 1; }
+    if (shade && !d3) { fprintf(stderr, "--shade is a day-3 option\n"); return 1; }
     if (d1 || d2 || d3) dna2 = true;
     if (light_len < 0) light_len = day_len / 2;
+    if (season_amp < 0) season_amp = day_len / 4;
+    if (d4 && (year_days < 1 || moon_days < 1 || season_amp > light_len || light_len + season_amp > day_len || lat_amp < 0 || lat_amp > 16 || lmoon < 0)) {
+        fprintf(stderr, "bad day-4 parameters (need 0 <= season_amp <= light_len, light_len + season_amp <= day_len, 0 <= lat_amp <= 16)\n"); return 1; }
     if (d1) {
         if (day_len < 1 || light_len > day_len) { fprintf(stderr, "need day_len >= 1 and 0 <= light_len <= day_len\n"); return 1; }
         if (T < 0 || eshift < 0 || emax < 1 || e_seed < 0 || e_seed > emax || e_spont < 0 || e_spont > emax ||
@@ -934,8 +1071,9 @@ int main(int argc, char **argv)
     P.d1 = d1; P.d2 = d2; P.d3 = d3; P.day_len = day_len; P.light_len = light_len; P.lmax = lmax; P.emax = emax; P.eshift = eshift;
     P.e_seed = e_seed; P.e_spont = e_spont; P.gp[0] = d3 ? gp_sea : g_pass; P.gp[1] = d3 ? gp_land : g_pass; P.gh[0] = gh_sea; P.gh[1] = gh_land;
     P.c_copy = c_copy; P.maint = maint; P.inflow_land = inflow_land ? 1 : 0; P.W = Wg; P.R = Rg; P.firm = firm;
+    P.d4 = d4; P.shade = shade; P.year_days = year_days; P.moon_days = moon_days; P.season_amp = season_amp; P.lat_amp = lat_amp; P.lmoon = lmoon;
     if (d2) make_terrain(h.terrain, seed, S, Wg, firm, d3, land_cell, land_thr); else h.terrain.assign((size_t)S, 0);
-    u8 *table = h.table; build_table(table, uniform, dna2, d3);
+    u8 *table = h.table; build_table(table, uniform, dna2, d3, d4);
     h.depth_cap = depth_cap;
 
     CUDA_CHECK(cudaSetDevice(gpu));
@@ -954,7 +1092,7 @@ int main(int argc, char **argv)
     dalloc((void **)&w.ghash, S * sizeof(u64)); dalloc((void **)&w.cens_depth, S * sizeof(i32));
     dalloc((void **)&w.counters, 5 * sizeof(u64)); dalloc((void **)&w.table, 64);
     dalloc((void **)&w.terrain, S); dalloc((void **)&w.div_energy, S * sizeof(i64)); dalloc((void **)&w.ledger, 9 * sizeof(u64));
-    dalloc((void **)&w.clade, S * sizeof(i32)); dalloc((void **)&w.cens_acc, 5 * sizeof(u64));
+    dalloc((void **)&w.clade, S * sizeof(i32)); dalloc((void **)&w.cens_acc, 7 * sizeof(u64));
     if (d2) { dalloc((void **)&w.claim64, S * sizeof(u64)); dalloc((void **)&w.alloc_cand, S * sizeof(i32)); CUDA_CHECK(cudaMemset(w.claim64, 0xFF, S * sizeof(u64))); }
     CUDA_CHECK(cudaMemcpy(w.terrain, h.terrain.data(), S, cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemset(w.claimed_by, 0xFF, S * sizeof(i32)));
@@ -979,18 +1117,18 @@ int main(int argc, char **argv)
         fprintf(log_f, "#tick\tparent\tchild\tparent_hash\tchild_hash\tfaithful\tdepth\tparent_age\tcopied\tparent_P%s\n",
                 log_codons ? "\tparent_codons\tchild_codons" : "");
     }
-    if (!top_path.empty()) { h.top_f = fopen(top_path.c_str(), "w"); if (!h.top_f) { fprintf(stderr, "cannot write %s\n", top_path.c_str()); return 1; }
-                             fprintf(h.top_f, "#tick\thash\tcount\tslot\tdepth\tcodons\tops\n"); }
+    if (!top_path.empty()) { h.top_f = fopen(top_path.c_str(), resume_path.empty() ? "w" : "a"); if (!h.top_f) { fprintf(stderr, "cannot write %s\n", top_path.c_str()); return 1; }
+                             if (resume_path.empty()) fprintf(h.top_f, "#tick\thash\tcount\tslot\tdepth\tcodons\tops\n"); }
     if (!map_path.empty()) {
         /* docs/17: --slot-map-mode is a comma list of depth (the docs/12 map, written to FILE itself), gene, clade,
          * energy, plant (written to FILE.<mode>); with day 2 the terrain goes to FILE.terrain once */
         std::string m = map_mode_arg + ",";
         for (size_t i = 0, j; (j = m.find(',', i)) != std::string::npos; i = j + 1) {
             std::string mm = m.substr(i, j - i); if (mm.empty()) continue;
-            if (mm == "depth") { h.map_f = fopen(map_path.c_str(), "wb"); if (!h.map_f) { fprintf(stderr, "cannot write %s\n", map_path.c_str()); return 1; } continue; }
-            int code = mm == "gene" ? 1 : mm == "clade" ? 2 : mm == "energy" ? 3 : mm == "plant" ? 4 : -1;
-            if (code < 0) { fprintf(stderr, "--slot-map-mode: depth, gene, clade, energy, plant\n"); return 1; }
-            std::string fn = map_path + "." + mm; FILE *f = fopen(fn.c_str(), "wb"); if (!f) { fprintf(stderr, "cannot write %s\n", fn.c_str()); return 1; }
+            if (mm == "depth") { h.map_f = fopen(map_path.c_str(), resume_path.empty() ? "wb" : "ab"); if (!h.map_f) { fprintf(stderr, "cannot write %s\n", map_path.c_str()); return 1; } continue; }
+            int code = mm == "gene" ? 1 : mm == "clade" ? 2 : mm == "energy" ? 3 : mm == "plant" ? 4 : mm == "traits" ? 5 : -1;
+            if (code < 0) { fprintf(stderr, "--slot-map-mode: depth, gene, clade, energy, plant, traits\n"); return 1; }
+            std::string fn = map_path + "." + mm; FILE *f = fopen(fn.c_str(), resume_path.empty() ? "wb" : "ab");   /* resumed runs append */ if (!f) { fprintf(stderr, "cannot write %s\n", fn.c_str()); return 1; }
             h.map_modes.push_back(code); h.map_files.push_back(f);
         }
         h.map_frame.resize(S);
@@ -1006,10 +1144,13 @@ int main(int argc, char **argv)
     if (d1 || d2) {
         i64 nland = 0, nfirm = 0; for (i64 i = 0; i < S; i++) { nland += h.terrain[i] == 1; nfirm += h.terrain[i] == 2; }
         fprintf(stderr, "dna3 days=%s%s%s day_len=%lld light_len=%lld lmax=%lld emax=%lld eshift=%lld e_seed=%lld e_spont=%lld gp=%lld,%lld gh=%lld,%lld c_copy=%lld maint=%lld "
-                        "inflow_land=%d W=%lld R=%lld firm=%lld land=%lld firmament=%lld\n", d1 ? "1" : "", d2 ? "2" : "", d3 ? "3" : "", (long long)day_len, (long long)light_len,
+                        "inflow_land=%d W=%lld R=%lld firm=%lld land=%lld firmament=%lld\n", d1 ? "1" : "", d2 ? "2" : "", d3 ? (d4 ? "34" : "3") : "", (long long)day_len, (long long)light_len,
                 (long long)lmax, (long long)emax, (long long)eshift, (long long)e_seed, (long long)e_spont, (long long)P.gp[0], (long long)P.gp[1], (long long)gh_sea, (long long)gh_land,
                 (long long)c_copy, (long long)maint, inflow_land ? 1 : 0, (long long)Wg, (long long)Rg, (long long)firm, (long long)nland, (long long)nfirm);
     }
+    if (d4 || shade)
+        fprintf(stderr, "day4=%d year_days=%lld moon_days=%lld season_amp=%lld lat_amp=%lld lmoon=%lld shade=%d\n", d4 ? 1 : 0, (long long)year_days,
+                (long long)moon_days, (long long)season_amp, (long long)lat_amp, (long long)lmoon, shade ? 1 : 0);
     if (log_f || h.top_f || h.map_f || depth_cap)
         fprintf(stderr, "log_births=%s log_filter=%s log_every=%lld depth_cap=%lld top_genes=%s slot_map=%s\n", log_path.c_str(),
                 log_filter == 0 ? "divide" : log_filter == 1 ? "faithful" : "all", (long long)log_every, (long long)depth_cap, top_path.c_str(), map_path.c_str());
@@ -1091,11 +1232,20 @@ int main(int argc, char **argv)
         fprintf(stderr, "seeded %lld slots with %zu codons, gene hash %016llx, expressible=%d\n", (long long)n_seed, codons.size(),
                 (unsigned long long)gh, expressible(packed.data(), 0, table, P.maxk) ? 1 : 0);
     }
+    i64 t_first = 0;
+    if (!resume_path.empty()) {   /* docs/17 section 14: continue a run from its checkpoint */
+        if (n_seed > 0) { fprintf(stderr, "--resume replaces the initial state; drop --n-seed\n"); return 1; }
+        t_first = read_checkpoint(h, resume_path, uniform);
+        if (t_first >= ticks) { fprintf(stderr, "checkpoint is at tick %lld, nothing to do for --ticks %lld\n", (long long)t_first, (long long)ticks); return 1; }
+        fprintf(stderr, "resumed from %s at tick %lld\n", resume_path.c_str(), (long long)t_first);
+    }
+    if (ckpt_every > 0 && census_every > 0 && ckpt_every % census_every) { fprintf(stderr, "--checkpoint-every must be a multiple of --census-every\n"); return 1; }
     CUDA_CHECK(cudaDeviceSynchronize());
     size_t mem_free1; CUDA_CHECK(cudaMemGetInfo(&mem_free1, &mem_total));
 
     const unsigned sgrid = (unsigned)((S + 255) / 256), dgrid = (unsigned)((D + 255) / 256), fgrid = (unsigned)((F + 255) / 256);
     u64 prev[5] = { 0, 0, 0, 0, 0 };
+    memcpy(prev, h.counters, sizeof prev);   /* a resumed run's census continues from the checkpoint's counters */
     /* convention of section 13 (same as sim/dna_ref.py): "tick t" labels the state after tick t (t = 0 .. ticks-1,
      * the tick that used t in rnd); the initial state is printed as "tick -1" with --hash-init. */
     auto hash_due = [&](i64 t) { bool last = t == ticks - 1; return hash_every > 0 ? (last || (t + 1) % hash_every == 0) : hash_every == 0 ? last : false; };
@@ -1115,7 +1265,7 @@ int main(int argc, char **argv)
     fflush(stdout);
 
     auto t_loop = std::chrono::steady_clock::now();
-    for (i64 t = 0; t < ticks; t++) {
+    for (i64 t = t_first; t < ticks; t++) {
         CUDA_CHECK(cudaMemcpyAsync(w.fwd_old, w.fwd, h.nbytes, cudaMemcpyDeviceToDevice));   /* snapshot for reads */
         i64 lam = d1 ? (t % day_len < light_len ? lmax : 0) : 0;                           /* docs/17 day 1 */
         k_execute<<<sgrid, 256>>>(w, P, t, lam);                                            /* 1 */
@@ -1174,6 +1324,7 @@ int main(int argc, char **argv)
             ticks = t + 1;                                    /* this tick becomes the last one */
         }
         report(t);
+        if (!ckpt_path.empty() && ((ckpt_every > 0 && (t + 1) % ckpt_every == 0) || t == ticks - 1)) write_checkpoint(h, ckpt_path, t + 1, uniform);
     }
     CUDA_CHECK(cudaDeviceSynchronize());
     double secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t_loop).count();

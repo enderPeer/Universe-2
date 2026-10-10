@@ -8,3 +8,5 @@ __pycache__/
 scratch/
 results/u2_tables/raw/
 results/u2_fnall/*.functions.txt
+results/dna3/open/*/frames.*
+results/dna3/open/*/*.raw.txt.gz

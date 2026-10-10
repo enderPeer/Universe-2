@@ -49,9 +49,9 @@ COMP_TABLE = bytes((b ^ 3) if b < 4 else b for b in range(256))   # comp(s) = s 
 
 # operation codes (the order is irrelevant; MEANINGS below carries the table order of docs/09 section 3)
 NOP, START, STOP, COPY, R1, L1, JNZB, SETP, SETQ, ALLOC, DIVIDE, SKNZ, SKZ, LDA, STA, INC, FLIP, R3, L3, SEEK, \
-    COPYR, REWIND, TERM, HARVEST = range(24)              # TERM only under --dna2 (docs/15), HARVEST only on day 3 (docs/17)
+    COPYR, REWIND, TERM, HARVEST, SENSE, WAIT = range(26)  # TERM only under --dna2 (docs/15), HARVEST day 3, SENSE/WAIT day 4 (docs/17)
 OP_NAMES = ["NOP", "START", "STOP", "COPY", "R1", "L1", "JNZB", "SETP", "SETQ", "ALLOC", "DIVIDE", "SKNZ", "SKZ",
-            "LDA", "STA", "INC", "FLIP", "R3", "L3", "SEEK", "COPYR", "REWIND", "TERM", "HARVEST"]
+            "LDA", "STA", "INC", "FLIP", "R3", "L3", "SEEK", "COPYR", "REWIND", "TERM", "HARVEST", "SENSE", "WAIT"]
 OP_INDEX = {n: i for i, n in enumerate(OP_NAMES)}
 
 # docs/09 section 3, row by row (codons, amino acid, operation). The row order is the "table order" of the
@@ -146,6 +146,27 @@ def dna3_table(table, uniform):
             assert t[v] == L1
             t[v] = HARVEST
     return t
+
+
+DNA3_SENSE_WAIT_CODONS = ("AGT", "AGC")   # docs/17 day 4: taken from Ser; R1 keeps TCT TCC TCA TCG
+
+
+def dna3_day4_table(table, uniform):
+    """docs/17 day 4: SENSE on AGT and WAIT on AGC (uniform code: codon values 23 and 24)."""
+    t = list(table)
+    if uniform:
+        t[23], t[24] = SENSE, WAIT
+    else:
+        for cod, op in zip(DNA3_SENSE_WAIT_CODONS, (SENSE, WAIT)):
+            v = codon_value(cod)
+            assert t[v] == R1
+            t[v] = op
+    return t
+
+
+def tri(u, P):
+    """docs/17 day 4: integer triangle wave on [0, P): P - |4u - 2P|, in [-P, P]."""
+    return P - abs(4 * u - 2 * P)
 
 
 # docs/17 day 2: the eight neighbours of a slot on the grid, (dx, dy) with y growing downwards, in scan order
@@ -299,7 +320,8 @@ class World:
                  seed=1, genome=None, n_seed=0, dna2=False, days=(), seed_slots=None, seed_terrain="any",
                  W=0, firm=1, day_len=32, light_len=None, lmax=16, emax=1024, eshift=4, e_seed=512, e_spont=128,
                  g_pass=16, gp_sea=8, gp_land=0, gh_sea=16, gh_land=32, c_copy=1, maint=1, inflow_land=False,
-                 land_cell=32, land_thr=32768):
+                 land_cell=32, land_thr=32768, year_days=16, moon_days=8, season_amp=None, lat_amp=8, lmoon=1,
+                 shade=False):
         if G < 6:
             raise ValueError("G must be at least 6 (two codons)")                      # [13: Limits]
         if N % G:
@@ -317,18 +339,22 @@ class World:
         self.table = uniform_table() if uniform else standard_table()
         # docs/17: DNA-3 days; every day implies DNA-2, day 3 needs days 1 and 2
         days = tuple(sorted(set(days)))
-        if any(d not in (1, 2, 3) for d in days):
-            raise ValueError("only days 1, 2 and 3 are implemented")
+        if any(d not in (1, 2, 3, 4) for d in days):
+            raise ValueError("only days 1 to 4 are implemented")
         if 3 in days and not (1 in days and 2 in days):
             raise ValueError("day 3 needs days 1 and 2")
+        if 4 in days and not (1 in days and 2 in days and 3 in days):
+            raise ValueError("day 4 needs days 1, 2 and 3")
         self.days = days
-        self.d1, self.d2, self.d3 = 1 in days, 2 in days, 3 in days
+        self.d1, self.d2, self.d3, self.d4 = 1 in days, 2 in days, 3 in days, 4 in days
         dna2 = dna2 or bool(days)
         self.dna2 = dna2
         if dna2:
             self.table = dna2_table(self.table, uniform)
         if self.d3:
             self.table = dna3_table(self.table, uniform)
+        if self.d4:
+            self.table = dna3_day4_table(self.table, uniform)
         light_len = day_len // 2 if light_len is None else light_len
         if self.d1:
             if day_len < 1 or not 0 <= light_len <= day_len:
@@ -339,8 +365,19 @@ class World:
         elif T < 1:
             raise ValueError("T must be at least 1 (T = 0, no age limit, exists only on day 1)")
         self.day_len, self.light_len = day_len, light_len
+        # docs/17 day 4: calendar
+        season_amp = day_len // 4 if season_amp is None else season_amp
+        if self.d4 and (year_days < 1 or moon_days < 1 or season_amp < 0 or season_amp > light_len
+                        or light_len + season_amp > day_len or not 0 <= lat_amp <= 16 or lmoon < 0):
+            raise ValueError("bad day-4 parameters (need 0 <= season_amp <= light_len, light_len + season_amp <= day_len, "
+                             "0 <= lat_amp <= 16)")
+        self.year_days, self.moon_days, self.season_amp, self.lat_amp, self.lmoon = \
+            year_days, moon_days, season_amp, lat_amp, lmoon
         self.lmax, self.emax, self.eshift, self.e_seed, self.e_spont = lmax, emax, eshift, e_seed, e_spont
         self.g_pass, self.c_copy, self.maint, self.inflow_land = g_pass, c_copy, maint, inflow_land
+        if shade and not self.d3:
+            raise ValueError("--shade is a day-3 option")
+        self.shade = shade                      # docs/17 section 14: light shared with the live neighbours
         self.gp = (gp_sea, gp_land) if self.d3 else (g_pass, g_pass)     # passive gain by terrain, sixteenths
         self.gh = (gh_sea, gh_land)                                      # HARVEST gain by terrain, sixteenths
         if self.d2:
@@ -491,14 +528,37 @@ class World:
         """docs/17 day 1: the light level of tick t (square wave: lmax for the first light_len ticks of each day)."""
         return self.lmax if t % self.day_len < self.light_len else 0
 
+    def sky(self, t, s):
+        """docs/17 day 4: (light, [sun, moon, season, stars]) at tick t in slot s."""
+        Py, Pm, R = self.year_days, self.moon_days, self.R
+        d, phi = divmod(t, self.day_len)
+        y = s // self.W
+        sy = tri(d % Py, Py) + Py
+        sz = 2 * Py - sy if y < R // 2 else sy
+        Lz = self.light_len - self.season_amp + (self.season_amp * sz) // Py
+        up = phi < Lz
+        ys = R // 4 + ((R // 2) * sy) // (2 * Py)
+        dy = abs(y - ys)
+        dist = min(dy, R - dy)
+        fac = 16 - (self.lat_amp * dist) // (R // 2)
+        ml = ((tri(d % Pm, Pm) + Pm) * 3 + Pm) // (2 * Pm)
+        lam = (self.lmax * fac) // 16 if up else self.lmoon * ml
+        sun = 0 if not up else (3 if fac >= 14 else 2 if fac >= 11 else 1)
+        season = (4 * sz) // (2 * Py + 1)
+        stars = 0 if up else 1 + (3 * y) // R
+        return lam, (sun, ml, season, stars)
+
     def has_harvest(self, s):
-        """docs/17 day 3: the gene of slot s (codons 1 .. len-1) contains a HARVEST codon."""
+        return self.has_op(s, HARVEST)
+
+    def has_op(self, s, opcode):
+        """docs/17 days 3 and 4: the gene of slot s (codons 1 .. len-1) contains a codon of this operation."""
         base = s * self.G
         n = gene_len(self.fwd, self.is_stop, base, self.maxc)
         f, tb = self.fwd, self.table
         for k in range(1, n):
             i = base + 3 * k
-            if tb[f[i] * 16 + f[i + 1] * 4 + f[i + 2]] == HARVEST:
+            if tb[f[i] * 16 + f[i + 1] * 4 + f[i + 2]] == opcode:
                 return True
         return False
 
@@ -532,7 +592,9 @@ class World:
             "depth_hist": [[d, c] for d, c in sorted(dhist.items())],
         }
         if self.d1:                                     # docs/17 census additions, in this key order
-            out["light"] = self.light(t)
+            # day 4: the light at column 0 of the middle row of each zone, a list of two
+            out["light"] = self.light(t) if not self.d4 else [self.sky(t, (self.R // 4) * self.W)[0],
+                                                              self.sky(t, (self.R // 2 + self.R // 4) * self.W)[0]]
             out["energy_total"] = sum(self.E[s] for s in self.live)
             out["energy_init"] = self.energy_init
             out["ledger"] = list(self.ledger)
@@ -545,6 +607,9 @@ class World:
             out["starved_total"] = self.starved
             out["live_land"] = sum(1 for s in self.live if self.terrain[s] == LAND)
             out["harvesters"] = sum(1 for s in self.live if self.has_harvest(s))
+        if self.d4:                                     # docs/17 day 4
+            out["sensers"] = sum(1 for s in self.live if self.has_op(s, SENSE))
+            out["sleepers"] = sum(1 for s in self.live if self.has_op(s, WAIT))
         out["hash"] = None if state_hash is None else "%016x" % state_hash
         return out
 
@@ -563,6 +628,7 @@ class World:
         E_ = self.E
         ledger = self.ledger
         lam = self.light(t) if d1 else 0
+        d4 = self.d4
         emax, eshift, c_copy = self.emax, self.eshift, self.c_copy
         terrain = self.terrain
         win = 3 * G + 2                         # SEEK window: candidates H+1 .. H+3G, each needs 3 cells
@@ -588,7 +654,19 @@ class World:
                     # docs/17 day 1: passive light first, then the budget min(I, E >> eshift); one unit per instruction
                     E = E_[s]
                     ter = terrain[s] if terrain is not None else SEA
+                    if d4:
+                        lam, chan = self.sky(t, s)      # docs/17 day 4: light and sky channels of this slot
                     g = (lam * self.gp[ter]) >> 4
+                    if self.shade:
+                        # docs/17 section 14: n = live neighbours at the start of the tick; every light gain of this
+                        # processor in this tick is multiplied by (9 - n) / 9 (floor)
+                        Wd, Rd = self.W, self.R
+                        x0, y0 = s % Wd, s // Wd
+                        nl = 0
+                        for dx, dy in NEIGHBOURS:
+                            nl += alive[((y0 + dy) % Rd) * Wd + (x0 + dx) % Wd]
+                        shade_k = 9 - nl
+                        g = (g * shade_k) // 9
                     add = min(g, emax - E)
                     E += add
                     ledger[0] += add
@@ -711,11 +789,27 @@ class World:
                             term = bool(is_stop[c3])
                         if not term:
                             pc += 1
+                    elif op == SENSE:
+                        # docs/17 day 4: the next codon is the operand (consumed); skip the codon after it if the
+                        # sky channel (operand mod 4) is nonzero; NOP when the operand lies beyond the gene end
+                        if pc < L:
+                            ob = base + 3 * pc
+                            c = fwd[ob] * 16 + fwd[ob + 1] * 4 + fwd[ob + 2]
+                            pc += 1
+                            if chan[c & 3]:
+                                pc += 1
+                    elif op == WAIT:
+                        # docs/17 day 4: the tick ends after this instruction (the wrap rule still applies)
+                        if pc >= L:
+                            pc = 1
+                        break
                     elif op == HARVEST:
                         # docs/17 day 3: once per tick, light times the terrain's HARVEST gain
                         if not harvested:
                             harvested = True
                             g = (lam * self.gh[ter]) >> 4
+                            if self.shade:
+                                g = (g * shade_k) // 9
                             add = min(g, emax - E)
                             E += add
                             ledger[1] += add
@@ -881,7 +975,7 @@ def main(argv=None):
     ap.add_argument("--dump", default=None, help="write the final state bytes of section 8 to this file")
     ap.add_argument("--out", default=None, help="write the final census JSON to this file")
     g3 = ap.add_argument_group("DNA-3 (docs/17): the days of creation; every day implies --dna2")
-    g3.add_argument("--days", default="", help="days to switch on, e.g. 1 or 1,2 or 1,2,3 (day 3 needs 1 and 2)")
+    g3.add_argument("--days", default="", help="days to switch on, e.g. 1 or 1,2 or 1,2,3 or 1,2,3,4 (day 3 needs 1 and 2, day 4 needs 1 to 3)")
     g3.add_argument("--dna3", action="store_true", help="shorthand for --days 1,2,3")
     g3.add_argument("--seed-slots", default=None, help="explicit seed slots, comma-separated (n_seed of them)")
     g3.add_argument("--seed-terrain", default="any", choices=("any", "sea", "land"),
@@ -903,8 +997,14 @@ def main(argv=None):
     g3.add_argument("--c-copy", type=int, default=1, help="day 3: energy per copied cell")
     g3.add_argument("--maint", type=int, default=1, help="day 3: maintenance per tick")
     g3.add_argument("--inflow-land", action="store_true", help="day 3: inflow also refills land slots")
+    g3.add_argument("--shade", action="store_true", help="day 3 option (docs/17 section 14): light gains times (9 - live neighbours) / 9")
     g3.add_argument("--land-cell", type=int, default=32, help="day 3: terrain noise lattice spacing in slots")
     g3.add_argument("--land-thr", type=int, default=32768, help="day 3: land where the noise >= land-thr / 65536")
+    g3.add_argument("--year-days", type=int, default=16, help="day 4: days per year")
+    g3.add_argument("--moon-days", type=int, default=8, help="day 4: days per lunar cycle")
+    g3.add_argument("--season-amp", type=int, default=None, help="day 4: day-length amplitude in ticks (default day-len / 4)")
+    g3.add_argument("--lat-amp", type=int, default=8, help="day 4: light lost at the latitude farthest from the sun, sixteenths")
+    g3.add_argument("--lmoon", type=int, default=1, help="day 4: moonlight per moon level")
     a = ap.parse_args(argv)
     days = (1, 2, 3) if a.dna3 else tuple(int(x) for x in a.days.replace(",", " ").split())
     seed_slots = [int(x) for x in a.seed_slots.replace(",", " ").split()] if a.seed_slots else None
@@ -924,7 +1024,9 @@ def main(argv=None):
               days=days, seed_slots=seed_slots, seed_terrain=a.seed_terrain, W=a.W, firm=a.firm, day_len=a.day_len,
               light_len=a.light_len, lmax=a.lmax, emax=a.emax, eshift=a.eshift, e_seed=a.e_seed, e_spont=a.e_spont,
               g_pass=a.g_pass, gp_sea=a.gp_sea, gp_land=a.gp_land, gh_sea=a.gh_sea, gh_land=a.gh_land,
-              c_copy=a.c_copy, maint=a.maint, inflow_land=a.inflow_land, land_cell=a.land_cell, land_thr=a.land_thr)
+              c_copy=a.c_copy, maint=a.maint, inflow_land=a.inflow_land, land_cell=a.land_cell, land_thr=a.land_thr,
+              year_days=a.year_days, moon_days=a.moon_days, season_amp=a.season_amp, lat_amp=a.lat_amp, lmoon=a.lmoon,
+              shade=a.shade)
     t_init = time.perf_counter() - t0
     params = {"N": w.N, "G": w.G, "S": w.S, "ticks": a.ticks, "seed": w.seed, "I": w.I, "T": w.T, "mu": w.mu,
               "D": w.D, "F": w.F, "double": w.double, "code": "uniform" if a.uniform_code else "standard", "dna2": w.dna2,
@@ -939,7 +1041,10 @@ def main(argv=None):
             params.update(W=w.W, R=w.R, firm=w.firm, land=sum(1 for x in w.terrain if x == LAND),
                           firmament=sum(1 for x in w.terrain if x == FIRMAMENT))
         if w.d3:
-            params.update(gh=list(w.gh), c_copy=w.c_copy, maint=w.maint, inflow_land=w.inflow_land)
+            params.update(gh=list(w.gh), c_copy=w.c_copy, maint=w.maint, inflow_land=w.inflow_land, shade=w.shade)
+        if w.d4:
+            params.update(year_days=w.year_days, moon_days=w.moon_days, season_amp=w.season_amp, lat_amp=w.lat_amp,
+                          lmoon=w.lmoon)
     print("params " + json.dumps(params), file=sys.stderr, flush=True)
 
     out = sys.stdout

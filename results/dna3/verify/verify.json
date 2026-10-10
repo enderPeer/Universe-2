@@ -9,7 +9,7 @@
   "births_identical": true,
   "first_diff_line": null,
   "ref_secs": 0.2,
-  "engine_secs": 0.7,
+  "engine_secs": 1.2,
   "final": {
    "tick": 199,
    "live": 2,
@@ -33,7 +33,7 @@
   "births_identical": true,
   "first_diff_line": null,
   "ref_secs": 1.3,
-  "engine_secs": 0.9,
+  "engine_secs": 1.2,
   "final": {
    "tick": 299,
    "live": 208,
@@ -57,7 +57,7 @@
   "births_identical": true,
   "first_diff_line": null,
   "ref_secs": 0.9,
-  "engine_secs": 0.8,
+  "engine_secs": 1.1,
   "final": {
    "tick": 199,
    "live": 253,
@@ -81,7 +81,7 @@
   "births_identical": true,
   "first_diff_line": null,
   "ref_secs": 1.2,
-  "engine_secs": 0.9,
+  "engine_secs": 1.2,
   "final": {
    "tick": 299,
    "live": 205,
@@ -105,7 +105,7 @@
   "births_identical": true,
   "first_diff_line": null,
   "ref_secs": 1.2,
-  "engine_secs": 0.8,
+  "engine_secs": 1.1,
   "final": {
    "tick": 299,
    "live": 250,
@@ -129,7 +129,7 @@
   "births_identical": true,
   "first_diff_line": null,
   "ref_secs": 1.3,
-  "engine_secs": 0.9,
+  "engine_secs": 1.2,
   "final": {
    "tick": 299,
    "live": 181,
@@ -156,7 +156,7 @@
   "births_identical": true,
   "first_diff_line": null,
   "ref_secs": 1.3,
-  "engine_secs": 1.2,
+  "engine_secs": 1.1,
   "final": {
    "tick": 299,
    "live": 230,
@@ -180,7 +180,7 @@
   "births_identical": true,
   "first_diff_line": null,
   "ref_secs": 1.1,
-  "engine_secs": 0.9,
+  "engine_secs": 1.2,
   "final": {
    "tick": 299,
    "live": 187,
@@ -207,7 +207,7 @@
   "births_identical": true,
   "first_diff_line": null,
   "ref_secs": 5.7,
-  "engine_secs": 1.1,
+  "engine_secs": 1.4,
   "final": {
    "tick": 399,
    "live": 783,
@@ -234,7 +234,7 @@
   "births_identical": true,
   "first_diff_line": null,
   "ref_secs": 3.3,
-  "engine_secs": 0.9,
+  "engine_secs": 1.2,
   "final": {
    "tick": 399,
    "live": 22,
@@ -261,7 +261,7 @@
   "births_identical": true,
   "first_diff_line": null,
   "ref_secs": 4.0,
-  "engine_secs": 1.0,
+  "engine_secs": 1.2,
   "final": {
    "tick": 299,
    "live": 795,
@@ -288,7 +288,7 @@
   "births_identical": true,
   "first_diff_line": null,
   "ref_secs": 1.1,
-  "engine_secs": 0.9,
+  "engine_secs": 1.2,
   "final": {
    "tick": 299,
    "live": 185,
@@ -314,8 +314,8 @@
   "births_rows": 29,
   "births_identical": true,
   "first_diff_line": null,
-  "ref_secs": 2.6,
-  "engine_secs": 0.9,
+  "ref_secs": 2.5,
+  "engine_secs": 1.3,
   "final": {
    "tick": 299,
    "live": 4,
@@ -330,6 +330,168 @@
    "harvesters": 3,
    "starved_total": 0,
    "hash": "d9da8b0ed858b011"
+  }
+ },
+ {
+  "name": "shade_T0_nonplant",
+  "args": "--dna3 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 31 --mu 0.005 --n-seed 16 --seed-terrain sea --genome 'ATG GCT CTT TTA GGT'",
+  "ok": true,
+  "tick_hashes": 600,
+  "census_lines": 60,
+  "births_rows": 1087,
+  "births_identical": true,
+  "first_diff_line": null,
+  "ref_secs": 5.7,
+  "engine_secs": 2.0,
+  "final": {
+   "tick": 599,
+   "live": 306,
+   "births_total": 1087,
+   "faithful_total": 1017,
+   "energy_total": 3808,
+   "zone_live": [
+    161,
+    145
+   ],
+   "live_land": 16,
+   "harvesters": 1,
+   "starved_total": 796,
+   "hash": "41e6f4ef9373c100"
+  }
+ },
+ {
+  "name": "day4_plant",
+  "args": "--days 1,2,3,4 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 3 --n-seed 16 --seed-terrain sea --genome 'ATG AGA GCT CTT TTA GGT'",
+  "ok": true,
+  "tick_hashes": 600,
+  "census_lines": 60,
+  "births_rows": 1324,
+  "births_identical": true,
+  "first_diff_line": null,
+  "ref_secs": 6.1,
+  "engine_secs": 1.4,
+  "final": {
+   "tick": 599,
+   "live": 367,
+   "births_total": 1324,
+   "faithful_total": 1303,
+   "energy_total": 14243,
+   "zone_live": [
+    337,
+    30
+   ],
+   "live_land": 45,
+   "harvesters": 365,
+   "starved_total": 971,
+   "hash": "d098ddd2ed0066f8"
+  }
+ },
+ {
+  "name": "day4_sleeper_odd",
+  "args": "--days 1,2,3,4 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 37 --mu 0.01 --year-days 4 --moon-days 3 --season-amp 6 --lat-amp 12 --lmoon 2 --n-seed 16 --genome 'ATG AGA AGT AAA AGC GCT CTT TTA GGT'",
+  "ok": true,
+  "tick_hashes": 600,
+  "census_lines": 60,
+  "births_rows": 469,
+  "births_identical": true,
+  "first_diff_line": null,
+  "ref_secs": 5.4,
+  "engine_secs": 1.4,
+  "final": {
+   "tick": 599,
+   "live": 160,
+   "births_total": 469,
+   "faithful_total": 333,
+   "energy_total": 7493,
+   "zone_live": [
+    94,
+    66
+   ],
+   "live_land": 49,
+   "harvesters": 151,
+   "starved_total": 316,
+   "hash": "d2ef0703fa28f02d"
+  }
+ },
+ {
+  "name": "day4_noshade_T64",
+  "args": "--days 1,2,3,4 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 41 --n-seed 16 --genome 'ATG AGA AGT AAA AGC GCT CTT TTA GGT'",
+  "ok": true,
+  "tick_hashes": 600,
+  "census_lines": 60,
+  "births_rows": 2087,
+  "births_identical": true,
+  "first_diff_line": null,
+  "ref_secs": 6.4,
+  "engine_secs": 1.4,
+  "final": {
+   "tick": 599,
+   "live": 6,
+   "births_total": 2087,
+   "faithful_total": 2013,
+   "energy_total": 557,
+   "zone_live": [
+    0,
+    6
+   ],
+   "live_land": 5,
+   "harvesters": 6,
+   "starved_total": 165,
+   "hash": "5009bcd1339d6574"
+  }
+ },
+ {
+  "name": "day4_uniform",
+  "args": "--days 1,2,3,4 --uniform-code --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 400 --seed 43 --n-seed 16 --genome 'AAA CCG CCT AAA CGA AGA AAG CCC AGC'",
+  "ok": true,
+  "tick_hashes": 400,
+  "census_lines": 40,
+  "births_rows": 444,
+  "births_identical": true,
+  "first_diff_line": null,
+  "ref_secs": 3.7,
+  "engine_secs": 1.3,
+  "final": {
+   "tick": 399,
+   "live": 180,
+   "births_total": 444,
+   "faithful_total": 436,
+   "energy_total": 11190,
+   "zone_live": [
+    8,
+    172
+   ],
+   "live_land": 62,
+   "harvesters": 180,
+   "starved_total": 278,
+   "hash": "71246a6dede713c0"
+  }
+ },
+ {
+  "name": "day4_g255_single_soup",
+  "args": "--days 1,2,3,4 --shade --T 0 --W 16 --land-cell 8 --N 65280 --G 255 --ticks 600 --seed 47 --no-double --D 20 --F 6 --e-spont 300 --inflow-land --day-len 20 --light-len 12 --year-days 6",
+  "ok": true,
+  "tick_hashes": 600,
+  "census_lines": 60,
+  "births_rows": 44,
+  "births_identical": true,
+  "first_diff_line": null,
+  "ref_secs": 1.5,
+  "engine_secs": 1.3,
+  "final": {
+   "tick": 599,
+   "live": 11,
+   "births_total": 44,
+   "faithful_total": 0,
+   "energy_total": 463,
+   "zone_live": [
+    5,
+    6
+   ],
+   "live_land": 0,
+   "harvesters": 3,
+   "starved_total": 12,
+   "hash": "d88742bf523792d3"
   }
  }
 ]

@@ -1,0 +1,168 @@
+[
+ {
+  "tick": 10239,
+  "event": "harvesters above 1 %",
+  "count": 13840,
+  "live": 18285
+ },
+ {
+  "tick": 10239,
+  "event": "harvesters above 10 %",
+  "count": 13840,
+  "live": 18285
+ },
+ {
+  "tick": 10239,
+  "event": "harvesters above 50 %",
+  "count": 13840,
+  "live": 18285
+ },
+ {
+  "tick": 10239,
+  "event": "sensers above 1 %",
+  "count": 4580,
+  "live": 18285
+ },
+ {
+  "tick": 10239,
+  "event": "sensers above 10 %",
+  "count": 4580,
+  "live": 18285
+ },
+ {
+  "tick": 10239,
+  "event": "sleepers above 1 %",
+  "count": 4587,
+  "live": 18285
+ },
+ {
+  "tick": 10239,
+  "event": "sleepers above 10 %",
+  "count": 4587,
+  "live": 18285
+ },
+ {
+  "tick": 10239,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST L1 COPY ALLOC HARVEST TERM DIVIDE",
+  "codons": "ATG AGG CGC CTA GCT AGG TTG GGG",
+  "count": 422
+ },
+ {
+  "tick": 10239,
+  "event": "longest top-10 gene so far",
+  "length": 8,
+  "ops": "START HARVEST L1 COPY ALLOC HARVEST TERM DIVIDE"
+ },
+ {
+  "tick": 10239,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST L1 COPY ALLOC HARVEST TERM DIVIDE TERM JNZB SENSE SETQ",
+  "codons": "ATG AGG CGC CTA GCT AGG TTG GGG TTG GTT AGT ACA",
+  "count": 379
+ },
+ {
+  "tick": 10239,
+  "event": "longest top-10 gene so far",
+  "length": 12,
+  "ops": "START HARVEST L1 COPY ALLOC HARVEST TERM DIVIDE TERM JNZB SENSE SETQ"
+ },
+ {
+  "tick": 10239,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST",
+  "codons": "ATG AGG",
+  "count": 177
+ },
+ {
+  "tick": 10239,
+  "event": "new operation sequence in the top 10",
+  "ops": "START WAIT",
+  "codons": "ATG AGC",
+  "count": 158
+ },
+ {
+  "tick": 10239,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST L1 COPY ALLOC HARVEST TERM DIVIDE TERM JNZB SENSE R3",
+  "codons": "ATG AGG CGC CTA GCT AGG TTG GGG TTG GTT AGT AAA",
+  "count": 77
+ },
+ {
+  "tick": 10239,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST L1 COPY ALLOC HARVEST TERM DIVIDE TERM JNZB SENSE R1",
+  "codons": "ATG AGG CGC CTA GCT AGG TTG GGG TTG GTT AGT TCA",
+  "count": 70
+ },
+ {
+  "tick": 10239,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST L1 COPY ALLOC HARVEST TERM DIVIDE TERM JNZB SENSE SETP",
+  "codons": "ATG AGG CGC CTA GCT AGG TTG GGG TTG GTT AGT CCA",
+  "count": 60
+ },
+ {
+  "tick": 10239,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST L1 COPY ALLOC HARVEST TERM DIVIDE TERM SKNZ SENSE SETQ",
+  "codons": "ATG AGG CGC CTA GCT AGG TTG GGG TTG ATT AGT ACA",
+  "count": 51
+ },
+ {
+  "tick": 20479,
+  "event": "new operation sequence in the top 10",
+  "ops": "START ALLOC R1 HARVEST TERM DIVIDE SKNZ R3 COPY",
+  "codons": "ATG GCG TCT AGG TTG GGA ATC AAA CTC",
+  "count": 517
+ },
+ {
+  "tick": 20479,
+  "event": "new operation sequence in the top 10",
+  "ops": "START ALLOC R1 HARVEST TERM DIVIDE SKZ R3 COPY",
+  "codons": "ATG GCG TCT AGG TTG GGA TTC AAA CTC",
+  "count": 250
+ },
+ {
+  "tick": 20479,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST L1 COPY ALLOC HARVEST TERM DIVIDE TERM JNZB HARVEST R3",
+  "codons": "ATG AGG CGC CTA GCT AGG TTG GGG TTG GTT AGA AAA",
+  "count": 170
+ },
+ {
+  "tick": 30719,
+  "event": "new operation sequence in the top 10",
+  "ops": "START ALLOC R1 HARVEST TERM DIVIDE SKZ HARVEST COPY",
+  "codons": "ATG GCG TCT AGG TTG GGA TTC AGA CTC",
+  "count": 1895
+ },
+ {
+  "tick": 30719,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST HARVEST COPY ALLOC HARVEST TERM DIVIDE",
+  "codons": "ATG AGG AGA CTA GCT AGG TTG GGG",
+  "count": 647
+ },
+ {
+  "tick": 30719,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST WAIT COPY ALLOC HARVEST TERM DIVIDE",
+  "codons": "ATG AGG AGC CTA GCT AGG TTG GGG",
+  "count": 275
+ },
+ {
+  "tick": 40959,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST STA COPY ALLOC HARVEST TERM DIVIDE",
+  "codons": "ATG AGG CAC CTA GCT AGG TTG GGG",
+  "count": 1909
+ },
+ {
+  "tick": 40959,
+  "event": "new operation sequence in the top 10",
+  "ops": "START ALLOC R1 HARVEST TERM DIVIDE R1 HARVEST COPY",
+  "codons": "ATG GCG TCT AGG TTG GGA TCC AGA CTC",
+  "count": 597
+ }
+]

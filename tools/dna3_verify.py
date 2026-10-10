@@ -1,7 +1,7 @@
 """DNA-3 (docs/17): run sim/dna_ref.py locally and gpu/dna_world.cu on a cluster node on the same configurations and
 compare every stdout line (the state hash after every tick and the census lines) and the birth files byte for byte.
 
-  python tools/dna3_verify.py --host knecht24 --bin '~/universe2/dna3/dna_world3' --gpu 0 --out results/dna3/verify
+  python tools/dna3_verify.py --host knecht24 --bin '~/universe2/dna3/dna_world3b' --gpu 0 --out results/dna3/verify
 
 The configurations are listed in CONFIGS below: DNA-1 and DNA-2 regressions (the new engine must still reproduce
 them) and DNA-3 worlds that switch on days 1, 2 and 3 alone and together, with edge cases (G not a multiple of 4,
@@ -19,6 +19,7 @@ import time
 REF = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sim", "dna_ref.py")
 REPL = "ATG GCT CTT TTA GGT"            # the DNA-2 5-codon replicator (docs/15)
 PLANT = "ATG AGA GCT CTT TTA GGT"       # the same with HARVEST after START (docs/17 day 3)
+SLEEPER = "ATG AGA AGT AAA AGC GCT CTT TTA GGT"   # START HARVEST SENSE <sun> WAIT ALLOC COPY TERM DIVIDE (day 4)
 
 CONFIGS = [
     ("dna1_t1", "--N 16384 --G 256 --ticks 200 --seed 1"),
@@ -41,6 +42,19 @@ CONFIGS = [
     ("dna3_g255_single", "--dna3 --W 16 --land-cell 8 --N 65280 --G 255 --ticks 300 --seed 23 --no-double --D 20 "
                          "--inflow-land --c-copy 3 --maint 2 --gp-land 4 --F 3 --n-seed 8 --genome '%s'" % PLANT),
     ("dna3_soup", "--dna3 --W 32 --land-cell 16 --N 262144 --G 256 --ticks 300 --seed 29 --F 8 --e-spont 300"),
+    # docs/17 section 14: no fixed lifetime (T = 0), shading, day 4
+    ("shade_T0_nonplant", "--dna3 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 31 --mu 0.005 "
+                          "--n-seed 16 --seed-terrain sea --genome '%s'" % REPL),
+    ("day4_plant", "--days 1,2,3,4 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 3 --n-seed 16 "
+                   "--seed-terrain sea --genome '%s'" % PLANT),
+    ("day4_sleeper_odd", "--days 1,2,3,4 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 37 --mu 0.01 "
+                         "--year-days 4 --moon-days 3 --season-amp 6 --lat-amp 12 --lmoon 2 --n-seed 16 --genome '%s'" % SLEEPER),
+    ("day4_noshade_T64", "--days 1,2,3,4 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 41 --n-seed 16 "
+                         "--genome '%s'" % SLEEPER),
+    ("day4_uniform", "--days 1,2,3,4 --uniform-code --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 400 --seed 43 "
+                     "--n-seed 16 --genome 'AAA CCG CCT AAA CGA AGA AAG CCC AGC'"),
+    ("day4_g255_single_soup", "--days 1,2,3,4 --shade --T 0 --W 16 --land-cell 8 --N 65280 --G 255 --ticks 600 --seed 47 "
+                              "--no-double --D 20 --F 6 --e-spont 300 --inflow-land --day-len 20 --light-len 12 --year-days 6"),
 ]
 
 
