@@ -22,7 +22,7 @@ specified at design level with predictions. Section 12 lists the decisions that 
 | 3 | waters gathered, dry land appears; the earth brings forth plants | **terrain** (sea, land) with different light and inflow; **HARVEST** (photosynthesis) as a new operation; costs per copied cell; maintenance per tick; death by starvation | autotrophs; selection on something other than copying speed; a land/sea ecology | implemented, verified |
 | 4 | lights in the firmament for signs, seasons, days and years | sun height by latitude, **seasons** with opposite phase in the two zones (hemispheres), a moon, stars; **SENSE** (branch on a sky signal) and **WAIT** (sleep) | timing behaviour, dormancy, seasonal strategies | implemented, verified (section 14) |
 | 5 | water creatures and birds | **predation** (energy taken from a neighbour), **motion** (swimming; flying across the firmament), **foreign execution** (a processor may run a neighbour's gene, so parasites can arise) | heterotrophs, trophic levels, migration between hemispheres, parasites | implemented, verified (section 15) |
-| 6 | land animals; then humans | **tasks** on a working tape rewarded with energy (stepping stones from the docs/07 function library); **signals** between neighbours; the **interface** for a learned controller (the "human" layer), specified, not built | computation selected by the environment, communication, the slot for learning minds | design |
+| 6 | land animals; then humans | **tasks** on a working tape rewarded with energy (stepping stones from the docs/07 function library); **signals** between neighbours; the **interface** for a learned controller (the "human" layer), specified, not built | computation selected by the environment, communication, the slot for learning minds | implemented except the human layer (section 16) |
 | 7 | the work completed; rest | **no design change**: the frozen rule set runs long and unattended with open-endedness measurements (evolutionary activity against a neutral shadow, novelty, complexity) and stated criteria for open-ended against plateau | the test | design |
 
 **Changes against the suggested mapping, and why.** (a) Energy enters on day 1, not day 3: day 1 is "light", and
@@ -45,7 +45,8 @@ goes to day 5 with the other interactions.
   unless a day below changes it.
 - **Flags.** `--days 1`, `--days 2`, `--days 1,2`, `--days 1,2,3`; `--dna3` = `--days 1,2,3`.
 - **New random streams** (`rnd(t, k, j)` of docs/09 section 7): `rnd(t, s, 2000)` (day 2 ALLOC and day 5 MOVE
-  priority), `rnd(t, e, 3000)` (day 5 order of eaters) and `rnd(-2, i, 9)` (day 3 terrain lattice). DNA-1/2 use j = 0 (ALLOC), 1, 2 (damage), 3, 4 + j (inflow), 1000 + c
+  priority), `rnd(t, e, 3000)` (day 5 order of eaters), `rnd(t, s, 4000)` (day 6 task input) and `rnd(-2, i, 9)`
+  (day 3 terrain lattice). DNA-1/2 use j = 0 (ALLOC), 1, 2 (damage), 3, 4 + j (inflow), 1000 + c
   (mutation); 2000 is above every inflow cell index for G < 1996 and t = -2 is used by nothing else. Day 4 uses no
   random numbers.
 - **Integer arithmetic.** All energy quantities are non-negative integers; `floor` of non-negative operands, so
@@ -298,22 +299,44 @@ that EXEC a neighbour and carry no complete copy loop of their own) arise within
 (iii) fliers are rare without a reason to cross, but where one zone is empty (O1) a lineage that flies across has a
 free hemisphere.
 
-## 8. Day 6: land animals, and humans (design; the human layer is an interface only)
+## 8. Day 6: land animals, and humans (implemented except the human layer, which is an interface only; section 16)
 
-- **Land animals.** `MOVE` on land (walking) becomes possible; whether a gene swims, walks or flies is fixed by a
-  "body" codon read once at birth (codon 1 after START mod 3), so body plans are heritable and mutable.
-- **Tasks.** The last cells of each slot (beyond the codons; G = 256 gives 85 codons and 1 spare cell, so day 6 needs
-  G with a 16-cell I/O area, e.g. G = 271) are a working tape. At the start of each tick the world writes an input
-  x (4 bits, two cells, `rnd(t, s, 4000)`) into the I/O area; the gene computes; `OUT` submits the two cells under H
-  as y. If y = f(x) for a function f of the task list, the processor gains `bonus(f)` units once per tick and
-  function. The task list comes from the docs/07 library of 2-bit machines, ordered by how many programs of the
-  winning machine compute each function (the rarer, the harder): stepping stones from identity and NOT through
-  x+1, 15-x, parity, to x*x mod 16, with bonus doubling per difficulty rank (Avida's EQU at the top).
-  Prediction: the first tasks appear within 10^5 ticks at 10^8 cells (the identity costs about four codons);
-  harder tasks only if the easy ones are rewarded (Lenski et al. 2003 stepping stones).
-- **Senses and signals.** `SIGNAL` writes A into a 2-bit per-slot signal register (visible to neighbours from the next
-  tick, through the snapshot); `LISTEN`: operand direction, A = that neighbour's register. Prediction: signals are
-  first used as kin markers (cooperation within patches), later as alarm calls if predators exist.
+Day 6 needs days 1 to 5. The design version proposed body codons for swimming, walking and flying, tasks on a
+working tape with a separate I/O area of 16 cells and inputs every tick; the implemented rules below are simpler
+(*changed*) and were shaped by two loopholes found in the reference (section 16.1).
+
+**Codon table.** SIGNAL on CGA and LISTEN on CGG (from Arg; L1 keeps CGT, CGC), IN on TCA and OUT on TCG (from Ser;
+R1 keeps TCT, TCC). Uniform code: values 28, 29, 30, 31.
+
+**Parameters** (defaults): `c_walk` 4 (energy for a one-slot move that touches land), `task_bonus` 8.
+
+**State.** Every processor gains four fields, hashed after `xs` in this order: `sig` (signal register, 0..3), `xin`
+(the input of its last IN, 0..3), `open` (1 while that input awaits its answer), `streak` (per task k a 2-bit count
+of correct answers in a row, bits 2k and 2k+1). All are 0 at birth and move with the processor.
+
+**Land animals.** A one-slot MOVE (day 5) is no longer restricted to the sea: any target that is not firmament, free
+and affordable is allowed; its cost is `c_walk` if the source or the target is land, else `c_move`.
+
+**Signals.** At the start of step 1 every slot's signal is copied (`sig_old`, 0 where there is no processor).
+
+| operation | effect |
+|---|---|
+| SIGNAL | `sig = A` (seen by the neighbours from the next tick) |
+| LISTEN | operand as for EAT; `A = sig_old` of that neighbour (0 if it has no processor) |
+| IN | `x = rnd(t, s, 4000) mod 4`; the I/O cell, the last cell of the own slot (cell G - 1, outside every codon when G mod 3 != 0), gets `fwd = x` (and `rev = comp`); `H` = the I/O cell; `A = x`; `xin = x`, `open = 1` |
+| OUT | if `open`: `open = 0`, and for each task k of the ladder: if `f_k(xin) == A` its streak rises by 1 (at most 3), else it is reset to 0; a task whose streak is now 3 pays `task_bonus << rank_k` (capped at emax; the excess is wasted) |
+
+**The task ladder** (2-bit input x): `x^1` (rank 0), `x+1 mod 4` (rank 0), `x^3` (rank 2), `x-1 mod 4` (rank 2):
+bonuses 8, 8, 32, 32 by default. With the I/O cell under the head after IN, `IN FLIP LDA OUT` computes x^1, `IN INC
+LDA OUT` x+1, `IN FLIP INC INC LDA OUT` x^3 and `IN INC INC INC LDA OUT` x-1: the hard tasks are the easy ones plus
+two INC, stepping stones in the sense of Lenski et al. (2003). An echo (`IN LDA OUT`) matches no task, and a
+constant or random answer reaches a streak of 3 for a given task with probability 1/64 per answer.
+
+**Ledger and census.** The ledger gains a thirteenth entry `tasks` (income); the balance becomes energy_total =
+energy_init + passive + harvest + spontaneous + tasks - instructions - copy - maintenance - dead - lost_endowments -
+trophic_loss - movement. Census keys after the day-5 ones: `"signalers"`, `"listeners"`, `"taskers"` (live genes with
+SIGNAL, LISTEN, OUT) and `"tasks"`, the cumulative number of rewarded answers per task.
+
 - **The human layer: an interface for a learned controller (not built).** A processor may be *controlled*: a flag
   set at birth for genes that carry a `MIND` codon. A controlled processor does not fetch codons in step 1; it
   executes one action per tick from a fixed set {NOP, HARVEST, ALLOC+COPY loop as a macro, DIVIDE, MOVE d, EAT d,
@@ -790,3 +813,60 @@ days 1 to 5) but seeded with 4,096 *plants* (`ATG AGA GCT CTT TTA GGT`) in the s
   event has not been traced instruction by instruction.
 - **WAIT stays and grows**: 78 % of O1 (210,909), 73 % of O2, 60 % of O4. The populations still grow (O1 115,846 at
   tick 204,799, 271,790 at 573,439), now in both zones.
+
+## 16. Day 6 implemented: computation evolves
+
+### 16.1 Two loopholes, found in the reference before the engine was written
+
+1. **Guessing.** The first version paid every task whose value matched an OUT once per input. With 2-bit values a
+   random answer matches each task one time in four: a hand-written x^1 program whose head had wandered out of its
+   slot earned all four rewards with noise, and `IN LDA OUT` (a constant answer) earned about as much as a correct
+   program. Now each input gets one answer, and a task pays only after three correct answers in a row (a 2-bit
+   streak per task), so a guesser earns about 1/64 of a correct program's reward.
+2. **No safe place to compute.** The head starts on the gene's first cell, and any write there kills; reaching the
+   padding behind the gene needs SEEK or a long walk. Now IN writes the input into the slot's last cell (outside every
+   codon for G = 256) and puts the head there, so `IN FLIP LDA OUT` computes x^1 and `IN INC INC INC LDA OUT` x-1.
+
+Reference, 32 x 32 slots, 768 ticks, 16 seeds: the x^1 program reaches 957 organisms and earns 10.6 M units from tasks
+(0.73 M from light); the x-1 program 956; the echo `IN LDA OUT` earns nothing and holds 71 (the plain plant: 323).
+
+### 16.2 Verification
+
+Six configurations were added (the x^1 and x-1 programs, a signaller-listener with tasks, walkers seeded on land, the
+uniform code at G = 255, plants with mu 0.03). **31 of 31 configurations identical on every tick, 15,500 tick
+hashes, 1,550 census lines and 25,677 birth rows each, on an RTX 3060 and on the RTX 4090**, the earlier 25 unchanged in the reference; every day-6 path is exercised
+(rewarded answers in five worlds, 18,160 units spent walking on land, signals and listens) and the ledger with task
+income closes in every census line.
+
+### 16.3 O6: the day-6 world
+
+`O6_day6`: the O5 world with day 6 switched on (10^8 cells, shading, T = 0, 4,096 plant seeds in the sea, census every
+10,240 ticks), started 2026-10-10 about 22:40 UTC on an RTX 3060 in place of O2.
+
+| tick | alive | zone 0 / zone 1 | with OUT | rewarded answers x^1 / x+1 / x^3 / x-1 | task income (cumulative) | HARVEST income |
+|---:|---:|---|---:|---|---:|---:|
+| 10,239 | 64,026 | 44,920 / 19,106 | 104 | 22 / 79 / 27 / 17 | 2,216 | 1.31 G |
+| 30,719 | 110,881 | 64,714 / 46,167 | 7,828 | 2.12 M / 10.5 M / 2.13 M / 4,325 | 122 M | 5.30 G |
+| 40,959 | 264,136 | 68,467 / 195,669 | 191,086 | 366 M / 1.63 G / 366 M / 18,821 | 16.1 G | 9.01 G |
+| 112,639 | 293,798 | 91,208 / 202,590 | 204,306 | 5.77 G / 25.4 G / 5.77 G / 869,181 | 245 G | 49.0 G |
+
+1. **Computation evolved from plants that had none, within 30,000 ticks.** Between ticks 20,479 and 40,959 the
+   carriers of OUT went from 335 to 191,086 and the population more than tripled (72,400 to 264,136). In the last
+   census interval an organism earned 10.90 units per tick from tasks, 2.22 from HARVEST and 0.20 from passive light,
+   and ran 11.84 instructions per tick (the T = 0 plants of O1 ran 3.9): computation is now the main food.
+2. **The program is wrapped around the copy loop.** All living genes at tick 102,400 were read from the checkpoint
+   (`tools/dna3_ckpt_genes.py`): 4,041 operation sequences, of which the leading ones are
+   `START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE HARVEST HARVEST OUT IN INC` (42,577) and
+   `START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE WAIT MOVE OUT IN INC` (33,444). At the end of the gene IN puts x into
+   the I/O cell and INC makes it x+1; the gene wraps and passes HARVEST, ALLOC, COPY and TERM (whose skip jumps over
+   DIVIDE) to LDA, which loads x+1, and OUT answers. The task computation and the copy loop are one loop; the head,
+   which the copier does not use, is the computer's register. It computes x+1 (rank 0); the x^1 and x^3 rewards are
+   by-products (x+1 equals x^1 for even x and x^3 for odd x, so three even or three odd inputs in a row pay those too).
+   The harder x-1 (two more INC) has appeared (869,181 rewarded answers) but has not spread.
+3. **The firmament holds back an innovation.** Read from the checkpoint at tick 102,400: in zone 1, 201,215 of 202,516
+   organisms (99.4 %) carry OUT; in zone 0, 2,203 of 92,337 (2.4 %). The computing lineages fill their hemisphere and
+   stop at the barrier; only a flight (MOVE of 2 to 4 slots, since day 5) can carry a gene across, and in 70,000 ticks
+   task carriers have not taken zone 0 (whether its 2,203 carriers crossed or arose there was not traced).
+4. Seen along the way: WAIT, EAT and MOVE spread here too (108,344, 61,152 and 83,979 carriers at tick 102,399), and
+   SIGNAL and LISTEN are carried by 27,785 and 18,881 organisms; whether the signals carry information has not been
+   tested.

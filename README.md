@@ -133,7 +133,12 @@ MOVE with swimming and flights across the firmament, EXEC of a neighbour's gene;
 on both GPU types). Open-ended worlds are running (docs/17 sections 14 and 15): WAIT spreads in long `HARVEST WAIT`
 genes; one hemisphere died, stayed empty for 300,000 ticks behind the firmament and was refilled by a second,
 independent origin of life; in the day-5 world dispersal by flight spread first (90 % of organisms) and then
-predation (81 %), all of them mixotrophic plants that eat their neighbours.
+predation (81 %), all of them mixotrophic plants that eat their neighbours. **Day 6 is implemented** (walking on land, signals, and a task
+ladder on a 2-bit input with an I/O cell and a three-in-a-row rule against guessing; 31 of 31 configurations
+identical on both GPU types), and in its open world **computation evolved from plants that had none within 30,000
+ticks**: a program wrapped around the copy loop (`... LDA ... OUT IN INC`) computes x+1, task income became five
+times the light income, and the innovation filled its hemisphere (99.4 % of zone 1) but not the other one (2.4 %),
+held back by the firmament.
 
 **Real ISAs.** AArch64 exhaustive over all 2^32 words: **1,526,900,218 valid instructions (35.5509 %)**, 1,298
 mnemonics, 15 minutes on the workstation. Encoding density of other ISAs (16.7 M-word samples, Capstone): ARM32

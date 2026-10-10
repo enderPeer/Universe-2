@@ -1,0 +1,200 @@
+[
+ {
+  "tick": 10239,
+  "event": "harvesters above 1 %",
+  "count": 63901,
+  "live": 64026
+ },
+ {
+  "tick": 10239,
+  "event": "harvesters above 10 %",
+  "count": 63901,
+  "live": 64026
+ },
+ {
+  "tick": 10239,
+  "event": "harvesters above 50 %",
+  "count": 63901,
+  "live": 64026
+ },
+ {
+  "tick": 10239,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE",
+  "codons": "ATG AGA GCT CTT TTA GGT",
+  "count": 42946
+ },
+ {
+  "tick": 10239,
+  "event": "longest top-10 gene so far",
+  "length": 6,
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE"
+ },
+ {
+  "tick": 10239,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE HARVEST STA",
+  "codons": "ATG AGA GCT CTT TTA GGT AGA CAC",
+  "count": 1102
+ },
+ {
+  "tick": 10239,
+  "event": "longest top-10 gene so far",
+  "length": 8,
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE HARVEST STA"
+ },
+ {
+  "tick": 20479,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE HARVEST",
+  "codons": "ATG AGA GCA CTT TTA GGT AGA",
+  "count": 4841
+ },
+ {
+  "tick": 30719,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE MOVE COPY",
+  "codons": "ATG AGA GCT CTT TTA GGT ACA CTG",
+  "count": 5110
+ },
+ {
+  "tick": 30719,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE MOVE INC",
+  "codons": "ATG AGA GCT CTT TTA GGT ACA CAG",
+  "count": 3195
+ },
+ {
+  "tick": 30719,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE MOVE STA",
+  "codons": "ATG AGA GCT CTT TTA GGT ACA CAC",
+  "count": 2984
+ },
+ {
+  "tick": 30719,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE MOVE TERM HARVEST LISTEN COPYR",
+  "codons": "ATG AGA GCT CTT TTA GGT ACG TTG AGA CGG TGT",
+  "count": 2574
+ },
+ {
+  "tick": 30719,
+  "event": "longest top-10 gene so far",
+  "length": 11,
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE MOVE TERM HARVEST LISTEN COPYR"
+ },
+ {
+  "tick": 40959,
+  "event": "sensers above 1 %",
+  "count": 153950,
+  "live": 264136
+ },
+ {
+  "tick": 40959,
+  "event": "sensers above 10 %",
+  "count": 153950,
+  "live": 264136
+ },
+ {
+  "tick": 40959,
+  "event": "sensers above 50 %",
+  "count": 153950,
+  "live": 264136
+ },
+ {
+  "tick": 40959,
+  "event": "sleepers above 1 %",
+  "count": 61740,
+  "live": 264136
+ },
+ {
+  "tick": 40959,
+  "event": "sleepers above 10 %",
+  "count": 61740,
+  "live": 264136
+ },
+ {
+  "tick": 40959,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE WAIT MOVE OUT IN INC",
+  "codons": "ATG AGG GCT CTT TTG GGG TAT AGT AGC ACA TCG TCA CAA",
+  "count": 28235
+ },
+ {
+  "tick": 40959,
+  "event": "longest top-10 gene so far",
+  "length": 13,
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE WAIT MOVE OUT IN INC"
+ },
+ {
+  "tick": 40959,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE TERM HARVEST OUT IN INC",
+  "codons": "ATG AGA GCA CTT TTG GGT TAT AGT TTG AGA TCG TCA CAG",
+  "count": 10502
+ },
+ {
+  "tick": 40959,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE HARVEST HARVEST OUT IN INC",
+  "codons": "ATG AGG GCT CTT TTG GGG TAT AGT AGG AGA TCG TCA CAA",
+  "count": 9834
+ },
+ {
+  "tick": 40959,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE WAIT HARVEST OUT IN INC",
+  "codons": "ATG AGG GCT CTT TTG GGG TAT AGT AGC AGA TCG TCA CAA",
+  "count": 6639
+ },
+ {
+  "tick": 40959,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE LISTEN SIGNAL OUT IN INC",
+  "codons": "ATG AGG GCT CTT TTG GGG TAT AGT CGG CGA TCG TCA CAA",
+  "count": 6228
+ },
+ {
+  "tick": 40959,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA HARVEST HARVEST HARVEST OUT IN INC",
+  "codons": "ATG AGA GCT CTT TTG GGT TAT AGG AGG AGA TCG TCA CAA",
+  "count": 6220
+ },
+ {
+  "tick": 51199,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE MOVE LDA HARVEST MOVE SENSE",
+  "codons": "ATG AGA GCT CTT TTA GGT ACG TAC AGA ACG AGT",
+  "count": 8993
+ },
+ {
+  "tick": 51199,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE MOVE LDA HARVEST MOVE COPYR",
+  "codons": "ATG AGA GCT CTT TTA GGT ACG TAC AGA ACG TGT",
+  "count": 5647
+ },
+ {
+  "tick": 61439,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE MOVE LDA HARVEST MOVE DIVIDE",
+  "codons": "ATG AGA GCT CTT TTA GGT ACG TAC AGA ACG GGT",
+  "count": 5033
+ },
+ {
+  "tick": 71679,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE MOVE R1 HARVEST MOVE WAIT",
+  "codons": "ATG AGA GCT CTT TTA GGT ACG TCC AGA ACG AGC",
+  "count": 5311
+ },
+ {
+  "tick": 81919,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE MOVE L3 HARVEST MOVE EXEC",
+  "codons": "ATG AGA GCT CTT TTG GGT ACG GAC AGA ACG GTA",
+  "count": 5879
+ }
+]

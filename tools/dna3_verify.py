@@ -24,6 +24,10 @@ EATER = "ATG AGA CCA AAA GCT CTT TTA GGT"        # START HARVEST EAT <N> ALLOC C
 SWIMMER = "ATG AGA ACA AGA GCT CTT TTA GGT"      # START HARVEST MOVE <AGA: 1 slot east> ALLOC COPY TERM DIVIDE
 FLIER = "ATG AGA ACA CTA GCT CTT TTA GGT"        # START HARVEST MOVE <CTA: 4 slots south> ALLOC COPY TERM DIVIDE
 EXECER = "ATG AGA GTA AAG GCT CTT TTA GGT"       # START HARVEST EXEC <AAG: the east neighbour> ALLOC COPY TERM DIVIDE
+TASKER1 = "ATG AGA TCA AAT TAT TCG GCT CTT TTA GGT"   # START HARVEST IN FLIP LDA OUT ALLOC COPY TERM DIVIDE: x^1 (day 6)
+TASKERM1 = "ATG AGA TCA CAA CAA CAA TAT TCG GCT CTT TTA GGT"   # IN INC INC INC LDA OUT: x-1
+SIGNALER = "ATG AGA TCA CGA CGG AAG TCG GCT CTT TTA GGT"  # START HARVEST IN SIGNAL LISTEN <E> OUT ALLOC COPY TERM DIVIDE
+WALKER = "ATG AGA ACA AGA GCT CTT TTA GGT"       # the swimmer of day 5; on day 6 it walks on land too
 
 CONFIGS = [
     ("dna1_t1", "--N 16384 --G 256 --ticks 200 --seed 1"),
@@ -72,6 +76,19 @@ CONFIGS = [
                          "--eat-shift 2 --eat-eff 12 --c-move 1 --n-seed 64 --genome '%s'" % EXECER),
     ("day5_uniform_g255", "--days 1,2,3,4,5 --uniform-code --shade --T 0 --W 16 --land-cell 8 --N 65280 --G 255 --ticks 600 "
                           "--seed 71 --mu 0.02 --F 4 --n-seed 16 --genome 'AAA CCG CTT AAA AGA AAG CCC AGC'"),
+    # docs/17 day 6
+    ("day6_tasker_x1", "--days 1,2,3,4,5,6 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 7 --mu 0.01 "
+                       "--n-seed 16 --seed-terrain sea --genome '%s'" % TASKER1),
+    ("day6_tasker_xm1", "--days 1,2,3,4,5,6 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 73 "
+                        "--task-bonus 3 --c-walk 2 --n-seed 16 --genome '%s'" % TASKERM1),
+    ("day6_signaler", "--days 1,2,3,4,5,6 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 79 --mu 0.005 "
+                      "--n-seed 64 --genome '%s'" % SIGNALER),
+    ("day6_walker_land", "--days 1,2,3,4,5,6 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 83 "
+                         "--n-seed 32 --seed-terrain land --genome '%s'" % WALKER),
+    ("day6_uniform_g255", "--days 1,2,3,4,5,6 --uniform-code --shade --T 0 --W 16 --land-cell 8 --N 65280 --G 255 --ticks 600 "
+                          "--seed 89 --mu 0.01 --F 4 --n-seed 16 --genome 'AAA CCG CTG ATT ATA CTT AGA AAG CCC AGC'"),
+    ("day6_plant_mu", "--days 1,2,3,4,5,6 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 1000 --seed 97 --mu 0.03 "
+                      "--n-seed 16 --seed-terrain sea --genome '%s'" % PLANT),
 ]
 
 

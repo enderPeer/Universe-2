@@ -1,0 +1,56 @@
+{
+ "tick": 102400,
+ "live": 294853,
+ "selected": 294853,
+ "sequences": 4041,
+ "top": [
+  {
+   "count": 42577,
+   "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE HARVEST HARVEST OUT IN INC",
+   "spelling": "ATG AGG GCT CTT TTG GGG TAT AGT AGG AGA TCG TCA CAA",
+   "spelling_count": 9846
+  },
+  {
+   "count": 33444,
+   "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE WAIT MOVE OUT IN INC",
+   "spelling": "ATG AGG GCT CTT TTG GGG TAT AGT AGC ACA TCG TCA CAA",
+   "spelling_count": 27365
+  },
+  {
+   "count": 22734,
+   "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE WAIT HARVEST OUT IN INC",
+   "spelling": "ATG AGG GCT CTT TTG GGG TAT AGT AGC AGA TCG TCA CAA",
+   "spelling_count": 6717
+  },
+  {
+   "count": 17075,
+   "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE TERM HARVEST OUT IN INC",
+   "spelling": "ATG AGA GCA CTT TTG GGT TAT AGT TTG AGA TCG TCA CAG",
+   "spelling_count": 11969
+  },
+  {
+   "count": 14943,
+   "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA HARVEST HARVEST HARVEST OUT IN INC",
+   "spelling": "ATG AGA GCT CTT TTG GGT TAT AGG AGG AGA TCG TCA CAA",
+   "spelling_count": 6220
+  },
+  {
+   "count": 12692,
+   "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE LISTEN SIGNAL OUT IN INC",
+   "spelling": "ATG AGG GCT CTT TTG GGG TAT AGT CGG CGA TCG TCA CAA",
+   "spelling_count": 6381
+  },
+  {
+   "count": 9283,
+   "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA HARVEST TERM HARVEST OUT IN INC",
+   "spelling": "ATG AGA GCA CTT TTG GGT TAT AGG TTG AGA TCG TCA CAG",
+   "spelling_count": 2740
+  },
+  {
+   "count": 7393,
+   "ops": "START HARVEST ALLOC COPY TERM DIVIDE HARVEST HARVEST",
+   "spelling": "ATG AGA GCT CTC TTG GGT AGA AGG",
+   "spelling_count": 1626
+  }
+ ]
+}
