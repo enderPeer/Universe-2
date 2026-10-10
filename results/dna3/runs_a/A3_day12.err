@@ -1,0 +1,5 @@
+dna_world N=104857600 G=256 S=409600 ticks=20000 seed=1 I=16 T=64 mu=0.001 D=100 F=100 double=1 code=standard-dna2 blank=0 n_seed=4096 hash_every=-1 census_every=100 gpu=0
+dna3 days=12 day_len=32 light_len=16 lmax=16 emax=1024 eshift=4 e_seed=512 e_spont=128 gp=16,16 gh=16,32 c_copy=1 maint=1 inflow_land=0 W=640 R=640 firm=1 land=0 firmament=1280
+log_births= log_filter=divide log_every=1 depth_cap=50 top_genes=A3_day12.top slot_map=A3_day12.map
+seeded 4096 slots with 5 codons, gene hash 3aa15a0d0fdaee9e, expressible=1
+summary ticks=20000 seconds=31.791 ticks_per_second=629.10 seconds_total=31.948 device_mem_alloc_bytes=139264216 device_mem_used_bytes=150994944 live=351450 births=110470580 faithful=108718032 spontaneous=575 deaths=110123226

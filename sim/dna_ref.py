@@ -19,6 +19,12 @@ last tick, 0 = after the last tick only [13: Hash schedule]. One line "census {j
 every census_every-th tick and after the last [13: Census schedule]. stderr: parameters at the start, a one-line
 summary at the end.
 
+DNA-2 (docs/15) is behind --dna2; DNA-3 (docs/17: day 1 light and energy, day 2 grid and firmament, day 3 terrain,
+HARVEST, copy cost and maintenance) behind --days 1,2,3 or --dna3, each day implying --dna2:
+
+  python sim/dna_ref.py --dna3 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 400 --seed 3 --n-seed 16 \
+      --seed-terrain sea --genome "ATG AGA GCT CTT TTA GGT"
+
 Honest caveats: this is a reference, not an engine. The tape is one byte per cell here (the packed layout is
 only produced for the hash and the dump), so N = 3 x 10^9 does not fit; the test worlds of docs/09 section 10
 (N up to 1,048,576) run in seconds to minutes. The whole state is rebuilt and FNV-hashed on every hashed tick,
@@ -43,9 +49,9 @@ COMP_TABLE = bytes((b ^ 3) if b < 4 else b for b in range(256))   # comp(s) = s 
 
 # operation codes (the order is irrelevant; MEANINGS below carries the table order of docs/09 section 3)
 NOP, START, STOP, COPY, R1, L1, JNZB, SETP, SETQ, ALLOC, DIVIDE, SKNZ, SKZ, LDA, STA, INC, FLIP, R3, L3, SEEK, \
-    COPYR, REWIND, TERM = range(23)                       # TERM exists only under --dna2 (docs/15)
+    COPYR, REWIND, TERM, HARVEST = range(24)              # TERM only under --dna2 (docs/15), HARVEST only on day 3 (docs/17)
 OP_NAMES = ["NOP", "START", "STOP", "COPY", "R1", "L1", "JNZB", "SETP", "SETQ", "ALLOC", "DIVIDE", "SKNZ", "SKZ",
-            "LDA", "STA", "INC", "FLIP", "R3", "L3", "SEEK", "COPYR", "REWIND", "TERM"]
+            "LDA", "STA", "INC", "FLIP", "R3", "L3", "SEEK", "COPYR", "REWIND", "TERM", "HARVEST"]
 OP_INDEX = {n: i for i, n in enumerate(OP_NAMES)}
 
 # docs/09 section 3, row by row (codons, amino acid, operation). The row order is the "table order" of the
@@ -123,6 +129,59 @@ def dna2_table(table, uniform):
             assert t[v] == COPY
             t[v] = TERM
     return t
+
+
+DNA3_HARVEST_CODONS = ("AGA", "AGG")   # docs/17 day 3: taken from Arg; L1 keeps CGT CGC CGA CGG
+
+
+def dna3_table(table, uniform):
+    """docs/17 day 3: HARVEST gets AGA and AGG under the standard code (the two Arg codons that vertebrate
+    mitochondria reassign) and codon value 22 under the uniform code, the first NOP after TERM's 21."""
+    t = list(table)
+    if uniform:
+        t[22] = HARVEST
+    else:
+        for cod in DNA3_HARVEST_CODONS:
+            v = codon_value(cod)
+            assert t[v] == L1
+            t[v] = HARVEST
+    return t
+
+
+# docs/17 day 2: the eight neighbours of a slot on the grid, (dx, dy) with y growing downwards, in scan order
+NEIGHBOURS = ((0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1))
+SEA, LAND, FIRMAMENT = 0, 1, 2
+
+
+def make_terrain(seed, S, W, firm, day3, land_cell, land_thr):
+    """docs/17 days 2 and 3: terrain code per slot. Firmament rows are the rows y with y mod (R/2) < firm (two
+    bands on the torus, so they cut it into two zones). On day 3 every other slot is land when the value noise
+    of lattice spacing land_cell is at least land_thr / 65536 of its range, else sea; without day 3 it is sea."""
+    R = S // W
+    ter = bytearray(S)
+    half = R // 2
+    if day3:
+        L = land_cell
+        nx, ny = W // L, R // L
+        lat = [rnd(seed, -2, i, 9) >> 48 for i in range(nx * ny)]      # 16-bit lattice values
+        thr = land_thr * L * L
+    for y in range(R):
+        if firm and y % half < firm:
+            for x in range(W):
+                ter[y * W + x] = FIRMAMENT
+            continue
+        if not day3:
+            continue
+        j0, fy = divmod(y, L)
+        j1 = (j0 + 1) % ny
+        for x in range(W):
+            i0, fx = divmod(x, L)
+            i1 = (i0 + 1) % nx
+            v = ((lat[j0 * nx + i0] * (L - fx) + lat[j0 * nx + i1] * fx) * (L - fy)
+                 + (lat[j1 * nx + i0] * (L - fx) + lat[j1 * nx + i1] * fx) * fy)
+            if v >= thr:
+                ter[y * W + x] = LAND
+    return ter
 
 
 def splitmix64(x):
@@ -237,7 +296,10 @@ class World:
     """The DNA-1 world of docs/09. Processors are stored densely by slot (lists indexed by slot)."""
 
     def __init__(self, N, G, I=16, T=64, mu=0.001, D=None, F=None, double=True, uniform=False, blank=False,
-                 seed=1, genome=None, n_seed=0, dna2=False):
+                 seed=1, genome=None, n_seed=0, dna2=False, days=(), seed_slots=None, seed_terrain="any",
+                 W=0, firm=1, day_len=32, light_len=None, lmax=16, emax=1024, eshift=4, e_seed=512, e_spont=128,
+                 g_pass=16, gp_sea=8, gp_land=0, gh_sea=16, gh_land=32, c_copy=1, maint=1, inflow_land=False,
+                 land_cell=32, land_thr=32768):
         if G < 6:
             raise ValueError("G must be at least 6 (two codons)")                      # [13: Limits]
         if N % G:
@@ -253,9 +315,47 @@ class World:
         self.double = double
         self.seed = seed & MASK64
         self.table = uniform_table() if uniform else standard_table()
+        # docs/17: DNA-3 days; every day implies DNA-2, day 3 needs days 1 and 2
+        days = tuple(sorted(set(days)))
+        if any(d not in (1, 2, 3) for d in days):
+            raise ValueError("only days 1, 2 and 3 are implemented")
+        if 3 in days and not (1 in days and 2 in days):
+            raise ValueError("day 3 needs days 1 and 2")
+        self.days = days
+        self.d1, self.d2, self.d3 = 1 in days, 2 in days, 3 in days
+        dna2 = dna2 or bool(days)
         self.dna2 = dna2
         if dna2:
             self.table = dna2_table(self.table, uniform)
+        if self.d3:
+            self.table = dna3_table(self.table, uniform)
+        light_len = day_len // 2 if light_len is None else light_len
+        if self.d1:
+            if day_len < 1 or not 0 <= light_len <= day_len:
+                raise ValueError("need day_len >= 1 and 0 <= light_len <= day_len")
+            if T < 0 or eshift < 0 or emax < 1 or not (0 <= e_seed <= emax) or not (0 <= e_spont <= emax) \
+                    or min(lmax, g_pass, gp_sea, gp_land, gh_sea, gh_land, c_copy, maint) < 0:
+                raise ValueError("bad energy parameters")
+        elif T < 1:
+            raise ValueError("T must be at least 1 (T = 0, no age limit, exists only on day 1)")
+        self.day_len, self.light_len = day_len, light_len
+        self.lmax, self.emax, self.eshift, self.e_seed, self.e_spont = lmax, emax, eshift, e_seed, e_spont
+        self.g_pass, self.c_copy, self.maint, self.inflow_land = g_pass, c_copy, maint, inflow_land
+        self.gp = (gp_sea, gp_land) if self.d3 else (g_pass, g_pass)     # passive gain by terrain, sixteenths
+        self.gh = (gh_sea, gh_land)                                      # HARVEST gain by terrain, sixteenths
+        if self.d2:
+            if W < 3 or S % W or S // W < 3:
+                raise ValueError("day 2 needs --W >= 3 dividing S with S / W >= 3 rows")
+            R = S // W
+            if firm < 0 or (firm and (R % 2 or firm > R // 2 - 1)):
+                raise ValueError("the firmament needs an even number of rows R and 0 < firm <= R/2 - 1")
+            if self.d3 and (land_cell < 1 or W % land_cell or R % land_cell):
+                raise ValueError("--land-cell must divide W and R")
+            self.W, self.R, self.firm = W, R, firm
+            self.terrain = make_terrain(self.seed, S, W, firm, self.d3, land_cell, land_thr)
+        else:
+            self.W, self.R, self.firm = 0, 0, 0
+            self.terrain = None
         self.is_stop = bytes(1 if op == STOP else 0 for op in self.table)
         # execution table: START inside a gene is NOP; a fetched STOP (only possible when the gene has
         # degenerated to len <= 1 during the tick) is NOP too [13: Degenerate genes]
@@ -289,6 +389,14 @@ class World:
         self.age = [0] * S
         self.depth = [0] * S
         self.copied = [0] * S
+        self.E = [0] * S                        # docs/17 day 1: energy store
+        self.div_energy = [0] * S               # endowment of the child marked by DIVIDE this tick
+        # docs/17 energy ledger (cumulative), in this order: passive light, HARVEST, spontaneous births' energy, spent
+        # on instructions, on copied cells, on maintenance, lost with the dead, lost endowments (child not born),
+        # light wasted on full stores (not part of the balance)
+        self.ledger = [0] * 9
+        self.energy_init = 0
+        self.starved = 0
         self.claimed_by = [-1] * S              # parent slot that holds the claim on this slot, or -1
         self.live = set()
         self.births = self.faithful = self.spontaneous = self.deaths = 0
@@ -305,8 +413,30 @@ class World:
             if n_seed > S:
                 raise ValueError("more seeds than slots")
             step = S // n_seed                                                          # [13: Seeding]
+            if seed_slots is not None:
+                if len(seed_slots) != n_seed or len(set(seed_slots)) != n_seed or any(not 0 <= x < S for x in seed_slots):
+                    raise ValueError("--seed-slots needs n_seed distinct slots in [0, S)")
+            chosen = []
+            used = set()
             for k in range(n_seed):
-                s = k * step
+                if seed_slots is not None:
+                    s = seed_slots[k]
+                    if self.terrain is not None and self.terrain[s] == FIRMAMENT:
+                        raise ValueError("seed slot %d lies in the firmament" % s)
+                else:
+                    s = k * step
+                    if self.terrain is not None:
+                        # docs/17: advance to the next slot that is not firmament, matches --seed-terrain and is unseeded
+                        want = {"any": (SEA, LAND), "sea": (SEA,), "land": (LAND,)}[seed_terrain]
+                        n_try = 0
+                        while self.terrain[s] not in want or s in used:
+                            s = (s + 1) % S
+                            n_try += 1
+                            if n_try > S:
+                                raise ValueError("no slot for seed %d" % k)
+                used.add(s)
+                chosen.append(s)
+            for s in chosen:
                 base = s * G
                 for ci in range(self.maxc):
                     c = genome[ci] if ci < len(genome) else self.stop_codon
@@ -315,6 +445,9 @@ class World:
                         self.rev[base + 3 * ci + off] = v ^ 3
                 # the G mod 3 trailing cells of the slot are not codons and keep their soup content [13: Seeding]
                 self.born(s, 0)                 # unconditional, not logged, not counted [13: Seeding, Counters]
+                if self.d1:
+                    self.E[s] = e_seed
+                    self.energy_init += e_seed
 
     # -- helpers ---------------------------------------------------------------------------------------------
     def born(self, s, depth):
@@ -337,15 +470,37 @@ class World:
         return gene_hash(self.fwd, self.is_stop, s * self.G, self.maxc)
 
     def state_bytes(self):
-        """Section 8: packed fwd, packed rev, per live processor (slot order) ten LE u64 fields, four counters."""
+        """Section 8: packed fwd, packed rev, per live processor (slot order) ten LE u64 fields, four counters.
+        docs/17: day 1 appends the energy E as an eleventh field, day 3 the starvation count as a fifth counter."""
         out = bytearray(pack2(self.fwd))
         out += pack2(self.rev)
         pk = struct.Struct("<10Q").pack
+        pe = struct.Struct("<Q").pack
+        d1 = self.d1
         for s in sorted(self.live):
             out += pk(s, self.pc[s], self.H[s], self.P[s], self.Q[s], self.child[s] & MASK64,   # -1 -> 2^64 - 1
                       self.A[s], self.age[s], self.depth[s], self.copied[s])
+            if d1:
+                out += pe(self.E[s])
         out += struct.pack("<4Q", self.births, self.faithful, self.spontaneous, self.deaths)
+        if self.d3:
+            out += pe(self.starved)
         return bytes(out)
+
+    def light(self, t):
+        """docs/17 day 1: the light level of tick t (square wave: lmax for the first light_len ticks of each day)."""
+        return self.lmax if t % self.day_len < self.light_len else 0
+
+    def has_harvest(self, s):
+        """docs/17 day 3: the gene of slot s (codons 1 .. len-1) contains a HARVEST codon."""
+        base = s * self.G
+        n = gene_len(self.fwd, self.is_stop, base, self.maxc)
+        f, tb = self.fwd, self.table
+        for k in range(1, n):
+            i = base + 3 * k
+            if tb[f[i] * 16 + f[i + 1] * 4 + f[i + 2]] == HARVEST:
+                return True
+        return False
 
     def state_hash(self):
         return fnv1a(self.state_bytes())
@@ -361,7 +516,7 @@ class World:
             d = self.depth[s]
             dhist[d] = dhist.get(d, 0) + 1
         top = sorted(hashes.items(), key=lambda kv: (-kv[1], kv[0]))[:10]
-        return {
+        out = {
             "tick": t,
             "live": len(self.live),
             "births": self.births - since[0],
@@ -375,8 +530,23 @@ class World:
             "distinct_genes": len(hashes),
             "top_genes": [["%016x" % h, c] for h, c in top],
             "depth_hist": [[d, c] for d, c in sorted(dhist.items())],
-            "hash": None if state_hash is None else "%016x" % state_hash,
         }
+        if self.d1:                                     # docs/17 census additions, in this key order
+            out["light"] = self.light(t)
+            out["energy_total"] = sum(self.E[s] for s in self.live)
+            out["energy_init"] = self.energy_init
+            out["ledger"] = list(self.ledger)
+        if self.d2 and self.firm:
+            z = [0, 0]
+            for s in self.live:
+                z[0 if s // self.W < self.R // 2 else 1] += 1
+            out["zone_live"] = z
+        if self.d3:
+            out["starved_total"] = self.starved
+            out["live_land"] = sum(1 for s in self.live if self.terrain[s] == LAND)
+            out["harvesters"] = sum(1 for s in self.live if self.has_harvest(s))
+        out["hash"] = None if state_hash is None else "%016x" % state_hash
+        return out
 
     # -- the tick ---------------------------------------------------------------------------------------------
     def tick(self):
@@ -389,6 +559,12 @@ class World:
         alive, claimed_by, live = self.alive, self.claimed_by, self.live
         seed, mu = self.seed, self.mu
         dna2 = self.dna2
+        d1, d2, d3 = self.d1, self.d2, self.d3
+        E_ = self.E
+        ledger = self.ledger
+        lam = self.light(t) if d1 else 0
+        emax, eshift, c_copy = self.emax, self.eshift, self.c_copy
+        terrain = self.terrain
         win = 3 * G + 2                         # SEEK window: candidates H+1 .. H+3G, each needs 3 cells
         alloc_req = []                          # requesting slots, increasing
         marked = []                             # (parent, child) pairs marked by DIVIDE, increasing parent
@@ -407,7 +583,24 @@ class World:
                     ch_lo = ch_hi = -1          # an empty range: no cell satisfies ch_lo <= x < ch_hi
                 L = gene_len(fwd, is_stop, base, maxc)
                 requested = False
-                for _ in range(I):
+                budget = I
+                if d1:
+                    # docs/17 day 1: passive light first, then the budget min(I, E >> eshift); one unit per instruction
+                    E = E_[s]
+                    ter = terrain[s] if terrain is not None else SEA
+                    g = (lam * self.gp[ter]) >> 4
+                    add = min(g, emax - E)
+                    E += add
+                    ledger[0] += add
+                    ledger[8] += g - add
+                    budget = min(I, E >> eshift)
+                    harvested = False
+                for _ in range(budget):
+                    if d1:
+                        if E < 1:
+                            break
+                        E -= 1
+                        ledger[3] += 1
                     cb = base + 3 * pc
                     op = xtable[fwd[cb] * 16 + fwd[cb + 1] * 4 + fwd[cb + 2]]
                     pc += 1
@@ -419,6 +612,12 @@ class World:
                           if op == COPYR:
                               v ^= 3
                           if ch_lo <= Q < ch_hi:  # child claimed and Q inside it: write
+                              if d3:
+                                  if E < c_copy:  # docs/17 day 3: no energy for the cell: back to this COPY, tick over
+                                      pc -= 1
+                                      break
+                                  E -= c_copy
+                                  ledger[4] += c_copy
                               if mu > 0.0:
                                   r = rnd(seed, t, s, 1000 + copied)                      # [13: Mutation index]
                                   if (r >> 32) / 4294967296.0 < mu:                       # [13: Mutation test]
@@ -456,6 +655,10 @@ class World:
                             ch_lo = ch_hi = -1
                             if dna2:
                                 P = base        # docs/15 fix 2: the template is re-armed for the next copy
+                            if d1:              # docs/17 day 1: half of the store goes with the child
+                                x = E >> 1
+                                E -= x
+                                self.div_energy[s] = x
                     elif op == SKNZ:
                         v = fwd[H] if (base <= H < own_hi or ch_lo <= H < ch_hi) else fwd_old[H]
                         if v:
@@ -508,14 +711,50 @@ class World:
                             term = bool(is_stop[c3])
                         if not term:
                             pc += 1
+                    elif op == HARVEST:
+                        # docs/17 day 3: once per tick, light times the terrain's HARVEST gain
+                        if not harvested:
+                            harvested = True
+                            g = (lam * self.gh[ter]) >> 4
+                            add = min(g, emax - E)
+                            E += add
+                            ledger[1] += add
+                            ledger[8] += g - add
                     # NOP: nothing
                     if pc >= L:
                         pc = 1
                 pc_[s] = pc; H_[s] = H; P_[s] = P; Q_[s] = Q; child_[s] = child; A_[s] = A; copied_[s] = copied
+                if d1:
+                    E_[s] = E
 
         # 2. resolve ALLOC: increasing slot order, so the lowest requester takes a contested candidate
         Sm1 = S - 1
-        for s in alloc_req:
+        if d2:
+            # docs/17 day 2: every requester scans its eight neighbours from a random direction on the state after
+            # step 1 and proposes the first free one (alive no, claimed no, not firmament); a contested slot goes to
+            # the requester with the lowest key (rnd(t, s, 2000) >> 32) * 2^32 + s
+            W, R = self.W, self.R
+            best = {}
+            for s in alloc_req:
+                x, y = s % W, s // W
+                r = rnd(seed, t, s, 0) & 7
+                for i in range(8):
+                    dx, dy = NEIGHBOURS[(r + i) & 7]
+                    c = ((y + dy) % R) * W + (x + dx) % W
+                    if terrain[c] != FIRMAMENT and not alive[c] and claimed_by[c] < 0:
+                        key = ((rnd(seed, t, s, 2000) >> 32) << 32) | s
+                        if c not in best or key < best[c][0]:
+                            best[c] = (key, s)
+                        break
+            for c in sorted(best):
+                s = best[c][1]
+                claimed_by[c] = s
+                child_[s] = c
+                Q_[s] = c * G
+                copied_[s] = 0
+                self.claims += 1
+        else:
+          for s in alloc_req:
             cand = (s + 1 + rnd(seed, t, s, 0) % Sm1) % S
             if not alive[cand] and claimed_by[cand] < 0:
                 claimed_by[cand] = s
@@ -529,19 +768,35 @@ class World:
             claimed_by[ch] = -1                 # the claim is released whether or not something is born
             if self.expressible(ch):
                 self.born(ch, self.depth[p] + 1)
+                if d1:
+                    E_[ch] = self.div_energy[p]
                 ph = self.genehash(p)           # the parent's gene as it is now, after its own writes of the tick
                 chh = self.genehash(ch)
                 f = ph == chh
                 self.births += 1                                                        # [13: Counters]
                 self.faithful += f
                 self.birth_log.append((t, p, ch, ph, chh, f))
+            elif d1:
+                ledger[7] += self.div_energy[p]  # docs/17: the endowment of a child that is not born is lost
 
         # 4. deaths (age += 1 for every processor alive now, this tick's newborns included) [13: Age]
         T = self.T
         age_ = self.age
+        maint = self.maint
         for s in sorted(live):
             age_[s] += 1
-            if age_[s] >= T or not self.expressible(s):
+            dies = (age_[s] >= T and (T > 0 or not d1)) or not self.expressible(s)   # docs/17: T = 0 on day 1, no limit
+            if not dies and d3:
+                # docs/17 day 3: maintenance; a processor that cannot pay it starves
+                if E_[s] < maint:
+                    dies = True
+                    self.starved += 1
+                else:
+                    E_[s] -= maint
+                    ledger[5] += maint
+            if dies:
+                if d1:
+                    ledger[6] += E_[s]
                 alive[s] = 0
                 live.discard(s)
                 if child_[s] >= 0:
@@ -568,6 +823,8 @@ class World:
         m = MASK64
         for k in range(self.F):
             d = rnd(seed, t, k, 3) % S
+            if terrain is not None and (terrain[d] == FIRMAMENT or (terrain[d] == LAND and not self.inflow_land)):
+                continue                        # docs/17: no inflow into the firmament; on day 3 only into the sea
             if not alive[d] and claimed_by[d] < 0:
                 base = d * G
                 x = ((t + 1) * C1 + k * C2 + 4 * C3) & m         # mix(t, k, 4 + j), j = 0, then + C3 per cell
@@ -583,6 +840,9 @@ class World:
         for d in sorted(refilled):
             if self.expressible(d):
                 self.born(d, 0)
+                if d1:
+                    E_[d] = self.e_spont
+                    ledger[2] += self.e_spont
                 self.births += 1
                 self.spontaneous += 1
                 self.birth_log.append((t, -1, d, None, self.genehash(d), False))
@@ -620,7 +880,34 @@ def main(argv=None):
     ap.add_argument("--births", default=None, help="write the birth log (TSV) to this file")
     ap.add_argument("--dump", default=None, help="write the final state bytes of section 8 to this file")
     ap.add_argument("--out", default=None, help="write the final census JSON to this file")
+    g3 = ap.add_argument_group("DNA-3 (docs/17): the days of creation; every day implies --dna2")
+    g3.add_argument("--days", default="", help="days to switch on, e.g. 1 or 1,2 or 1,2,3 (day 3 needs 1 and 2)")
+    g3.add_argument("--dna3", action="store_true", help="shorthand for --days 1,2,3")
+    g3.add_argument("--seed-slots", default=None, help="explicit seed slots, comma-separated (n_seed of them)")
+    g3.add_argument("--seed-terrain", default="any", choices=("any", "sea", "land"),
+                    help="day 2/3: seeds advance to the next slot of this terrain")
+    g3.add_argument("--day-len", type=int, default=32, help="day 1: ticks per day")
+    g3.add_argument("--light-len", type=int, default=None, help="day 1: light ticks at the start of each day (default day-len / 2)")
+    g3.add_argument("--lmax", type=int, default=16, help="day 1: light level in the light ticks")
+    g3.add_argument("--emax", type=int, default=1024, help="day 1: energy store capacity")
+    g3.add_argument("--eshift", type=int, default=4, help="day 1: budget = min(I, E >> eshift) instructions per tick")
+    g3.add_argument("--e-seed", type=int, default=512, help="day 1: energy of seeded organisms")
+    g3.add_argument("--e-spont", type=int, default=128, help="day 1: energy of spontaneous (inflow) organisms")
+    g3.add_argument("--g-pass", type=int, default=16, help="day 1 without day 3: passive light gain in sixteenths")
+    g3.add_argument("--W", type=int, default=0, help="day 2: grid width in slots (R = S / W rows)")
+    g3.add_argument("--firm", type=int, default=1, help="day 2: firmament rows per band (two bands; 0 = none)")
+    g3.add_argument("--gp-sea", type=int, default=8, help="day 3: passive gain on sea, sixteenths")
+    g3.add_argument("--gp-land", type=int, default=0, help="day 3: passive gain on land, sixteenths")
+    g3.add_argument("--gh-sea", type=int, default=16, help="day 3: HARVEST gain on sea, sixteenths")
+    g3.add_argument("--gh-land", type=int, default=32, help="day 3: HARVEST gain on land, sixteenths")
+    g3.add_argument("--c-copy", type=int, default=1, help="day 3: energy per copied cell")
+    g3.add_argument("--maint", type=int, default=1, help="day 3: maintenance per tick")
+    g3.add_argument("--inflow-land", action="store_true", help="day 3: inflow also refills land slots")
+    g3.add_argument("--land-cell", type=int, default=32, help="day 3: terrain noise lattice spacing in slots")
+    g3.add_argument("--land-thr", type=int, default=32768, help="day 3: land where the noise >= land-thr / 65536")
     a = ap.parse_args(argv)
+    days = (1, 2, 3) if a.dna3 else tuple(int(x) for x in a.days.replace(",", " ").split())
+    seed_slots = [int(x) for x in a.seed_slots.replace(",", " ").split()] if a.seed_slots else None
 
     genome = parse_genome(a.genome) if a.genome else None
     D, F = parse_auto(a.D), parse_auto(a.F)
@@ -633,12 +920,26 @@ def main(argv=None):
               file=sys.stderr)
     t0 = time.perf_counter()
     w = World(a.N, a.G, I=a.I, T=a.T, mu=a.mu, D=D, F=F, double=not a.no_double,
-              uniform=a.uniform_code, blank=a.blank, seed=a.seed, genome=genome, n_seed=a.n_seed, dna2=a.dna2)
+              uniform=a.uniform_code, blank=a.blank, seed=a.seed, genome=genome, n_seed=a.n_seed, dna2=a.dna2,
+              days=days, seed_slots=seed_slots, seed_terrain=a.seed_terrain, W=a.W, firm=a.firm, day_len=a.day_len,
+              light_len=a.light_len, lmax=a.lmax, emax=a.emax, eshift=a.eshift, e_seed=a.e_seed, e_spont=a.e_spont,
+              g_pass=a.g_pass, gp_sea=a.gp_sea, gp_land=a.gp_land, gh_sea=a.gh_sea, gh_land=a.gh_land,
+              c_copy=a.c_copy, maint=a.maint, inflow_land=a.inflow_land, land_cell=a.land_cell, land_thr=a.land_thr)
     t_init = time.perf_counter() - t0
     params = {"N": w.N, "G": w.G, "S": w.S, "ticks": a.ticks, "seed": w.seed, "I": w.I, "T": w.T, "mu": w.mu,
-              "D": w.D, "F": w.F, "double": w.double, "code": "uniform" if a.uniform_code else "standard", "dna2": a.dna2,
+              "D": w.D, "F": w.F, "double": w.double, "code": "uniform" if a.uniform_code else "standard", "dna2": w.dna2,
               "blank": a.blank, "genome": [codon_text(c) for c in genome] if genome else None, "n_seed": a.n_seed,
               "init_secs": round(t_init, 3)}
+    if w.days:
+        params["days"] = list(w.days)
+        if w.d1:
+            params.update(day_len=w.day_len, light_len=w.light_len, lmax=w.lmax, emax=w.emax, eshift=w.eshift,
+                          e_seed=w.e_seed, e_spont=w.e_spont, gp=list(w.gp))
+        if w.d2:
+            params.update(W=w.W, R=w.R, firm=w.firm, land=sum(1 for x in w.terrain if x == LAND),
+                          firmament=sum(1 for x in w.terrain if x == FIRMAMENT))
+        if w.d3:
+            params.update(gh=list(w.gh), c_copy=w.c_copy, maint=w.maint, inflow_land=w.inflow_land)
     print("params " + json.dumps(params), file=sys.stderr, flush=True)
 
     out = sys.stdout

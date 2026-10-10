@@ -1,0 +1,76 @@
+{
+ "run": "A5_nonplant",
+ "mode": "clade",
+ "W": 640,
+ "S": 409600,
+ "frames": 500,
+ "land": 241977,
+ "sea": 166343,
+ "series": [
+  {
+   "frame": 0,
+   "tick": 199,
+   "live": 42825,
+   "pairs": 38412,
+   "same_frac": 0.6645058835780485,
+   "expected": 0.004586734933472921,
+   "assortment": 144.8755799531034,
+   "distinct": 253,
+   "patches": 19117,
+   "mean_patch": 2.240152743631323,
+   "largest_patch": 31
+  },
+  {
+   "frame": 9,
+   "tick": 1999,
+   "live": 111459,
+   "pairs": 136718,
+   "same_frac": 0.5273628929621557,
+   "expected": 0.01563117541561818,
+   "assortment": 33.73789103762672,
+   "distinct": 253,
+   "patches": 53076,
+   "mean_patch": 2.0999886954555733,
+   "largest_patch": 7317
+  },
+  {
+   "frame": 49,
+   "tick": 9999,
+   "live": 323984,
+   "pairs": 513981,
+   "same_frac": 0.9242384446117659,
+   "expected": 0.0767115014213591,
+   "assortment": 12.048238236599373,
+   "distinct": 51,
+   "patches": 12099,
+   "mean_patch": 26.777750227291513,
+   "largest_patch": 34900
+  },
+  {
+   "frame": 99,
+   "tick": 19999,
+   "live": 342572,
+   "pairs": 574007,
+   "same_frac": 0.9156456280149894,
+   "expected": 0.10585761680706007,
+   "assortment": 8.64978501909672,
+   "distinct": 36,
+   "patches": 12101,
+   "mean_patch": 28.309395917692754,
+   "largest_patch": 69243
+  },
+  {
+   "frame": 499,
+   "tick": 99999,
+   "live": 349582,
+   "pairs": 596769,
+   "same_frac": 0.8476412146073271,
+   "expected": 0.1599816873557547,
+   "assortment": 5.298364010390823,
+   "distinct": 26,
+   "patches": 20498,
+   "mean_patch": 17.054444336032784,
+   "largest_patch": 82344
+  }
+ ]
+}

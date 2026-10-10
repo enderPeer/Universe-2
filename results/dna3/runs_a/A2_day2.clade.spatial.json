@@ -1,0 +1,102 @@
+{
+ "run": "A2_day2",
+ "mode": "clade",
+ "W": 640,
+ "S": 409600,
+ "frames": 200,
+ "land": 0,
+ "sea": 408320,
+ "series": [
+  {
+   "frame": 0,
+   "tick": 99,
+   "live": 357242,
+   "pairs": 654942,
+   "same_frac": 0.7336222138754271,
+   "expected": 0.004295433256602288,
+   "assortment": 170.791203133657,
+   "distinct": 253,
+   "patches": 35853,
+   "mean_patch": 9.964075530638999,
+   "largest_patch": 197
+  },
+  {
+   "frame": 4,
+   "tick": 499,
+   "live": 361642,
+   "pairs": 656930,
+   "same_frac": 0.6108139375580351,
+   "expected": 0.004313456813501771,
+   "assortment": 141.60659627936815,
+   "distinct": 253,
+   "patches": 62643,
+   "mean_patch": 5.7730632313267245,
+   "largest_patch": 217
+  },
+  {
+   "frame": 9,
+   "tick": 999,
+   "live": 363538,
+   "pairs": 662094,
+   "same_frac": 0.5790733642050827,
+   "expected": 0.004354597546020406,
+   "assortment": 132.97976634701598,
+   "distinct": 253,
+   "patches": 73038,
+   "mean_patch": 4.977381636956105,
+   "largest_patch": 281
+  },
+  {
+   "frame": 19,
+   "tick": 1999,
+   "live": 381483,
+   "pairs": 717571,
+   "same_frac": 0.561428764540373,
+   "expected": 0.004371369597293711,
+   "assortment": 128.43314939280134,
+   "distinct": 253,
+   "patches": 75308,
+   "mean_patch": 5.06563711690657,
+   "largest_patch": 404
+  },
+  {
+   "frame": 49,
+   "tick": 4999,
+   "live": 381325,
+   "pairs": 716223,
+   "same_frac": 0.5711782503494024,
+   "expected": 0.004580754701716745,
+   "assortment": 124.69086155941508,
+   "distinct": 253,
+   "patches": 72393,
+   "mean_patch": 5.26742917132872,
+   "largest_patch": 551
+  },
+  {
+   "frame": 99,
+   "tick": 9999,
+   "live": 374368,
+   "pairs": 691360,
+   "same_frac": 0.5885558898403147,
+   "expected": 0.004852380574114645,
+   "assortment": 121.29219480021956,
+   "distinct": 253,
+   "patches": 68331,
+   "mean_patch": 5.478743176596274,
+   "largest_patch": 889
+  },
+  {
+   "frame": 199,
+   "tick": 19999,
+   "live": 376527,
+   "pairs": 698474,
+   "same_frac": 0.6104393291661536,
+   "expected": 0.005444122012783523,
+   "assortment": 112.1281499078751,
+   "distinct": 252,
+   "patches": 62181,
+   "mean_patch": 6.0553384474357115,
+   "largest_patch": 969
+  }
+ ]
+}

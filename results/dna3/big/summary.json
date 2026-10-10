@@ -1,0 +1,976 @@
+[
+ {
+  "run": "big",
+  "censuses": 200,
+  "final": {
+   "tick": 39999,
+   "live": 10003577,
+   "births": 30964897,
+   "faithful": 30355164,
+   "spontaneous": 66,
+   "deaths": 30893526,
+   "births_total": 5678780280,
+   "faithful_total": 5555036831,
+   "spontaneous_total": 23361,
+   "deaths_total": 5669776703,
+   "distinct_genes": 41776,
+   "max_depth": 1368,
+   "light": 0,
+   "energy_total": 644191534,
+   "energy_init": 512000000,
+   "ledger": [
+    617834960504,
+    4232440898800,
+    2990208,
+    3197067110872,
+    132916420429,
+    356695294536,
+    1161764344666,
+    1703487475,
+    0
+   ],
+   "zone_live": [
+    5001650,
+    5001927
+   ],
+   "starved_total": 21282249,
+   "live_land": 5886366,
+   "harvesters": 9972546,
+   "hash": null
+  },
+  "live_second_half": [
+   9792202,
+   10004813
+  ],
+  "faithful_share": 0.9782095022348708,
+  "ledger_named": {
+   "passive": 617834960504,
+   "harvest": 4232440898800,
+   "spontaneous": 2990208,
+   "instructions": 3197067110872,
+   "copy": 132916420429,
+   "maintenance": 356695294536,
+   "dead": 1161764344666,
+   "lost_endowments": 1703487475,
+   "wasted": 0
+  },
+  "ledger_shares_of_income": {
+   "passive": 0.1274,
+   "harvest": 0.8726,
+   "spontaneous": 0.0,
+   "instructions": 0.6592,
+   "copy": 0.0274,
+   "maintenance": 0.0735,
+   "dead": 0.2395,
+   "lost_endowments": 0.0004
+  },
+  "ledger_closes": true,
+  "first_harvester_tick": 199,
+  "first_land_tick": 199,
+  "harvesters_half_tick": 3599,
+  "series": [
+   {
+    "tick": 199,
+    "live": 2356722,
+    "births": 8085713,
+    "faithful": 7953292,
+    "spontaneous": 866,
+    "energy_total": 112590787,
+    "harvesters": 1543,
+    "live_land": 143,
+    "zone_live": [
+     1251151,
+     1105571
+    ],
+    "starved_total": 96176,
+    "max_depth": 10,
+    "distinct_genes": 3772
+   },
+   {
+    "tick": 999,
+    "live": 2548137,
+    "births": 7902052,
+    "faithful": 7767716,
+    "spontaneous": 727,
+    "energy_total": 117664045,
+    "harvesters": 26035,
+    "live_land": 6506,
+    "zone_live": [
+     1349554,
+     1198583
+    ],
+    "starved_total": 183958,
+    "max_depth": 47,
+    "distinct_genes": 4875
+   },
+   {
+    "tick": 1799,
+    "live": 2718223,
+    "births": 8455383,
+    "faithful": 8309666,
+    "spontaneous": 530,
+    "energy_total": 145904673,
+    "harvesters": 191516,
+    "live_land": 56977,
+    "zone_live": [
+     1437969,
+     1280254
+    ],
+    "starved_total": 279607,
+    "max_depth": 90,
+    "distinct_genes": 7649
+   },
+   {
+    "tick": 2599,
+    "live": 3066891,
+    "births": 9507761,
+    "faithful": 9332377,
+    "spontaneous": 382,
+    "energy_total": 227689507,
+    "harvesters": 700463,
+    "live_land": 253058,
+    "zone_live": [
+     1608735,
+     1458156
+    ],
+    "starved_total": 398616,
+    "max_depth": 137,
+    "distinct_genes": 14395
+   },
+   {
+    "tick": 3399,
+    "live": 3740080,
+    "births": 11542949,
+    "faithful": 11305238,
+    "spontaneous": 368,
+    "energy_total": 399144740,
+    "harvesters": 1744929,
+    "live_land": 730812,
+    "zone_live": [
+     1937127,
+     1802953
+    ],
+    "starved_total": 551109,
+    "max_depth": 185,
+    "distinct_genes": 25782
+   },
+   {
+    "tick": 4199,
+    "live": 4796219,
+    "births": 14796178,
+    "faithful": 14452196,
+    "spontaneous": 276,
+    "energy_total": 671254557,
+    "harvesters": 3336034,
+    "live_land": 1577117,
+    "zone_live": [
+     2478570,
+     2317649
+    ],
+    "starved_total": 756856,
+    "max_depth": 231,
+    "distinct_genes": 42511
+   },
+   {
+    "tick": 4999,
+    "live": 6174548,
+    "births": 19116330,
+    "faithful": 18632194,
+    "spontaneous": 226,
+    "energy_total": 1018223701,
+    "harvesters": 5273967,
+    "live_land": 2745938,
+    "zone_live": [
+     3213176,
+     2961372
+    ],
+    "starved_total": 1035551,
+    "max_depth": 280,
+    "distinct_genes": 61020
+   },
+   {
+    "tick": 5799,
+    "live": 7529138,
+    "births": 23488312,
+    "faithful": 22859709,
+    "spontaneous": 176,
+    "energy_total": 1353992045,
+    "harvesters": 7079991,
+    "live_land": 3924929,
+    "zone_live": [
+     3916760,
+     3612378
+    ],
+    "starved_total": 1392381,
+    "max_depth": 327,
+    "distinct_genes": 76755
+   },
+   {
+    "tick": 6599,
+    "live": 8546775,
+    "births": 26838198,
+    "faithful": 26105038,
+    "spontaneous": 155,
+    "energy_total": 1600876766,
+    "harvesters": 8357639,
+    "live_land": 4828191,
+    "zone_live": [
+     4433892,
+     4112883
+    ],
+    "starved_total": 1812745,
+    "max_depth": 371,
+    "distinct_genes": 86686
+   },
+   {
+    "tick": 7399,
+    "live": 9084470,
+    "births": 28665290,
+    "faithful": 27888401,
+    "spontaneous": 142,
+    "energy_total": 1729576522,
+    "harvesters": 9003702,
+    "live_land": 5297229,
+    "zone_live": [
+     4675376,
+     4409094
+    ],
+    "starved_total": 2260334,
+    "max_depth": 415,
+    "distinct_genes": 91088
+   },
+   {
+    "tick": 8199,
+    "live": 9337112,
+    "births": 29527082,
+    "faithful": 28748276,
+    "spontaneous": 135,
+    "energy_total": 1788789500,
+    "harvesters": 9287753,
+    "live_land": 5508457,
+    "zone_live": [
+     4755402,
+     4581710
+    ],
+    "starved_total": 2720247,
+    "max_depth": 457,
+    "distinct_genes": 91417
+   },
+   {
+    "tick": 8999,
+    "live": 9452741,
+    "births": 29915535,
+    "faithful": 29159578,
+    "spontaneous": 107,
+    "energy_total": 1815329024,
+    "harvesters": 9413855,
+    "live_land": 5585017,
+    "zone_live": [
+     4776301,
+     4676440
+    ],
+    "starved_total": 3178318,
+    "max_depth": 479,
+    "distinct_genes": 90412
+   },
+   {
+    "tick": 9799,
+    "live": 9545703,
+    "births": 30227512,
+    "faithful": 29493065,
+    "spontaneous": 95,
+    "energy_total": 1835619215,
+    "harvesters": 9510590,
+    "live_land": 5635014,
+    "zone_live": [
+     4790748,
+     4754955
+    ],
+    "starved_total": 3635214,
+    "max_depth": 505,
+    "distinct_genes": 89185
+   },
+   {
+    "tick": 10599,
+    "live": 9607592,
+    "births": 30442377,
+    "faithful": 29724529,
+    "spontaneous": 45,
+    "energy_total": 1849305116,
+    "harvesters": 9574519,
+    "live_land": 5658124,
+    "zone_live": [
+     4806215,
+     4801377
+    ],
+    "starved_total": 4085965,
+    "max_depth": 526,
+    "distinct_genes": 87204
+   },
+   {
+    "tick": 11399,
+    "live": 9641380,
+    "births": 30547983,
+    "faithful": 29839056,
+    "spontaneous": 57,
+    "energy_total": 1856822755,
+    "harvesters": 9608850,
+    "live_land": 5671410,
+    "zone_live": [
+     4821159,
+     4820221
+    ],
+    "starved_total": 4533517,
+    "max_depth": 548,
+    "distinct_genes": 85191
+   },
+   {
+    "tick": 12199,
+    "live": 9667822,
+    "births": 30630066,
+    "faithful": 29920557,
+    "spontaneous": 44,
+    "energy_total": 1862527133,
+    "harvesters": 9635605,
+    "live_land": 5681889,
+    "zone_live": [
+     4834354,
+     4833468
+    ],
+    "starved_total": 4980510,
+    "max_depth": 573,
+    "distinct_genes": 82823
+   },
+   {
+    "tick": 12999,
+    "live": 9685346,
+    "births": 30704928,
+    "faithful": 29988819,
+    "spontaneous": 52,
+    "energy_total": 1867304778,
+    "harvesters": 9652984,
+    "live_land": 5688773,
+    "zone_live": [
+     4845180,
+     4840166
+    ],
+    "starved_total": 5428618,
+    "max_depth": 596,
+    "distinct_genes": 80399
+   },
+   {
+    "tick": 13799,
+    "live": 9708273,
+    "births": 30779316,
+    "faithful": 30056607,
+    "spontaneous": 58,
+    "energy_total": 1872328105,
+    "harvesters": 9676363,
+    "live_land": 5699159,
+    "zone_live": [
+     4856447,
+     4851826
+    ],
+    "starved_total": 5877646,
+    "max_depth": 620,
+    "distinct_genes": 77938
+   },
+   {
+    "tick": 14599,
+    "live": 9725437,
+    "births": 30841127,
+    "faithful": 30115475,
+    "spontaneous": 58,
+    "energy_total": 1876422074,
+    "harvesters": 9693536,
+    "live_land": 5708749,
+    "zone_live": [
+     4864459,
+     4860978
+    ],
+    "starved_total": 6328015,
+    "max_depth": 641,
+    "distinct_genes": 75686
+   },
+   {
+    "tick": 15399,
+    "live": 9738789,
+    "births": 30896994,
+    "faithful": 30169869,
+    "spontaneous": 60,
+    "energy_total": 1879423503,
+    "harvesters": 9706531,
+    "live_land": 5714851,
+    "zone_live": [
+     4873290,
+     4865499
+    ],
+    "starved_total": 6781749,
+    "max_depth": 663,
+    "distinct_genes": 73253
+   },
+   {
+    "tick": 16199,
+    "live": 9755803,
+    "births": 30945971,
+    "faithful": 30223039,
+    "spontaneous": 41,
+    "energy_total": 1883287526,
+    "harvesters": 9723737,
+    "live_land": 5724100,
+    "zone_live": [
+     4881966,
+     4873837
+    ],
+    "starved_total": 7240016,
+    "max_depth": 684,
+    "distinct_genes": 70744
+   },
+   {
+    "tick": 16999,
+    "live": 9762251,
+    "births": 30984247,
+    "faithful": 30269530,
+    "spontaneous": 63,
+    "energy_total": 1885295114,
+    "harvesters": 9729765,
+    "live_land": 5728505,
+    "zone_live": [
+     4884279,
+     4877972
+    ],
+    "starved_total": 7702483,
+    "max_depth": 708,
+    "distinct_genes": 68669
+   },
+   {
+    "tick": 17799,
+    "live": 9775541,
+    "births": 31019594,
+    "faithful": 30319313,
+    "spontaneous": 59,
+    "energy_total": 1888255640,
+    "harvesters": 9743471,
+    "live_land": 5736908,
+    "zone_live": [
+     4890484,
+     4885057
+    ],
+    "starved_total": 8168589,
+    "max_depth": 734,
+    "distinct_genes": 66496
+   },
+   {
+    "tick": 18599,
+    "live": 9785635,
+    "births": 31054298,
+    "faithful": 30356754,
+    "spontaneous": 50,
+    "energy_total": 1890499722,
+    "harvesters": 9753757,
+    "live_land": 5744173,
+    "zone_live": [
+     4895293,
+     4890342
+    ],
+    "starved_total": 8639425,
+    "max_depth": 755,
+    "distinct_genes": 64667
+   },
+   {
+    "tick": 19399,
+    "live": 9795832,
+    "births": 31082933,
+    "faithful": 30391953,
+    "spontaneous": 52,
+    "energy_total": 1892806874,
+    "harvesters": 9763957,
+    "live_land": 5752371,
+    "zone_live": [
+     4899597,
+     4896235
+    ],
+    "starved_total": 9113925,
+    "max_depth": 780,
+    "distinct_genes": 62504
+   },
+   {
+    "tick": 20199,
+    "live": 9798338,
+    "births": 31107329,
+    "faithful": 30422441,
+    "spontaneous": 60,
+    "energy_total": 1894056489,
+    "harvesters": 9766639,
+    "live_land": 5754930,
+    "zone_live": [
+     4900434,
+     4897904
+    ],
+    "starved_total": 9591929,
+    "max_depth": 806,
+    "distinct_genes": 60347
+   },
+   {
+    "tick": 20999,
+    "live": 9806725,
+    "births": 31127947,
+    "faithful": 30450896,
+    "spontaneous": 55,
+    "energy_total": 1895712814,
+    "harvesters": 9774752,
+    "live_land": 5760366,
+    "zone_live": [
+     4904358,
+     4902367
+    ],
+    "starved_total": 10071724,
+    "max_depth": 829,
+    "distinct_genes": 59106
+   },
+   {
+    "tick": 21799,
+    "live": 9810272,
+    "births": 31146341,
+    "faithful": 30476114,
+    "spontaneous": 55,
+    "energy_total": 1896661612,
+    "harvesters": 9778191,
+    "live_land": 5762408,
+    "zone_live": [
+     4906059,
+     4904213
+    ],
+    "starved_total": 10550711,
+    "max_depth": 853,
+    "distinct_genes": 57042
+   },
+   {
+    "tick": 22599,
+    "live": 9814554,
+    "births": 31162606,
+    "faithful": 30498121,
+    "spontaneous": 57,
+    "energy_total": 1897920590,
+    "harvesters": 9782569,
+    "live_land": 5767720,
+    "zone_live": [
+     4909350,
+     4905204
+    ],
+    "starved_total": 11033130,
+    "max_depth": 876,
+    "distinct_genes": 55517
+   },
+   {
+    "tick": 23399,
+    "live": 9819626,
+    "births": 31175054,
+    "faithful": 30515783,
+    "spontaneous": 46,
+    "energy_total": 1899324358,
+    "harvesters": 9787496,
+    "live_land": 5772539,
+    "zone_live": [
+     4910155,
+     4909471
+    ],
+    "starved_total": 11513510,
+    "max_depth": 900,
+    "distinct_genes": 54217
+   },
+   {
+    "tick": 24199,
+    "live": 9823169,
+    "births": 31188974,
+    "faithful": 30536227,
+    "spontaneous": 56,
+    "energy_total": 1900355358,
+    "harvesters": 9790932,
+    "live_land": 5774802,
+    "zone_live": [
+     4911901,
+     4911268
+    ],
+    "starved_total": 11994333,
+    "max_depth": 922,
+    "distinct_genes": 52602
+   },
+   {
+    "tick": 24999,
+    "live": 9828476,
+    "births": 31198543,
+    "faithful": 30551964,
+    "spontaneous": 53,
+    "energy_total": 1901868849,
+    "harvesters": 9796882,
+    "live_land": 5778390,
+    "zone_live": [
+     4915619,
+     4912857
+    ],
+    "starved_total": 12474662,
+    "max_depth": 942,
+    "distinct_genes": 51252
+   },
+   {
+    "tick": 25799,
+    "live": 9829250,
+    "births": 31208942,
+    "faithful": 30568284,
+    "spontaneous": 53,
+    "energy_total": 1901963960,
+    "harvesters": 9797719,
+    "live_land": 5778089,
+    "zone_live": [
+     4916161,
+     4913089
+    ],
+    "starved_total": 12956019,
+    "max_depth": 966,
+    "distinct_genes": 49870
+   },
+   {
+    "tick": 26599,
+    "live": 9830470,
+    "births": 31216253,
+    "faithful": 30579037,
+    "spontaneous": 52,
+    "energy_total": 1902188816,
+    "harvesters": 9798629,
+    "live_land": 5781096,
+    "zone_live": [
+     4915575,
+     4914895
+    ],
+    "starved_total": 13435889,
+    "max_depth": 988,
+    "distinct_genes": 48935
+   },
+   {
+    "tick": 27399,
+    "live": 9830976,
+    "births": 31222061,
+    "faithful": 30587940,
+    "spontaneous": 59,
+    "energy_total": 1902891798,
+    "harvesters": 9799223,
+    "live_land": 5781563,
+    "zone_live": [
+     4915863,
+     4915113
+    ],
+    "starved_total": 13914886,
+    "max_depth": 1008,
+    "distinct_genes": 47757
+   },
+   {
+    "tick": 28199,
+    "live": 9836339,
+    "births": 31231019,
+    "faithful": 30598710,
+    "spontaneous": 52,
+    "energy_total": 1903823335,
+    "harvesters": 9804594,
+    "live_land": 5784989,
+    "zone_live": [
+     4919667,
+     4916672
+    ],
+    "starved_total": 14392817,
+    "max_depth": 1030,
+    "distinct_genes": 47064
+   },
+   {
+    "tick": 28999,
+    "live": 9834548,
+    "births": 31234433,
+    "faithful": 30606005,
+    "spontaneous": 49,
+    "energy_total": 1903771078,
+    "harvesters": 9803051,
+    "live_land": 5784104,
+    "zone_live": [
+     4918959,
+     4915589
+    ],
+    "starved_total": 14868468,
+    "max_depth": 1052,
+    "distinct_genes": 46429
+   },
+   {
+    "tick": 29799,
+    "live": 9835273,
+    "births": 31238957,
+    "faithful": 30612171,
+    "spontaneous": 65,
+    "energy_total": 1904300612,
+    "harvesters": 9803410,
+    "live_land": 5785729,
+    "zone_live": [
+     4918189,
+     4917084
+    ],
+    "starved_total": 15343408,
+    "max_depth": 1073,
+    "distinct_genes": 45516
+   },
+   {
+    "tick": 30599,
+    "live": 9838128,
+    "births": 31243947,
+    "faithful": 30619770,
+    "spontaneous": 56,
+    "energy_total": 1904418522,
+    "harvesters": 9806105,
+    "live_land": 5787169,
+    "zone_live": [
+     4919591,
+     4918537
+    ],
+    "starved_total": 15817354,
+    "max_depth": 1098,
+    "distinct_genes": 44950
+   },
+   {
+    "tick": 31399,
+    "live": 9839436,
+    "births": 31246459,
+    "faithful": 30624873,
+    "spontaneous": 56,
+    "energy_total": 1905052483,
+    "harvesters": 9807541,
+    "live_land": 5788740,
+    "zone_live": [
+     4921326,
+     4918110
+    ],
+    "starved_total": 16290789,
+    "max_depth": 1123,
+    "distinct_genes": 44158
+   },
+   {
+    "tick": 32199,
+    "live": 9841254,
+    "births": 31248918,
+    "faithful": 30629972,
+    "spontaneous": 61,
+    "energy_total": 1905459083,
+    "harvesters": 9809675,
+    "live_land": 5789130,
+    "zone_live": [
+     4920923,
+     4920331
+    ],
+    "starved_total": 16761430,
+    "max_depth": 1145,
+    "distinct_genes": 43447
+   },
+   {
+    "tick": 32999,
+    "live": 9842172,
+    "births": 31252805,
+    "faithful": 30633628,
+    "spontaneous": 46,
+    "energy_total": 1905531370,
+    "harvesters": 9810559,
+    "live_land": 5790154,
+    "zone_live": [
+     4921121,
+     4921051
+    ],
+    "starved_total": 17233515,
+    "max_depth": 1167,
+    "distinct_genes": 42812
+   },
+   {
+    "tick": 33799,
+    "live": 9844433,
+    "births": 31254690,
+    "faithful": 30637942,
+    "spontaneous": 61,
+    "energy_total": 1906105391,
+    "harvesters": 9812978,
+    "live_land": 5791657,
+    "zone_live": [
+     4921800,
+     4922633
+    ],
+    "starved_total": 17703977,
+    "max_depth": 1190,
+    "distinct_genes": 42656
+   },
+   {
+    "tick": 34599,
+    "live": 9840437,
+    "births": 31254931,
+    "faithful": 30637175,
+    "spontaneous": 50,
+    "energy_total": 1905619223,
+    "harvesters": 9808448,
+    "live_land": 5789523,
+    "zone_live": [
+     4919984,
+     4920453
+    ],
+    "starved_total": 18171908,
+    "max_depth": 1213,
+    "distinct_genes": 42575
+   },
+   {
+    "tick": 35399,
+    "live": 9842517,
+    "births": 31256091,
+    "faithful": 30639297,
+    "spontaneous": 46,
+    "energy_total": 1906224063,
+    "harvesters": 9810642,
+    "live_land": 5792332,
+    "zone_live": [
+     4921696,
+     4920821
+    ],
+    "starved_total": 18637505,
+    "max_depth": 1238,
+    "distinct_genes": 42031
+   },
+   {
+    "tick": 36199,
+    "live": 9842859,
+    "births": 31256776,
+    "faithful": 30643292,
+    "spontaneous": 58,
+    "energy_total": 1906499676,
+    "harvesters": 9811257,
+    "live_land": 5789835,
+    "zone_live": [
+     4921209,
+     4921650
+    ],
+    "starved_total": 19101521,
+    "max_depth": 1261,
+    "distinct_genes": 41794
+   },
+   {
+    "tick": 36999,
+    "live": 9845900,
+    "births": 31258806,
+    "faithful": 30644008,
+    "spontaneous": 51,
+    "energy_total": 1906960870,
+    "harvesters": 9814524,
+    "live_land": 5792102,
+    "zone_live": [
+     4921620,
+     4924280
+    ],
+    "starved_total": 19563249,
+    "max_depth": 1281,
+    "distinct_genes": 41903
+   },
+   {
+    "tick": 37799,
+    "live": 9844745,
+    "births": 31259122,
+    "faithful": 30643782,
+    "spontaneous": 60,
+    "energy_total": 1906580431,
+    "harvesters": 9813298,
+    "live_land": 5790984,
+    "zone_live": [
+     4921970,
+     4922775
+    ],
+    "starved_total": 20022331,
+    "max_depth": 1304,
+    "distinct_genes": 41496
+   },
+   {
+    "tick": 38599,
+    "live": 9842135,
+    "births": 31258090,
+    "faithful": 30644412,
+    "spontaneous": 53,
+    "energy_total": 1906075430,
+    "harvesters": 9810748,
+    "live_land": 5790088,
+    "zone_live": [
+     4921119,
+     4921016
+    ],
+    "starved_total": 20480461,
+    "max_depth": 1327,
+    "distinct_genes": 41467
+   },
+   {
+    "tick": 39399,
+    "live": 9843695,
+    "births": 31260425,
+    "faithful": 30644259,
+    "spontaneous": 61,
+    "energy_total": 1906579516,
+    "harvesters": 9812313,
+    "live_land": 5791859,
+    "zone_live": [
+     4921730,
+     4921965
+    ],
+    "starved_total": 20937115,
+    "max_depth": 1351,
+    "distinct_genes": 41797
+   }
+  ],
+  "top_genes_last": [
+   {
+    "count": 375351,
+    "codons": "ATG GCT CTT TTA GGT AGA",
+    "ops": "START ALLOC COPY TERM DIVIDE HARVEST"
+   },
+   {
+    "count": 183646,
+    "codons": "ATG GCT CTC TTA GGT AGA",
+    "ops": "START ALLOC COPY TERM DIVIDE HARVEST"
+   },
+   {
+    "count": 172347,
+    "codons": "ATG GCT CTA TTA GGT AGA",
+    "ops": "START ALLOC COPY TERM DIVIDE HARVEST"
+   },
+   {
+    "count": 171982,
+    "codons": "ATG GCT CTT TTA GGA AGA",
+    "ops": "START ALLOC COPY TERM DIVIDE HARVEST"
+   },
+   {
+    "count": 169723,
+    "codons": "ATG GCT CTG TTA GGT AGA",
+    "ops": "START ALLOC COPY TERM DIVIDE HARVEST"
+   },
+   {
+    "count": 167564,
+    "codons": "ATG GCA CTT TTA GGT AGA",
+    "ops": "START ALLOC COPY TERM DIVIDE HARVEST"
+   },
+   {
+    "count": 166782,
+    "codons": "ATG GCT CTT TTA GGG AGA",
+    "ops": "START ALLOC COPY TERM DIVIDE HARVEST"
+   },
+   {
+    "count": 165797,
+    "codons": "ATG GCC CTT TTA GGT AGA",
+    "ops": "START ALLOC COPY TERM DIVIDE HARVEST"
+   },
+   {
+    "count": 164270,
+    "codons": "ATG GCG CTT TTA GGT AGA",
+    "ops": "START ALLOC COPY TERM DIVIDE HARVEST"
+   },
+   {
+    "count": 163656,
+    "codons": "ATG GCT CTT TTA GGC AGA",
+    "ops": "START ALLOC COPY TERM DIVIDE HARVEST"
+   }
+  ]
+ }
+]

@@ -42,6 +42,7 @@ origin branches.
 | [`sim/dna_ref.py`](sim/dna_ref.py), [`gpu/dna_world.cu`](gpu/dna_world.cu) | **DNA-1**: the DNA-like machine of [docs/09](docs/09_dna1_spec.md) (4 symbols, complement xor 3, two strands, 1,024-cell slots, the standard genetic code's 64 codons onto 20 operations + STOP, processors with machine-held copy pointers, deterministic ticks). Python reference and CUDA engine agree bit for bit on 17 test worlds; the engine runs 2,999,999,488 cells at 405 ticks/s in 2.6 GB on one RTX 4090. First worlds and reading in [docs/10](docs/10_dna1_results.md). |
 | [`gpu/dna_sweep.cu`](gpu/dna_sweep.cu), [`tools/dna_sweep_verify.py`](tools/dna_sweep_verify.py), [`tools/dna_trace.py`](tools/dna_trace.py) | the DNA-1 **copier sweep**: thousands of single-gene 8 x 256-cell worlds per GPU launch (one thread per world), reduced on the GPU, verified tick by tick against the reference on 5,179 genes; exhaustive over every gene of 2 to 6 codons under both codon tables ([docs/11](docs/11_dna1_copier_sweep.md)); the tracer prints a gene's world tick by tick |
 | [`tools/dna_seeded_report.py`](tools/dna_seeded_report.py), [`tools/dna_slot_video.py`](tools/dna_slot_video.py), `results/dna1_seeded/` | the **seeded worlds** of [docs/12](docs/12_dna1_seeded_world.md): the 7-codon copier seeded by the thousand and by the million into the world engine (unsampled birth logs with lineage depth, capped depth census, top genes with codons, slot-map video); the report tool turns a run into generation tables and decay curves, the video tool renders the slot map |
+| [`docs/17_dna3_seven_days.md`](docs/17_dna3_seven_days.md), [`tools/dna3_verify.py`](tools/dna3_verify.py), [`tools/dna3_maps.py`](tools/dna3_maps.py), [`tools/dna3_report.py`](tools/dna3_report.py), `results/dna3/` | **DNA-3, the seven days**: DNA-2 ([docs/15](docs/15_dna2.md)) plus one layer per day of Genesis 1, each behind a flag (`--days 1,2,3`, `--dna3`) in the reference and the engine: day 1 light and energy, day 2 a 2D grid with a firmament, day 3 land, sea and plants (HARVEST); day 4 specified exactly, days 5 to 7 (predators, parasites, motion, tasks, the interface for a learned "human" controller, the open-endedness run) as design. Verified on 13 configurations, every tick identical; spatial statistics, pictures and videos from the slot maps |
 | [`docs/08_dna_machine.md`](docs/08_dna_machine.md) | how to build the machine like DNA: complement as repair, pointers in the polymerase, codon layer with degeneracy, regulation by templates, the world; six experiments in order |
 | [`docs/03_resources.md`](docs/03_resources.md) | the workstation and the four cluster nodes as found on 2026-10-09, and how to bound CPU, memory and power on each |
 
@@ -109,6 +110,21 @@ only synonymous spellings as reproducing mutants, unrepaired damage at ten times
 heritability (it supplies exit cells), and random inflow organisms revive the gene from dead copier slots 92 times
 in 20,000 ticks. Recommended change for DNA-2: a copy loop that ends on the template (a STOP-codon test under P)
 and a DIVIDE that re-arms P. A slot-map video of one run: `results/dna1_seeded/dna1_seeded_1e8.mp4`.
+
+**DNA-3, the seven days** ([docs/17](docs/17_dna3_seven_days.md)): DNA-2's replicators get a world, built in the order
+of Genesis 1. Day 1: a clock and a day/night light that fills a per-organism energy store; every instruction costs a
+unit and the store sets the pace. Day 2: a 2D torus of slots, children placed in a free neighbouring slot, and a
+firmament of two barrier rows that splits the world into two zones. Day 3: land and sea from value noise, a new
+operation HARVEST (codons AGA, AGG) that turns light into energy, costs for copied cells and for staying alive, death
+by starvation. Reference and CUDA engine agree on every tick of 13 configurations (DNA-1 and DNA-2 unchanged). First
+worlds at 10^8 cells: **births follow the light** (103,935 per light half-day against 69,704 per dark one); **lineages
+form patches** (founder assortment 112 against DNA-2's 1.01) and a lineage spreads at one slot per 14.5 ticks; **the
+firmament holds** (a single seed's lineage fills its zone, the other zone stays empty for 20,000 ticks); and **plants
+evolve from the non-plant DNA-2 replicator**: HARVEST enters the gene by read-through of a mutated STOP into old
+material, harvesters take the land (where the non-plant cannot live) and then the sea, 348,514 of 349,582 organisms
+at tick 99,999, streamlined to `START ALLOC COPY TERM DIVIDE HARVEST`. Days 4 (seasons, moon, stars, SENSE and
+WAIT) to 7 (the frozen long run with evolutionary activity against a neutral shadow) are specified, with eleven
+decisions listed for the user.
 
 **Real ISAs.** AArch64 exhaustive over all 2^32 words: **1,526,900,218 valid instructions (35.5509 %)**, 1,298
 mnemonics, 15 minutes on the workstation. Encoding density of other ISAs (16.7 M-word samples, Capstone): ARM32

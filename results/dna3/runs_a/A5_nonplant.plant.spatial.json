@@ -1,0 +1,181 @@
+{
+ "run": "A5_nonplant",
+ "mode": "plant",
+ "W": 640,
+ "S": 409600,
+ "frames": 500,
+ "land": 241977,
+ "sea": 166343,
+ "series": [
+  {
+   "frame": 0,
+   "tick": 199,
+   "live": 42825,
+   "harvesters": 98,
+   "live_land": 2,
+   "harv_land": 0,
+   "live_sea": 42823,
+   "harv_sea": 98
+  },
+  {
+   "frame": 1,
+   "tick": 399,
+   "live": 57838,
+   "harvesters": 377,
+   "live_land": 8,
+   "harv_land": 0,
+   "live_sea": 57830,
+   "harv_sea": 377
+  },
+  {
+   "frame": 2,
+   "tick": 599,
+   "live": 75733,
+   "harvesters": 695,
+   "live_land": 315,
+   "harv_land": 0,
+   "live_sea": 75418,
+   "harv_sea": 695
+  },
+  {
+   "frame": 3,
+   "tick": 799,
+   "live": 86531,
+   "harvesters": 1248,
+   "live_land": 491,
+   "harv_land": 69,
+   "live_sea": 86040,
+   "harv_sea": 1179
+  },
+  {
+   "frame": 4,
+   "tick": 999,
+   "live": 92607,
+   "harvesters": 2473,
+   "live_land": 594,
+   "harv_land": 579,
+   "live_sea": 92013,
+   "harv_sea": 1894
+  },
+  {
+   "frame": 5,
+   "tick": 1199,
+   "live": 96848,
+   "harvesters": 4587,
+   "live_land": 1834,
+   "harv_land": 1778,
+   "live_sea": 95014,
+   "harv_sea": 2809
+  },
+  {
+   "frame": 7,
+   "tick": 1599,
+   "live": 105526,
+   "harvesters": 11926,
+   "live_land": 6825,
+   "harv_land": 6169,
+   "live_sea": 98701,
+   "harv_sea": 5757
+  },
+  {
+   "frame": 9,
+   "tick": 1999,
+   "live": 111459,
+   "harvesters": 23623,
+   "live_land": 13557,
+   "harv_land": 13462,
+   "live_sea": 97902,
+   "harv_sea": 10161
+  },
+  {
+   "frame": 14,
+   "tick": 2999,
+   "live": 159253,
+   "harvesters": 84498,
+   "live_land": 54768,
+   "harv_land": 54138,
+   "live_sea": 104485,
+   "harv_sea": 30360
+  },
+  {
+   "frame": 19,
+   "tick": 3999,
+   "live": 239930,
+   "harvesters": 188123,
+   "live_land": 126543,
+   "harv_land": 126043,
+   "live_sea": 113387,
+   "harv_sea": 62080
+  },
+  {
+   "frame": 24,
+   "tick": 4999,
+   "live": 284061,
+   "harvesters": 254965,
+   "live_land": 165018,
+   "harv_land": 164641,
+   "live_sea": 119043,
+   "harv_sea": 90324
+  },
+  {
+   "frame": 29,
+   "tick": 5999,
+   "live": 306183,
+   "harvesters": 290064,
+   "live_land": 184575,
+   "harv_land": 184063,
+   "live_sea": 121608,
+   "harv_sea": 106001
+  },
+  {
+   "frame": 39,
+   "tick": 7999,
+   "live": 325703,
+   "harvesters": 322190,
+   "live_land": 197434,
+   "harv_land": 197044,
+   "live_sea": 128269,
+   "harv_sea": 125146
+  },
+  {
+   "frame": 49,
+   "tick": 9999,
+   "live": 323984,
+   "harvesters": 322780,
+   "live_land": 196078,
+   "harv_land": 195573,
+   "live_sea": 127906,
+   "harv_sea": 127207
+  },
+  {
+   "frame": 99,
+   "tick": 19999,
+   "live": 342572,
+   "harvesters": 341445,
+   "live_land": 204625,
+   "harv_land": 204252,
+   "live_sea": 137947,
+   "harv_sea": 137193
+  },
+  {
+   "frame": 249,
+   "tick": 49999,
+   "live": 344108,
+   "harvesters": 342912,
+   "live_land": 206778,
+   "harv_land": 206292,
+   "live_sea": 137330,
+   "harv_sea": 136620
+  },
+  {
+   "frame": 499,
+   "tick": 99999,
+   "live": 349582,
+   "harvesters": 348514,
+   "live_land": 209268,
+   "harv_land": 208896,
+   "live_sea": 140314,
+   "harv_sea": 139618
+  }
+ ]
+}
