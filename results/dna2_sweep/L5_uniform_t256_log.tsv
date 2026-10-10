@@ -1,0 +1,7 @@
+#code	L	glen	gene	codons	ops	claims	copied	divides	children	faithful	births_world	faithful_world	grandchildren	deaths	live_end	maxdepth	first_birth	prefiltered	claims_world	copied_world	intact
+uniform-dna2	5	5	558409	AAA AAG AGA CCC AGC	START COPY ALLOC TERM DIVIDE	3	54	3	3	3	31	31	28	24	8	13	4	0	36	611	3
+uniform-dna2	5	5	610888	AAA AAG CCC AGC AGA	START COPY TERM DIVIDE ALLOC	3	54	3	3	3	31	31	28	24	8	13	4	0	36	611	3
+uniform-dna2	5	5	2106697	AAA AGA AAG CCC AGC	START ALLOC COPY TERM DIVIDE	3	54	3	3	3	31	31	28	24	8	13	4	0	36	612	3
+uniform-dna2	5	5	2183746	AAA AGA CCC AGC AAG	START ALLOC TERM DIVIDE COPY	3	54	3	3	3	31	31	28	24	8	13	4	0	36	611	3
+uniform-dna2	5	5	5542024	AAA CCC AGC AAG AGA	START TERM DIVIDE COPY ALLOC	3	54	3	3	3	31	31	28	24	8	13	4	0	36	612	3
+uniform-dna2	5	5	5542402	AAA CCC AGC AGA AAG	START TERM DIVIDE ALLOC COPY	3	54	3	3	3	31	31	28	24	8	13	4	0	36	611	3

@@ -1,0 +1,4 @@
+dna_world N=99999744 G=1024 S=97656 ticks=50000 seed=1 I=16 T=64 mu=0.001 D=95 F=23 double=1 code=uniform-dna2 blank=0 n_seed=4096 hash_every=-1 census_every=100 gpu=2
+log_births= log_filter=divide log_every=1 depth_cap=50 top_genes=pilots/p6_g1024_uniform.top slot_map=
+seeded 4096 slots with 5 codons, gene hash f5f290967d116f0b, expressible=1
+summary ticks=50000 seconds=43.199 ticks_per_second=1157.42 seconds_total=43.347 device_mem_alloc_bytes=86132688 device_mem_used_bytes=88080384 live=88898 births=70616253 faithful=69309309 spontaneous=490 deaths=70531451

@@ -1,0 +1,4 @@
+dna_world N=99999744 G=1024 S=97656 ticks=50000 seed=1 I=16 T=64 mu=0.001 D=950 F=23 double=0 code=standard-dna2 blank=0 n_seed=4096 hash_every=-1 census_every=100 gpu=1
+log_births= log_filter=divide log_every=1 depth_cap=50 top_genes=pilots/p5_g1024_nodouble_d10.top slot_map=
+seeded 4096 slots with 5 codons, gene hash 3aa15a0d0fdaee9e, expressible=1
+summary ticks=50000 seconds=42.837 ticks_per_second=1167.21 seconds_total=42.974 device_mem_alloc_bytes=86132688 device_mem_used_bytes=88080384 live=88591 births=70645367 faithful=69416379 spontaneous=451 deaths=70560872
