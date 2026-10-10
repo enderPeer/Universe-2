@@ -26,16 +26,20 @@ rows = []
 for f in sorted(glob.glob(os.path.join(D, "*.txt.gz"))):
     tag = os.path.basename(f)[:-7]
     code, s = tag.rsplit("_s", 1)
-    cs = [json.loads(l[7:]) for l in gzip.open(f, "rt") if l.startswith("census")]
+    # strip NUL bytes: standard_s022's files were partly overwritten by a duplicate run (docs/16, caveats)
+    cs = [json.loads(l.strip("\0")[7:]) for l in gzip.open(f, "rt") if l.strip("\0").startswith("census")]
     if not cs:
         continue
     top = collections.defaultdict(list)
     tp = os.path.join(D, tag + ".top.gz")
     if os.path.exists(tp):
         for l in gzip.open(tp, "rt"):
-            if l.startswith("#"):
+            l = l.strip("\0")   # standard_s022's files were partly overwritten by a duplicate run (docs/16)
+            if not l or not l[0].isdigit():
                 continue
             r = l.rstrip("\n").split("\t")
+            if len(r) < 7:
+                continue
             top[int(r[0])].append(r)
     last = cs[-1]
     first = next((c for c in cs if c["faithful_total"] > 0), None)

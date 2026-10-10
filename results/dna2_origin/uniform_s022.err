@@ -1,0 +1,3 @@
+dna_world N=99999744 G=1024 S=97656 ticks=200000 seed=22 I=16 T=64 mu=0.001 D=95 F=23 double=1 code=uniform-dna2 blank=0 n_seed=0 hash_every=-1 census_every=100 gpu=0
+log_births= log_filter=divide log_every=1 depth_cap=50 top_genes=orig/uniform_s022.top slot_map=
+summary ticks=200000 seconds=57.148 ticks_per_second=3499.71 seconds_total=57.149 device_mem_alloc_bytes=86132688 device_mem_used_bytes=88080384 live=12 births=71675 faithful=8 spontaneous=70386 deaths=71663

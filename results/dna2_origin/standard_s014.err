@@ -1,0 +1,3 @@
+dna_world N=99999744 G=1024 S=97656 ticks=200000 seed=14 I=16 T=64 mu=0.001 D=95 F=23 double=1 code=standard-dna2 blank=0 n_seed=0 hash_every=-1 census_every=100 gpu=0
+log_births= log_filter=divide log_every=1 depth_cap=50 top_genes=orig/standard_s014.top slot_map=
+summary ticks=200000 seconds=188.689 ticks_per_second=1059.95 seconds_total=188.689 device_mem_alloc_bytes=86132688 device_mem_used_bytes=88080384 live=89151 births=194554269 faithful=138985116 spontaneous=22871 deaths=194465118
