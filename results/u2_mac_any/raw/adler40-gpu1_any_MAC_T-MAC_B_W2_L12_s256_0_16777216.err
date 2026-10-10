@@ -1,0 +1,2 @@
+mode=primany prims=MAC_T,MAC_B ops=INC_R1,INC_L1,FLIP_R2,JNZB W=2 L=12 steps=256 programs=16777216 start=0 secs=2.7 threads=0 host=adler40 device=gpu1:NVIDIA GeForce RTX 4080
+done

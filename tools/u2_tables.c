@@ -11,6 +11,8 @@
  *   u2_tables --list                               -> the catalog
  *   u2_tables prim PRIMS W L steps OPS start count threads -> arithmetic primitives (COPY, ADD, MUL_T, MAC_T,
  *       MAC_B, CARRY) of one machine over all programs of exactly L symbols in an index range (docs/13)
+ *   u2_tables primany PRIMS W L steps OPS start count threads -> the same primitives at every step budget
+ *       1..steps at once (one candidate mask per step; docs/14)
  *
  * TSV columns: table_id, op0..op3 (names), union_after_L1 .. union_after_L<L> (distinct tapes over all programs up
  * to that length), halted, nonblank, checksum (sum of all program tape hashes, order-independent, for cross-node
@@ -451,6 +453,218 @@ static int prim_mode(int argc, char **argv)
     return 0;
 }
 
+/* ---- primany mode: the primitives of prim mode at EVERY step budget 1..steps at once (docs/14) ----
+ *
+ *   u2_tables primany PRIMS W L steps OPS start count threads [maxin]
+ *
+ * Same machine, programs, primitives, inputs and input order as prim mode (maxin > 0 keeps only the first maxin
+ * inputs of every primitive, which exhibits the programs that survive that many). A program is the primitive "at budget s"
+ * when one FIXED cell, or the cell under the head after exactly s instructions, holds the target after exactly s
+ * instructions for EVERY input. This mode keeps one candidate mask per step, cand[s] (256 cell bits and a head bit),
+ * all of which only shrink as the inputs go by; a program stays alive while some step still has a candidate, and it
+ * stops at the first input after which no step has one. The cell masks are maintained incrementally: a step writes
+ * at most one cell (the cell under the head before the move), so the set of cells holding the target changes by at
+ * most one bit per step. Output per primitive: survivors after each input (alive = some step has a candidate),
+ * found (programs alive after every input), found_by_step (programs that are the primitive at each step s = 1..steps),
+ * and one line per found program:
+ *   F <prim> <program> <steps as ranges, e.g. 5-7,64> <s:cells:h;...> (cells = comma list or -, h = head rule holds)
+ * The op switch below is a verbatim copy of the one in run() (inserted by tools/u2_mac_any.py's patch of this file).
+ */
+#define MAXSTEPS 256
+static int primany_eval(const int *table, const uint8_t *prog, int L, int W, int steps, const Prim *p, uint8_t *tape,
+                        uint64_t (*cand)[4], uint64_t *hok)
+{
+    uint8_t mask = (uint8_t)((1 << W) - 1);
+    int match[MAXL];
+    int need_match = 0;
+    for (int i = 0; i < 4; i++) need_match |= table[i] == OPEN || table[i] == CLOSE;
+    if (need_match) {
+        int stack[MAXL], sp = 0;
+        for (int i = 0; i < L; i++) match[i] = -1;
+        for (int i = 0; i < L; i++) {
+            int op = table[prog[i]];
+            if (op == OPEN) stack[sp++] = i;
+            else if (op == CLOSE && sp) { int j = stack[--sp]; match[i] = j; match[j] = i; }
+        }
+    }
+    const uint64_t cell0 = p->excl0 ? ~1ULL : ~0ULL;
+    for (int i = 0; i < p->nin; i++) {
+        const uint8_t t = p->target[i];
+        memset(tape, 0, NCELL);
+        for (int j = 0; j < p->ninit; j++) tape[j] = p->init[i][j];
+        uint64_t eq[4];
+        for (int k = 0; k < 4; k++) eq[k] = t == 0 ? ~0ULL : 0;
+        for (int c = 0; c < p->ninit; c++) { if (tape[c] == t) eq[0] |= 1ULL << c; else eq[0] &= ~(1ULL << c); }
+        int head = 0, pc = 0, A = 0, halted = 0;
+        uint64_t alive = 0;
+        for (int s = 0; s < steps; s++) {
+            if (!halted) {
+                int at = pc, wh = head;
+                int op = table[prog[pc]];
+                pc = (pc + 1) % L;
+                uint8_t v = tape[head];
+                switch (op) {
+                case R1: head = (head + 1) & 255; break;
+                case L1: head = (head - 1) & 255; break;
+                case R2: head = (head + 2) & 255; break;
+                case L2: head = (head - 2) & 255; break;
+                case R3: head = (head + 3) & 255; break;
+                case L3: head = (head - 3) & 255; break;
+                case INC: tape[head] = (uint8_t)((v + 1) & mask); break;
+                case DEC: tape[head] = (uint8_t)((v - 1) & mask); break;
+                case FLIP: tape[head] = v ^ 1; break;
+                case NOT: tape[head] = v ^ mask; break;
+                case ZERO: tape[head] = 0; break;
+                case SET: tape[head] = mask; break;
+                case SHL: tape[head] = (uint8_t)((v << 1) & mask); break;
+                case INC_R1: tape[head] = (uint8_t)((v + 1) & mask); head = (head + 1) & 255; break;
+                case INC_L1: tape[head] = (uint8_t)((v + 1) & mask); head = (head - 1) & 255; break;
+                case FLIP_R1: tape[head] = v ^ 1; head = (head + 1) & 255; break;
+                case FLIP_L1: tape[head] = v ^ 1; head = (head - 1) & 255; break;
+                case FLIP_R2: tape[head] = v ^ 1; head = (head + 2) & 255; break;
+                case FLIP_R3: tape[head] = v ^ 1; head = (head + 3) & 255; break;
+                case SET_R1: tape[head] = mask; head = (head + 1) & 255; break;
+                case SET_R3: tape[head] = mask; head = (head + 3) & 255; break;
+                case ZERO_R1: tape[head] = 0; head = (head + 1) & 255; break;
+                case ZERO_R3: tape[head] = 0; head = (head + 3) & 255; break;
+                case SKZ: if (v == 0) pc = (pc + 1) % L; break;
+                case SKNZ: if (v != 0) pc = (pc + 1) % L; break;
+                case JZS: if (v == 0) pc = 0; break;
+                case JNZS: if (v != 0) pc = 0; break;
+                case JNZB: if (v != 0) pc = ((pc - 2) % L + L) % L; break;
+                case OPEN: if (v == 0) pc = match[at] >= 0 ? (match[at] + 1) % L : 0; break;
+                case CLOSE: if (v != 0) pc = match[at] >= 0 ? (match[at] + 1) % L : 0; break;
+                case HALT: halted = 1; break;
+                case NOP: break;
+                case LDA: A = v; break;
+                case STA: tape[head] = (uint8_t)A; break;
+                case SWAP: tape[head] = (uint8_t)A; A = v; break;
+                case ADDA: tape[head] = (uint8_t)((v + A) & mask); break;
+                case EAT: A = v; tape[head] = 0; break;                                            /* eat: cell into the stomach, cell emptied */
+                case MATE_A: tape[head] = (uint8_t)((v + A + 1) & mask); head = (head + 1) & 255; break;  /* mate: cell += A + 1, step right */
+                case MATE_B: tape[head] = (uint8_t)((A + 1) & mask); head = (head + 1) & 255; break;      /* mate: cell = A + 1, step right */
+                case SLEEP: if (A == 0) pc = (pc + 1) % L; break;                                  /* sleep: skip next if no energy */
+                case WASTE: tape[head] = mask; A = 0; head = (head - 1) & 255; break;             /* waste: cell = all ones, stomach emptied, step left */
+                }
+                uint8_t nv = tape[wh];
+                if (nv != v) { if (nv == t) eq[wh >> 6] |= 1ULL << (wh & 63); else eq[wh >> 6] &= ~(1ULL << (wh & 63)); }
+            }
+            int h = tape[head] == t && !(p->excl0 && head == 0);
+            uint64_t *c = cand[s];
+            uint64_t hb = 1ULL << (s & 63);
+            if (i == 0) {
+                c[0] = eq[0] & cell0; c[1] = eq[1]; c[2] = eq[2]; c[3] = eq[3];
+                if (h) hok[s >> 6] |= hb; else hok[s >> 6] &= ~hb;
+            } else {
+                c[0] &= eq[0]; c[1] &= eq[1]; c[2] &= eq[2]; c[3] &= eq[3];
+                if (!h) hok[s >> 6] &= ~hb;
+            }
+            alive |= c[0] | c[1] | c[2] | c[3] | (hok[s >> 6] & hb);
+        }
+        if (!alive) return i;
+    }
+    return p->nin;
+}
+
+static int primany_mode(int argc, char **argv)
+{
+    (void)argc;
+    char names[256]; strncpy(names, argv[2], 255); names[255] = 0;
+    int W = atoi(argv[3]), L = atoi(argv[4]), steps = atoi(argv[5]);
+    int table[4];
+    if (!parse_ops(argv[6], table)) { fprintf(stderr, "unknown operation in %s\n", argv[6]); return 2; }
+    unsigned long long start = strtoull(argv[7], 0, 0), count = strtoull(argv[8], 0, 0);
+    int threads = atoi(argv[9]);
+    int maxin = argc > 10 ? atoi(argv[10]) : 0;   /* optional: keep only the first maxin inputs, to exhibit the programs that get that far */
+    if (L < 1 || L > MAXL || W < 1 || W > 4 || steps < 1 || steps > MAXSTEPS) { fprintf(stderr, "1 <= L <= %d, 1 <= W <= 4, 1 <= steps <= %d\n", MAXL, MAXSTEPS); return 2; }
+    Prim prims[8]; int np = 0;
+    for (char *tok = strtok(names, ","); tok && np < 8; tok = strtok(NULL, ",")) {
+        if (!prim_build(&prims[np], tok, W)) { fprintf(stderr, "unknown primitive %s\n", tok); return 2; }
+        if (maxin > 0 && maxin < prims[np].nin) prims[np].nin = maxin;
+        np++;
+    }
+    unsigned long long *hist = calloc((size_t)threads * np * (MAXIN + 1), sizeof(unsigned long long));
+    unsigned long long *fbs = calloc((size_t)threads * np * MAXSTEPS, sizeof(unsigned long long));
+    Buf *found = calloc((size_t)threads * np, sizeof(Buf));
+    double t0 = omp_get_wtime();
+    #pragma omp parallel num_threads(threads)
+    {
+        int tid = omp_get_thread_num();
+        unsigned long long *h = hist + (size_t)tid * np * (MAXIN + 1);
+        unsigned long long *fb_s = fbs + (size_t)tid * np * MAXSTEPS;
+        Buf *fb = found + (size_t)tid * np;
+        uint8_t prog[MAXL], tape[NCELL];
+        uint64_t cand[MAXSTEPS][4], hok[4];
+        const size_t cap = 1 << 20;
+        char *line = malloc(cap);
+        #pragma omp for schedule(dynamic, 16384)
+        for (unsigned long long q = start; q < start + count; q++) {
+            for (int i = 0; i < L; i++) prog[i] = (uint8_t)((q >> (2 * (L - 1 - i))) & 3);
+            for (int k = 0; k < np; k++) {
+                int ns = primany_eval(table, prog, L, W, steps, &prims[k], tape, cand, hok);
+                h[k * (MAXIN + 1) + ns]++;
+                if (ns == prims[k].nin) {
+                    size_t n = (size_t)snprintf(line, cap, "F\t%s\t", prims[k].name);
+                    for (int i = 0; i < L; i++) line[n++] = (char)('0' + prog[i]);
+                    line[n++] = '\t';
+                    /* step ranges */
+                    int run_start = -1, first = 1;
+                    for (int s = 0; s <= steps; s++) {
+                        int on = s < steps && ((cand[s][0] | cand[s][1] | cand[s][2] | cand[s][3]) || (hok[s >> 6] >> (s & 63) & 1));
+                        if (on && run_start < 0) run_start = s;
+                        if (!on && run_start >= 0) {
+                            if (s - 1 > run_start) n += (size_t)snprintf(line + n, cap - n, first ? "%d-%d" : ",%d-%d", run_start + 1, s);
+                            else n += (size_t)snprintf(line + n, cap - n, first ? "%d" : ",%d", run_start + 1);
+                            first = 0; run_start = -1;
+                        }
+                    }
+                    line[n++] = '\t';
+                    first = 1;
+                    for (int s = 0; s < steps; s++) {
+                        int hb = (int)(hok[s >> 6] >> (s & 63) & 1);
+                        if (!(cand[s][0] | cand[s][1] | cand[s][2] | cand[s][3]) && !hb) continue;
+                        fb_s[k * MAXSTEPS + s]++;
+                        if (n + 2048 > cap) { line[n++] = '!'; break; }   /* never expected: 1 MB per found program */
+                        n += (size_t)snprintf(line + n, cap - n, first ? "%d:" : ";%d:", s + 1);
+                        first = 0;
+                        int fc = 1;
+                        for (int c = 0; c < NCELL; c++) if (cand[s][c >> 6] >> (c & 63) & 1) { n += (size_t)snprintf(line + n, cap - n, fc ? "%d" : ",%d", c); fc = 0; }
+                        if (fc) line[n++] = '-';
+                        n += (size_t)snprintf(line + n, cap - n, ":%d", hb);
+                    }
+                    line[n++] = '\n'; line[n] = 0;
+                    buf_add(&fb[k], line);
+                }
+            }
+        }
+        free(line);
+    }
+    double secs = omp_get_wtime() - t0;
+    printf("machine\t%s,%s,%s,%s\nmode\tprimany\nW\t%d\nL\t%d\nsteps\t%d\nstart\t%llu\nprograms\t%llu\n",
+           NAMES[table[0]], NAMES[table[1]], NAMES[table[2]], NAMES[table[3]], W, L, steps, start, count);
+    for (int k = 0; k < np; k++) {
+        const Prim *p = &prims[k];
+        unsigned long long tot[MAXIN + 1] = {0};
+        for (int t = 0; t < threads; t++) for (int i = 0; i <= p->nin; i++) tot[i] += hist[((size_t)t * np + k) * (MAXIN + 1) + i];
+        printf("prim\t%s\ninputs\t%d\nexcluded_cell0\t%d\norder", p->name, p->nin, p->excl0);
+        for (int i = 0; i < p->nin; i++) { printf("\t"); for (int j = 0; j < p->ninit; j++) printf("%s%d", j ? "," : "", p->init[i][j]); printf(":%d", p->target[i]); }
+        printf("\nsurvivors");
+        unsigned long long surv[MAXIN], alive = 0;
+        for (int i = p->nin - 1; i >= 0; i--) { alive += tot[i + 1]; surv[i] = alive; }
+        for (int i = 0; i < p->nin; i++) printf("\t%llu", surv[i]);
+        printf("\nfound\t%llu\nfound_by_step", tot[p->nin]);
+        for (int s = 0; s < steps; s++) { unsigned long long v = 0; for (int t = 0; t < threads; t++) v += fbs[((size_t)t * np + k) * MAXSTEPS + s]; printf("\t%llu", v); }
+        printf("\n");
+        for (int t = 0; t < threads; t++) { Buf *b = &found[(size_t)t * np + k]; if (b->len) fputs(b->buf, stdout); free(b->buf); }
+    }
+    fflush(stdout);
+    char host[64] = "?"; gethostname(host, sizeof host);
+    fprintf(stderr, "mode=primany prims=%s ops=%s,%s,%s,%s W=%d L=%d steps=%d programs=%llu start=%llu secs=%.1f threads=%d host=%s device=cpu\n",
+            argv[2], NAMES[table[0]], NAMES[table[1]], NAMES[table[2]], NAMES[table[3]], W, L, steps, count, start, secs, threads, host);
+    free(hist); free(fbs); free(found);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     if (argc >= 2 && strcmp(argv[1], "--list") == 0) {
@@ -459,6 +673,7 @@ int main(int argc, char **argv)
     }
     if (argc >= 8 && strcmp(argv[1], "custom") == 0) return custom_mode(argc, argv);
     if (argc >= 10 && strcmp(argv[1], "prim") == 0) return prim_mode(argc, argv);
+    if (argc >= 10 && strcmp(argv[1], "primany") == 0) return primany_mode(argc, argv);
     if (argc >= 4 && strcmp(argv[1], "--checkops") == 0) {
         /* --checkops OPS W : reads "steps program" lines, prints state and truth table for the explicit machine */
         int table[4]; if (!parse_ops(argv[2], table)) return 2; int W = atoi(argv[3]);
@@ -626,7 +841,7 @@ int main(int argc, char **argv)
         }
         return 0;
     }
-    if (argc < 7) { fprintf(stderr, "usage: u2_tables W L steps start count threads | prim PRIMS W L steps OPS start count threads | --check | --list\n"); return 2; }
+    if (argc < 7) { fprintf(stderr, "usage: u2_tables W L steps start count threads | prim PRIMS W L steps OPS start count threads | primany ... | --check | --list\n"); return 2; }
     int W = atoi(argv[1]), L = atoi(argv[2]), steps = atoi(argv[3]);
     long start = atol(argv[4]), count = atol(argv[5]);
     int threads = atoi(argv[6]);

@@ -1,0 +1,2 @@
+mode=primany prims=MAC_T,MAC_B ops=INC_R1,INC_L1,FLIP_R2,JNZB W=2 L=15 steps=256 programs=25476207 start=800044416 secs=36.0 threads=24 host=knecht24 device=cpu
+done

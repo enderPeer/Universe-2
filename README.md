@@ -68,7 +68,12 @@ cells 0, 1, 2 and the result in one fixed cell or under the head? **No program o
 weight encoding: 5,726,623,060 programs per encoding at 64 steps (1 to 14 symbols locally with numpy, 15 and 16 on the
 four cluster nodes with a new `prim` mode of the C sweeper, validated against the numpy search at 12 symbols and
 with an Intel/AMD overlap), while the same machine has copy at 5 symbols, a ternary multiplier at 10 and an adder
-at 11. The furthest any program gets is 17 of the 48 input triples.
+at 11. The furthest any program gets is 17 of the 48 input triples. The same holds at 256 steps (docs/13 section 9,
+best program 22 triples), and ([docs/14](docs/14_mac_any_step.md)) **at every step budget from 1 to 256 at once**:
+a `primany` mode of the C sweeper and a CUDA twin, checked against a Python per-step reference up to 12 symbols and
+against each other on every length, swept all 5,726,623,060 programs per encoding on the four nodes' CPUs and five
+GPUs in under 8 minutes. No program is a multiply-accumulate at any budget; the best 16-symbol program handles all 24
+triples with w = +1 and w = -1 at some budget and fails when w = 0.
 
 **The DNA-1 copier sweep** ([docs/11](docs/11_dna1_copier_sweep.md)): every gene of 2 to 7 codons (64 + 4,096 +
 262,144 + 16,777,216 + 1,073,741,824 + 68,719,476,736 codon strings after START) alone in a blank 8-slot world with

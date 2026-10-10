@@ -156,8 +156,10 @@ answer.
   swapped, output split over two cells, output defined relative to the head's start) is not excluded by this run.
 - Two budgets only. Sections 4 and 5 are 64 steps; the numpy search also tried 256 steps up to 12 symbols (no
   multiply-accumulate; nine times as many adders), and section 9 extends 256 steps to 13 to 16 symbols (none
-  either, 15.1 core-hours). Budgets beyond 256 steps were not tried; at 256 steps the frontier still moves with
-  length (section 9), so a longer budget or a longer program is not excluded by these runs.
+  either, 15.1 core-hours). Both are snapshots: a program with the right answer on the tape at step 100 that
+  overwrites it by step 256 is invisible here. docs/14 removes that caveat by checking every budget 1 to 256 at
+  once (still none). Budgets beyond 256 steps were not tried; the frontier moves with length (section 9, docs/14),
+  so a longer program is not excluded by these runs.
 - Exactly this machine. The other two W = 2 candidates (`INC, INC_R1, INC_L1, JNZB` and `L1, INC_L1, FLIP_R2, JNZB`)
   were searched up to 10 symbols only (Ghost report, section 4c).
 - Only the two weight encodings above; the primitive list of the C mode and the numpy search is the same, so a

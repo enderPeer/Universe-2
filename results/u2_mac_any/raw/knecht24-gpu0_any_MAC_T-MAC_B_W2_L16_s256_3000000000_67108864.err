@@ -1,0 +1,2 @@
+mode=primany prims=MAC_T,MAC_B ops=INC_R1,INC_L1,FLIP_R2,JNZB W=2 L=16 steps=256 programs=67108864 start=3000000000 secs=20.6 threads=0 host=knecht24 device=gpu0:NVIDIA GeForce RTX 3060 tpb=128 smem=32768
+done
