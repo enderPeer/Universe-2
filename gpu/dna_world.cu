@@ -69,7 +69,7 @@ typedef uint64_t u64; typedef int64_t i64; typedef uint32_t u32; typedef int32_t
 
 /* ---------------------------------------------------------------- operations and the codon table (section 3) */
 enum Op : u8 { NOP = 0, START, STOP, COPY, R1, L1, R3, L3, JNZB, SETP, SETQ, ALLOC, DIVIDE, SKNZ, SKZ, LDA, STA,
-               INC, FLIP, SEEK, COPYR, REWIND, N_OPS };
+               INC, FLIP, SEEK, COPYR, REWIND, TERM, N_OPS };   /* TERM only under --dna2 (docs/15) */
 
 /* letters ACGT, U read as T, case-insensitive (section 13 "Genome argument") */
 static int letter(char c) { switch (c) { case 'A': case 'a': return 0; case 'C': case 'c': return 1; case 'G': case 'g': return 2;
@@ -83,7 +83,18 @@ static int codon_value(const char *s)   /* "ATG" -> 16*a + 4*b + c, -1 if malfor
     return 16 * a + 4 * b + c;
 }
 
-static void build_table(u8 *table, bool uniform)
+static void build_table_dna1(u8 *table, bool uniform);
+/* docs/15 fix 1: under --dna2 TERM takes TTA and TTG from Leu (COPY keeps CTT CTC CTA CTG); under the uniform code
+ * it takes codon value 21, the first NOP */
+static void build_table(u8 *table, bool uniform, bool dna2)
+{
+    build_table_dna1(table, uniform);
+    if (!dna2) return;
+    if (uniform) { table[21] = TERM; return; }
+    const char *tc[2] = { "TTA", "TTG" };
+    for (int i = 0; i < 2; i++) { int v = codon_value(tc[i]); if (table[v] != COPY) { fprintf(stderr, "dna2 table error\n"); exit(1); } table[v] = TERM; }
+}
+static void build_table_dna1(u8 *table, bool uniform)
 {
     /* table order of section 3: START, STOP, then the 19 others as the table lists them */
     static const u8 order[21] = { START, STOP, COPY, R1, L1, JNZB, SETP, SETQ, ALLOC, DIVIDE, SKNZ, SKZ, LDA, STA,
@@ -136,6 +147,7 @@ struct Params {
     double mu;
     i64 D, F;
     int atomic_writes;        /* 1 when G % 4 != 0: a byte may straddle two slots, so cell writes use word atomics */
+    int dna2;                 /* docs/15: TERM, DIVIDE re-arms P, COPY/COPYR NOP without a claimed child */
 };
 
 /* 80 bytes, the ten 64-bit fields of section 4 in the hash order of section 8 */
@@ -285,8 +297,17 @@ __global__ void k_execute(World w, Params P, i64 t)
                 if (RD(h0) == t0 && RD(h1) == t1 && RD(h2) == t2) { p.H = h0; break; }
             }
         } break;
+        case TERM: {   /* docs/15 fix 1: skip the next codon unless the template has just passed a STOP codon */
+            i64 o = p.P % G; bool term = false;
+            if (o >= 3 && o % 3 == 0 && o / 3 <= maxk + 1) {
+                u32 c3 = 16u * RD(p.P - 3) + 4u * RD(p.P - 2) + RD(p.P - 1);
+                term = table[c3] == STOP;
+            }
+            if (!term) p.pc += 1;
+        } break;
         case ALLOC: if (p.child < 0) w.alloc_req[s] = 1; break;
         case COPY: case COPYR:
+            if (P.dna2 && p.child < 0) break;              /* docs/15 fix 3: no claimed child, nothing happens */
             if (p.child >= 0 && IN_CHILD(p.Q)) {
                 u32 v = RD(p.P);
                 if (op == COPYR) v ^= 3u;
@@ -299,7 +320,8 @@ __global__ void k_execute(World w, Params P, i64 t)
             p.Q += 1; if (p.Q >= N) p.Q -= N;
             break;
         case DIVIDE:
-            if (p.child >= 0 && p.copied >= 6) { w.div_mark[s] = (i32)p.child; w.div_copied[s] = (i32)p.copied; p.child = -1; cbase = -1; p.copied = 0; p.Q = 0; }
+            if (p.child >= 0 && p.copied >= 6) { w.div_mark[s] = (i32)p.child; w.div_copied[s] = (i32)p.copied; p.child = -1; cbase = -1; p.copied = 0; p.Q = 0;
+                                                if (P.dna2) p.P = base; }   /* docs/15 fix 2: re-arm the template */
             break;
         }
         if (p.pc >= len) p.pc = 1;                        /* the gene loops, skipping START */
@@ -458,7 +480,7 @@ __global__ void k_census(World w, Params P)
 }
 
 static const char *OP_NAMES[N_OPS] = { "NOP", "START", "STOP", "COPY", "R1", "L1", "R3", "L3", "JNZB", "SETP", "SETQ", "ALLOC",
-                                       "DIVIDE", "SKNZ", "SKZ", "LDA", "STA", "INC", "FLIP", "SEEK", "COPYR", "REWIND" };
+                                       "DIVIDE", "SKNZ", "SKZ", "LDA", "STA", "INC", "FLIP", "SEEK", "COPYR", "REWIND", "TERM" };
 
 /* ---------------------------------------------------------------- host side */
 static inline u64 fnv_bytes(u64 h, const u8 *p, u64 n) { for (u64 i = 0; i < n; i++) h = (h ^ p[i]) * 1099511628211ULL; return h; }
@@ -620,6 +642,7 @@ int main(int argc, char **argv)
     /* default N = 2,929,687 x 1024 = 2,999,999,488: the S of section 9 (3e9 itself is not a multiple of 1024;
      * section 13 "Default N"). D = F = -1 means "auto" (section 9). */
     u64 N = 2999999488ULL, seed = 1; i64 G = 1024, ticks = 100, I = 16, T = 64, D = -1, F = -1, n_seed = 0;
+    bool dna2 = false;
     double mu = 0.001; bool dbl = true, uniform = false, blank = false, no_hash = false, hash_init = false; i64 hash_every = -2, census_every = 10;
     std::string genome, births_path, dump_path, out_path; int gpu = 0;
     std::string log_path, top_path, map_path; int log_filter = 0; i64 log_every = 1, depth_cap = 0;   /* filter: 0 divide, 1 faithful, 2 all */
@@ -640,6 +663,7 @@ int main(int argc, char **argv)
                                if (F < 0) { fprintf(stderr, "--F must be 'auto' or >= 0\n"); return 1; } } }
         else if (a == "--no-double") dbl = false;
         else if (a == "--uniform-code") uniform = true;
+        else if (a == "--dna2") dna2 = true;
         else if (a == "--blank") blank = true;
         else if (a == "--genome") genome = next();
         else if (a == "--n-seed") n_seed = atoll(next());
@@ -676,7 +700,8 @@ int main(int argc, char **argv)
     Params &P = h.P;
     P.seed = seed; P.N = N; P.G = G; P.S = S; P.I = I; P.T = T; P.maxk = G / 3 - 1; P.mu = mu; P.D = D; P.F = F;
     P.atomic_writes = (G % 4) != 0;
-    u8 *table = h.table; build_table(table, uniform);
+    P.dna2 = dna2 ? 1 : 0;
+    u8 *table = h.table; build_table(table, uniform, dna2);
     h.depth_cap = depth_cap;
 
     CUDA_CHECK(cudaSetDevice(gpu));
@@ -725,7 +750,7 @@ int main(int argc, char **argv)
     fprintf(stderr, "dna_world N=%llu G=%lld S=%lld ticks=%lld seed=%llu I=%lld T=%lld mu=%g D=%lld F=%lld double=%d code=%s blank=%d "
                     "n_seed=%lld hash_every=%lld census_every=%lld gpu=%d\n", (unsigned long long)N, (long long)G, (long long)S,
             (long long)ticks, (unsigned long long)seed, (long long)I, (long long)T, mu, (long long)D, (long long)F, dbl ? 1 : 0,
-            uniform ? "uniform" : "standard", blank ? 1 : 0, (long long)n_seed, (long long)hash_every, (long long)census_every, gpu);
+            uniform ? (dna2 ? "uniform-dna2" : "uniform") : (dna2 ? "standard-dna2" : "standard"), blank ? 1 : 0, (long long)n_seed, (long long)hash_every, (long long)census_every, gpu);
     if (log_f || h.top_f || h.map_f || depth_cap)
         fprintf(stderr, "log_births=%s log_filter=%s log_every=%lld depth_cap=%lld top_genes=%s slot_map=%s\n", log_path.c_str(),
                 log_filter == 0 ? "divide" : log_filter == 1 ? "faithful" : "all", (long long)log_every, (long long)depth_cap, top_path.c_str(), map_path.c_str());

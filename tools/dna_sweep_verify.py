@@ -45,6 +45,7 @@ def main():
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--uniform-code", action="store_true")
     ap.add_argument("--soup", action="store_true")
+    ap.add_argument("--dna2", action="store_true", help="DNA-2 (docs/15) in both programs")
     ap.add_argument("--jobs", type=int, default=16)
     ap.add_argument("--gpu", type=int, default=0)
     a = ap.parse_args()
@@ -84,6 +85,8 @@ def main():
         cmd.append("--uniform-code")
     if a.soup:
         cmd.append("--soup")
+    if a.dna2:
+        cmd.append("--dna2")
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         print(r.stderr, file=sys.stderr)
@@ -115,6 +118,8 @@ def main():
             cmd.append("--blank")
         if a.uniform_code:
             cmd.append("--uniform-code")
+        if a.dna2:
+            cmd.append("--dna2")
         p = subprocess.run(cmd, capture_output=True, text=True)
         hashes = {}
         for line in p.stdout.splitlines():

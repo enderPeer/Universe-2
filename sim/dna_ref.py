@@ -43,9 +43,9 @@ COMP_TABLE = bytes((b ^ 3) if b < 4 else b for b in range(256))   # comp(s) = s 
 
 # operation codes (the order is irrelevant; MEANINGS below carries the table order of docs/09 section 3)
 NOP, START, STOP, COPY, R1, L1, JNZB, SETP, SETQ, ALLOC, DIVIDE, SKNZ, SKZ, LDA, STA, INC, FLIP, R3, L3, SEEK, \
-    COPYR, REWIND = range(22)
+    COPYR, REWIND, TERM = range(23)                       # TERM exists only under --dna2 (docs/15)
 OP_NAMES = ["NOP", "START", "STOP", "COPY", "R1", "L1", "JNZB", "SETP", "SETQ", "ALLOC", "DIVIDE", "SKNZ", "SKZ",
-            "LDA", "STA", "INC", "FLIP", "R3", "L3", "SEEK", "COPYR", "REWIND"]
+            "LDA", "STA", "INC", "FLIP", "R3", "L3", "SEEK", "COPYR", "REWIND", "TERM"]
 OP_INDEX = {n: i for i, n in enumerate(OP_NAMES)}
 
 # docs/09 section 3, row by row (codons, amino acid, operation). The row order is the "table order" of the
@@ -106,6 +106,23 @@ def uniform_table():
     """--uniform-code: codons 0..20 are the 21 meanings in table order, 21..63 are NOP. [13: START under the
     uniform code: codon 0 = AAA is START, codon 1 = AAC is STOP]"""
     return [MEANINGS[c] if c < len(MEANINGS) else NOP for c in range(64)]
+
+
+DNA2_TERM_CODONS = ("TTA", "TTG")   # docs/15: taken from Leu; COPY keeps CTT CTC CTA CTG
+
+
+def dna2_table(table, uniform):
+    """docs/15 fix 1: TERM gets TTA and TTG under the standard code and codon value 21 (CCC) under the uniform
+    code, where 21 was the first NOP."""
+    t = list(table)
+    if uniform:
+        t[21] = TERM
+    else:
+        for cod in DNA2_TERM_CODONS:
+            v = codon_value(cod)
+            assert t[v] == COPY
+            t[v] = TERM
+    return t
 
 
 def splitmix64(x):
@@ -220,7 +237,7 @@ class World:
     """The DNA-1 world of docs/09. Processors are stored densely by slot (lists indexed by slot)."""
 
     def __init__(self, N, G, I=16, T=64, mu=0.001, D=None, F=None, double=True, uniform=False, blank=False,
-                 seed=1, genome=None, n_seed=0):
+                 seed=1, genome=None, n_seed=0, dna2=False):
         if G < 6:
             raise ValueError("G must be at least 6 (two codons)")                      # [13: Limits]
         if N % G:
@@ -236,6 +253,9 @@ class World:
         self.double = double
         self.seed = seed & MASK64
         self.table = uniform_table() if uniform else standard_table()
+        self.dna2 = dna2
+        if dna2:
+            self.table = dna2_table(self.table, uniform)
         self.is_stop = bytes(1 if op == STOP else 0 for op in self.table)
         # execution table: START inside a gene is NOP; a fetched STOP (only possible when the gene has
         # degenerated to len <= 1 during the tick) is NOP too [13: Degenerate genes]
@@ -368,6 +388,7 @@ class World:
         pc_, H_, P_, Q_, child_, A_, copied_ = self.pc, self.H, self.P, self.Q, self.child, self.A, self.copied
         alive, claimed_by, live = self.alive, self.claimed_by, self.live
         seed, mu = self.seed, self.mu
+        dna2 = self.dna2
         win = 3 * G + 2                         # SEEK window: candidates H+1 .. H+3G, each needs 3 cells
         alloc_req = []                          # requesting slots, increasing
         marked = []                             # (parent, child) pairs marked by DIVIDE, increasing parent
@@ -391,20 +412,23 @@ class World:
                     op = xtable[fwd[cb] * 16 + fwd[cb + 1] * 4 + fwd[cb + 2]]
                     pc += 1
                     if op == COPY or op == COPYR:
-                        v = fwd[P] if (base <= P < own_hi or ch_lo <= P < ch_hi) else fwd_old[P]
-                        if op == COPYR:
-                            v ^= 3
-                        if ch_lo <= Q < ch_hi:  # child claimed and Q inside it: write
-                            if mu > 0.0:
-                                r = rnd(seed, t, s, 1000 + copied)                      # [13: Mutation index]
-                                if (r >> 32) / 4294967296.0 < mu:                       # [13: Mutation test]
-                                    v = (v + 1 + r % 3) & 3
-                            fwd[Q] = v
-                            rev[Q] = v ^ 3
-                            copied += 1
-                            self.copied_cells += 1
-                        P = (P + 1) % N if op == COPY else (P - 1) % N
-                        Q = (Q + 1) % N
+                        if dna2 and child < 0:
+                            pass                # docs/15 fix 3: no claimed child, nothing happens (P and Q stay)
+                        else:
+                          v = fwd[P] if (base <= P < own_hi or ch_lo <= P < ch_hi) else fwd_old[P]
+                          if op == COPYR:
+                              v ^= 3
+                          if ch_lo <= Q < ch_hi:  # child claimed and Q inside it: write
+                              if mu > 0.0:
+                                  r = rnd(seed, t, s, 1000 + copied)                      # [13: Mutation index]
+                                  if (r >> 32) / 4294967296.0 < mu:                       # [13: Mutation test]
+                                      v = (v + 1 + r % 3) & 3
+                              fwd[Q] = v
+                              rev[Q] = v ^ 3
+                              copied += 1
+                              self.copied_cells += 1
+                          P = (P + 1) % N if op == COPY else (P - 1) % N
+                          Q = (Q + 1) % N
                     elif op == R1:
                         H = (H + 1) % N
                     elif op == L1:
@@ -430,6 +454,8 @@ class World:
                             copied = 0
                             Q = 0
                             ch_lo = ch_hi = -1
+                            if dna2:
+                                P = base        # docs/15 fix 2: the template is re-armed for the next copy
                     elif op == SKNZ:
                         v = fwd[H] if (base <= H < own_hi or ch_lo <= H < ch_hi) else fwd_old[H]
                         if v:
@@ -469,6 +495,19 @@ class World:
                         P = base
                         if child >= 0:
                             Q = child * G
+                    elif op == TERM:
+                        # docs/15 fix 1: skip the next codon unless the template has just passed a STOP codon,
+                        # read codon-aligned in P's slot: o = P mod G, o >= 3, o % 3 == 0, o / 3 <= maxc, and the
+                        # codon of cells P-3 .. P-1 is STOP; cells read under the snapshot rule
+                        o = P % G
+                        term = False
+                        if o >= 3 and o % 3 == 0 and o // 3 <= maxc:
+                            c3 = 0
+                            for i in (P - 3, P - 2, P - 1):
+                                c3 = c3 * 4 + (fwd[i] if (base <= i < own_hi or ch_lo <= i < ch_hi) else fwd_old[i])
+                            term = bool(is_stop[c3])
+                        if not term:
+                            pc += 1
                     # NOP: nothing
                     if pc >= L:
                         pc = 1
@@ -566,6 +605,8 @@ def main(argv=None):
     ap.add_argument("--F", default="auto", help="refilled dead slots per tick; auto = max(1, S / 2^12)")
     ap.add_argument("--no-double", action="store_true", help="single strand: no repair of damage")
     ap.add_argument("--uniform-code", action="store_true", help="codons 0..20 = the 21 meanings, 21..63 NOP")
+    ap.add_argument("--dna2", action="store_true", help="DNA-2 (docs/15): TERM on TTA/TTG (uniform: codon 21), "
+                    "DIVIDE re-arms P, COPY/COPYR are NOP without a claimed child")
     ap.add_argument("--blank", action="store_true", help="initial tape all A instead of random soup")
     ap.add_argument("--genome", default=None, help="seed genome as codons, e.g. 'ATG GCT CCT ACT CTT GTT GGT TAA'")
     ap.add_argument("--n-seed", type=int, default=0, help="number of seeded organisms at slots k * (S // n_seed)")
@@ -592,10 +633,10 @@ def main(argv=None):
               file=sys.stderr)
     t0 = time.perf_counter()
     w = World(a.N, a.G, I=a.I, T=a.T, mu=a.mu, D=D, F=F, double=not a.no_double,
-              uniform=a.uniform_code, blank=a.blank, seed=a.seed, genome=genome, n_seed=a.n_seed)
+              uniform=a.uniform_code, blank=a.blank, seed=a.seed, genome=genome, n_seed=a.n_seed, dna2=a.dna2)
     t_init = time.perf_counter() - t0
     params = {"N": w.N, "G": w.G, "S": w.S, "ticks": a.ticks, "seed": w.seed, "I": w.I, "T": w.T, "mu": w.mu,
-              "D": w.D, "F": w.F, "double": w.double, "code": "uniform" if a.uniform_code else "standard",
+              "D": w.D, "F": w.F, "double": w.double, "code": "uniform" if a.uniform_code else "standard", "dna2": a.dna2,
               "blank": a.blank, "genome": [codon_text(c) for c in genome] if genome else None, "n_seed": a.n_seed,
               "init_secs": round(t_init, 3)}
     print("params " + json.dumps(params), file=sys.stderr, flush=True)

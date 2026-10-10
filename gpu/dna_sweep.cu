@@ -61,9 +61,9 @@ typedef uint64_t u64; typedef int64_t i64; typedef uint32_t u32; typedef int32_t
 
 /* ---------------------------------------------------------------- operations and the codon table (section 3), as in dna_world.cu */
 enum Op : u8 { NOP = 0, START, STOP, COPY, R1, L1, R3, L3, JNZB, SETP, SETQ, ALLOC, DIVIDE, SKNZ, SKZ, LDA, STA,
-               INC, FLIP, SEEK, COPYR, REWIND, N_OPS };
+               INC, FLIP, SEEK, COPYR, REWIND, TERM, N_OPS };   /* TERM only under --dna2 (docs/15) */
 static const char *OPNAME[N_OPS] = { "NOP", "START", "STOP", "COPY", "R1", "L1", "R3", "L3", "JNZB", "SETP", "SETQ", "ALLOC", "DIVIDE",
-                                     "SKNZ", "SKZ", "LDA", "STA", "INC", "FLIP", "SEEK", "COPYR", "REWIND" };
+                                     "SKNZ", "SKZ", "LDA", "STA", "INC", "FLIP", "SEEK", "COPYR", "REWIND", "TERM" };
 
 static int letter(char c) { switch (c) { case 'A': case 'a': return 0; case 'C': case 'c': return 1; case 'G': case 'g': return 2;
                                          case 'T': case 't': case 'U': case 'u': return 3; } return -1; }
@@ -78,7 +78,18 @@ static int codon_value(const char *s)
 
 static void codon_text(int c, char *out) { const char *L = "ACGT"; out[0] = L[c >> 4]; out[1] = L[(c >> 2) & 3]; out[2] = L[c & 3]; out[3] = 0; }
 
-static void build_table(u8 *table, bool uniform)
+static void build_table_dna1(u8 *table, bool uniform);
+/* docs/15 fix 1: under --dna2 TERM takes TTA and TTG from Leu (COPY keeps CTT CTC CTA CTG); under the uniform code
+ * it takes codon value 21, the first NOP */
+static void build_table(u8 *table, bool uniform, bool dna2)
+{
+    build_table_dna1(table, uniform);
+    if (!dna2) return;
+    if (uniform) { table[21] = TERM; return; }
+    const char *tc[2] = { "TTA", "TTG" };
+    for (int i = 0; i < 2; i++) { int v = codon_value(tc[i]); if (table[v] != COPY) { fprintf(stderr, "dna2 table error\n"); exit(1); } table[v] = TERM; }
+}
+static void build_table_dna1(u8 *table, bool uniform)
 {
     static const u8 order[21] = { START, STOP, COPY, R1, L1, JNZB, SETP, SETQ, ALLOC, DIVIDE, SKNZ, SKZ, LDA, STA,
                                   INC, FLIP, R3, L3, SEEK, COPYR, REWIND };
@@ -147,7 +158,7 @@ struct Rec {
 
 struct SP {
     u64 seed, n_worlds, gene_start, range, rseed;
-    i32 W, G, N, NB, maxk, I, T, ticks, mode, L, prefilter, hash_ticks, soup, slow_seek;
+    i32 W, G, N, NB, maxk, I, T, ticks, mode, L, prefilter, hash_ticks, soup, slow_seek, dna2;
     u32 log_mask, log_cap;
     u8 start_codon, stop_codon;
 };
@@ -307,6 +318,7 @@ __device__ void run_world(const SP &P, const u8 *tab, const u8 *xtab, const u8 *
                 switch (op) {
                 case NOP: break;
                 case COPY: case COPYR: {
+                    if (P.dna2 && child < 0) break;              /* docs/15 fix 3: no claimed child, nothing happens */
                     u32 v = (IN_OWN(Pp) || IN_CHILD(Pp)) ? get2s(fwd, Pp) : (w.snap[SLOT(Pp)] ? get2s(old, Pp) : get2s(fwd, Pp));
                     if (op == COPYR) v ^= 3u;
                     if (IN_CHILD(Q)) {                           /* mu = 0: no mutation */
@@ -324,9 +336,18 @@ __device__ void run_world(const SP &P, const u8 *tab, const u8 *xtab, const u8 *
                 case JNZB: if (RD(H) != 0) { pc -= 2; if (pc < 1) pc = 1; } break;
                 case SETP: Pp = H; break;
                 case SETQ: Q = H; break;
+                case TERM: {   /* docs/15 fix 1: skip the next codon unless the template has just passed a STOP codon */
+                    i32 o = Pp % G; bool term = false;
+                    if (o >= 3 && o % 3 == 0 && o / 3 <= maxk + 1) {
+                        u32 c3 = 16u * RD(Pp - 3) + 4u * RD(Pp - 2) + RD(Pp - 1);
+                        term = tab[c3] == STOP;
+                    }
+                    if (!term) pc += 1;
+                } break;
                 case ALLOC: if (child < 0 && !requested) { requested = true; req_mask |= 1u << s; } break;
                 case DIVIDE:
-                    if (child >= 0 && copied >= 6) { mark[s] = child; child = -1; copied = 0; Q = 0; ch_lo = ch_hi = -1; if (seed_org) r.divides += 1; }
+                    if (child >= 0 && copied >= 6) { mark[s] = child; child = -1; copied = 0; Q = 0; ch_lo = ch_hi = -1; if (seed_org) r.divides += 1;
+                                                     if (P.dna2) Pp = base; }   /* docs/15 fix 2: re-arm the template */
                     break;
                 case SKNZ: if (RD(H) != 0) pc += 1; break;
                 case SKZ: if (RD(H) == 0) pc += 1; break;
@@ -539,6 +560,7 @@ static void write_rec(FILE *f, const Rec &r, const char *code, int mode, const s
 int main(int argc, char **argv)
 {
     i64 L = 0, W = 8, G = 256, ticks = 64, T = 64, I = 16, chunk = 1 << 22, chunk_start = 0, chunk_end = -1, tpb = 64, random_n = -1;
+    bool dna2 = false;
     u64 seed = 1, rseed = 1; bool all = false, uniform = false, soup = false, prefilter = true, slow_seek = false; int gpu = 0; u32 log_mask = 3;
     std::string genes_path, out_path, log_path, records_path, hash_path, chunk_log_path;
     for (int i = 1; i < argc; i++) {
@@ -556,6 +578,7 @@ int main(int argc, char **argv)
         else if (a == "--I") I = atoll(next());
         else if (a == "--seed") seed = strtoull(next(), NULL, 10);
         else if (a == "--uniform-code") uniform = true;
+        else if (a == "--dna2") dna2 = true;
         else if (a == "--soup") soup = true;
         else if (a == "--no-prefilter") prefilter = false;
         else if (a == "--slow-seek") slow_seek = true;
@@ -581,13 +604,13 @@ int main(int argc, char **argv)
     if (!hash_path.empty() && mode != 2) { fprintf(stderr, "--hash-ticks needs --genes\n"); return 1; }
     if (mode == 2) prefilter = false;
 
-    u8 table[64]; build_table(table, uniform);
+    u8 table[64]; build_table(table, uniform, dna2);
     int start_codon = -1, stop_codon = -1;
     for (int c = 0; c < 64; c++) { if (table[c] == START && start_codon < 0) start_codon = c; if (table[c] == STOP && stop_codon < 0) stop_codon = c; }
 
     SP P; memset(&P, 0, sizeof P);
     P.seed = seed; P.W = (i32)W; P.G = (i32)G; P.N = (i32)(W * G); P.NB = (P.N + 3) / 4; P.maxk = (i32)(G / 3 - 1); P.I = (i32)I; P.T = (i32)T; P.ticks = (i32)ticks;
-    P.mode = mode; P.L = (i32)L; P.prefilter = prefilter ? 1 : 0; P.hash_ticks = hash_path.empty() ? 0 : 1; P.soup = soup ? 1 : 0; P.slow_seek = slow_seek ? 1 : 0;
+    P.mode = mode; P.L = (i32)L; P.prefilter = prefilter ? 1 : 0; P.hash_ticks = hash_path.empty() ? 0 : 1; P.soup = soup ? 1 : 0; P.slow_seek = slow_seek ? 1 : 0; P.dna2 = dna2 ? 1 : 0;
     P.log_mask = log_mask; P.start_codon = (u8)start_codon; P.stop_codon = (u8)stop_codon; P.rseed = rseed;
     const i32 stride = ((P.NB + 3) & ~3) + 4;      /* 4-byte aligned, one bank offset per thread against conflicts */
 
@@ -667,12 +690,12 @@ int main(int argc, char **argv)
 
     fprintf(stderr, "dna_sweep mode=%s L=%lld W=%lld G=%lld N=%d ticks=%lld T=%lld I=%lld seed=%llu code=%s soup=%d prefilter=%d worlds=%llu [%lld,%lld) chunk=%lld tpb=%lld smem=%zu gpu=%d\n",
             mode == 0 ? "all" : mode == 1 ? "random" : "genes", (long long)L, (long long)W, (long long)G, P.N, (long long)ticks, (long long)T, (long long)I,
-            (unsigned long long)seed, uniform ? "uniform" : "standard", soup ? 1 : 0, prefilter ? 1 : 0, (unsigned long long)n_total, (long long)chunk_start,
+            (unsigned long long)seed, uniform ? (dna2 ? "uniform-dna2" : "uniform") : (dna2 ? "standard-dna2" : "standard"), soup ? 1 : 0, prefilter ? 1 : 0, (unsigned long long)n_total, (long long)chunk_start,
             (long long)chunk_end, (long long)chunk, (long long)tpb, smem, gpu);
 
     auto t_start = std::chrono::steady_clock::now();
     u64 logged_total = 0, log_overflow = 0; int n_chunks = 0;
-    const char *code = uniform ? "uniform" : "standard";
+    const char *code = uniform ? (dna2 ? "uniform-dna2" : "uniform") : (dna2 ? "standard-dna2" : "standard");
     for (i64 c0 = chunk_start; c0 < chunk_end; c0 += chunk) {
         i64 c1 = std::min<i64>(c0 + chunk, chunk_end);
         auto tc = std::chrono::steady_clock::now();
