@@ -80,10 +80,10 @@ def matching(program, table):
     return m
 
 
-def run(table, program, W=1, steps=64, trace=False, init=()):
-    """table: 4 op indices; program: list of symbols 0..3. Returns the final state. init: initial cells 0.."""
+def run(table, program, W=1, steps=64, trace=False, init=(), ncell=N):
+    """table: 4 op indices; program: list of symbols 0..3. Returns the final state. init: initial cells 0..; ncell: ring size (default N = 256)"""
     mask = (1 << W) - 1
-    tape = [0] * N
+    tape = [0] * ncell
     for i, v in enumerate(init):
         tape[i] = v
     head = pc = A = 0
@@ -100,12 +100,12 @@ def run(table, program, W=1, steps=64, trace=False, init=()):
             hist.append((step, pc, s, op, head, tape[head], A))
         pc = (pc + 1) % L
         v = tape[head]
-        if op == "R1": head = (head + 1) % N
-        elif op == "L1": head = (head - 1) % N
-        elif op == "R2": head = (head + 2) % N
-        elif op == "L2": head = (head - 2) % N
-        elif op == "R3": head = (head + 3) % N
-        elif op == "L3": head = (head - 3) % N
+        if op == "R1": head = (head + 1) % ncell
+        elif op == "L1": head = (head - 1) % ncell
+        elif op == "R2": head = (head + 2) % ncell
+        elif op == "L2": head = (head - 2) % ncell
+        elif op == "R3": head = (head + 3) % ncell
+        elif op == "L3": head = (head - 3) % ncell
         elif op == "INC": tape[head] = (v + 1) & mask
         elif op == "DEC": tape[head] = (v - 1) & mask
         elif op == "FLIP": tape[head] = v ^ 1
@@ -113,16 +113,16 @@ def run(table, program, W=1, steps=64, trace=False, init=()):
         elif op == "ZERO": tape[head] = 0
         elif op == "SET": tape[head] = mask
         elif op == "SHL": tape[head] = (v << 1) & mask
-        elif op == "INC_R1": tape[head] = (v + 1) & mask; head = (head + 1) % N
-        elif op == "INC_L1": tape[head] = (v + 1) & mask; head = (head - 1) % N
-        elif op == "FLIP_R1": tape[head] = v ^ 1; head = (head + 1) % N
-        elif op == "FLIP_L1": tape[head] = v ^ 1; head = (head - 1) % N
-        elif op == "FLIP_R2": tape[head] = v ^ 1; head = (head + 2) % N
-        elif op == "FLIP_R3": tape[head] = v ^ 1; head = (head + 3) % N
-        elif op == "SET_R1": tape[head] = mask; head = (head + 1) % N
-        elif op == "SET_R3": tape[head] = mask; head = (head + 3) % N
-        elif op == "ZERO_R1": tape[head] = 0; head = (head + 1) % N
-        elif op == "ZERO_R3": tape[head] = 0; head = (head + 3) % N
+        elif op == "INC_R1": tape[head] = (v + 1) & mask; head = (head + 1) % ncell
+        elif op == "INC_L1": tape[head] = (v + 1) & mask; head = (head - 1) % ncell
+        elif op == "FLIP_R1": tape[head] = v ^ 1; head = (head + 1) % ncell
+        elif op == "FLIP_L1": tape[head] = v ^ 1; head = (head - 1) % ncell
+        elif op == "FLIP_R2": tape[head] = v ^ 1; head = (head + 2) % ncell
+        elif op == "FLIP_R3": tape[head] = v ^ 1; head = (head + 3) % ncell
+        elif op == "SET_R1": tape[head] = mask; head = (head + 1) % ncell
+        elif op == "SET_R3": tape[head] = mask; head = (head + 3) % ncell
+        elif op == "ZERO_R1": tape[head] = 0; head = (head + 1) % ncell
+        elif op == "ZERO_R3": tape[head] = 0; head = (head + 3) % ncell
         elif op == "SKZ":
             if v == 0: pc = (pc + 1) % L
         elif op == "SKNZ":
@@ -145,15 +145,15 @@ def run(table, program, W=1, steps=64, trace=False, init=()):
         elif op == "SWAP": tape[head], A = A, v
         elif op == "ADDA": tape[head] = (v + A) & mask
         elif op == "EAT": A = v; tape[head] = 0
-        elif op == "MATE_A": tape[head] = (v + A + 1) & mask; head = (head + 1) % N
-        elif op == "MATE_B": tape[head] = (A + 1) & mask; head = (head + 1) % N
+        elif op == "MATE_A": tape[head] = (v + A + 1) & mask; head = (head + 1) % ncell
+        elif op == "MATE_B": tape[head] = (A + 1) & mask; head = (head + 1) % ncell
         elif op == "SLEEP":
             if A == 0: pc = (pc + 1) % L
-        elif op == "WASTE": tape[head] = mask; A = 0; head = (head - 1) % N
+        elif op == "WASTE": tape[head] = mask; A = 0; head = (head - 1) % ncell
         done = step
         if halted:
             break
-    nz = [i for i in range(N) if tape[i]]
+    nz = [i for i in range(ncell) if tape[i]]
     return {"tape_nonzero": {i: tape[i] for i in nz}, "head": head, "A": A, "pc": pc, "halted": halted,
             "steps": done, "trace": hist if trace else None}
 

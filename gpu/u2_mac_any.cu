@@ -2,9 +2,10 @@
  * program of exactly L symbols in an index range, at EVERY step budget 1..steps at once.
  *
  *   nvcc -O3 -std=c++17 -arch=sm_89 -o u2_mac_any_gpu u2_mac_any.cu      (RTX 4090 / 4080; -arch=sm_86 for the RTX 3060)
- *   ./u2_mac_any_gpu PRIMS W L steps OPS start count [--gpu i] [--chunk n] [--tpb n]
+ *   nvcc ... -DNCELL=512 -DMAXSTEPS=512 -o u2_mac_any_gpu_n512_s512 ...   (the 512-cell, 512-budget variant, docs/14 section 11)
+ *   ./u2_mac_any_gpu PRIMS W L steps OPS start count [--gpu i] [--chunk n] [--tpb n] [--maxin n]
  *
- * Same machine semantics as tools/u2_ops.py and u2_tables.c (ring of 256 cells of W bits, head 0, A = 0, PC wraps at
+ * Same machine semantics as tools/u2_ops.py and u2_tables.c (ring of NCELL cells of W bits, head 0, A = 0, PC wraps at
  * L, HALT freezes the state), same primitives, inputs and input order as prim_build() there (copied below), same
  * definition as primany: a program is the primitive at budget s when one fixed cell, or the cell under the head
  * after exactly s instructions, holds the target after exactly s instructions for every input. One thread runs one
@@ -12,9 +13,9 @@
  * four inputs are simulated in lockstep and only the per-step OR of their joint candidate masks is kept, so a
  * program that dies within four inputs (almost all of them) touches no per-step memory at all; a survivor is re-run
  * in lockstep to fill cand[s] for s = 1..steps and then takes the remaining inputs one by one, shrinking cand[s].
- * The four tapes of a thread are packed W bits per cell (64 bytes each for W = 2) in shared memory, interleaved so
- * that a warp's accesses to the same word index are conflict-free; W must be 1, 2 or 4. The cell-equals-target
- * masks live in registers.
+ * The four tapes of a thread are packed W bits per cell (64 bytes each for W = 2 on 256 cells) in shared memory,
+ * interleaved so that a warp's accesses to the same word index are conflict-free; W must be 1, 2 or 4. The
+ * cell-equals-target masks (NCELL / 64 words each) live in registers.
  * Output: the format of the CPU mode (header, per primitive: inputs, order, survivors, found, found_by_step, F lines),
  * except that an F line carries the program and its step ranges only (F <prim> <program> <ranges>); the cells per
  * step are recovered by re-running the found program through the CPU mode (count = 1), as tools/u2_mac_any.py does.
@@ -32,10 +33,17 @@
 #include <cuda_runtime.h>
 
 #define NOPS 41
+#ifndef NCELL
 #define NCELL 256
+#endif
 #define MAXL 16
 #define MAXIN 64
+#ifndef MAXSTEPS
 #define MAXSTEPS 256
+#endif
+#define NWM (NCELL / 64)      /* words of a cell mask */
+#define SW (MAXSTEPS / 64)    /* words of a step mask */
+#define RMASK (NCELL - 1)
 #define MAXPRIM 8
 #define NSIM 4
 
@@ -106,7 +114,7 @@ __constant__ uint8_t c_init[MAXPRIM][MAXIN][3];
 __constant__ uint8_t c_target[MAXPRIM][MAXIN];
 __constant__ int c_nin[MAXPRIM], c_ninit[MAXPRIM], c_excl0[MAXPRIM];
 
-struct Found { unsigned long long q; unsigned long long stepmask[4]; int prim; int pad; };
+struct Found { unsigned long long q; unsigned long long stepmask[SW]; int prim; int pad; };
 
 /* packed tape: cell c of width W sits in word c / (64/W) at bit offset (c % (64/W)) * W; words are strided by `stride`
  * (the block size) so that the threads of a warp touch consecutive shared-memory words */
@@ -123,12 +131,19 @@ template <int W> struct Tape {
 };
 
 template <int W> struct Sim {
-    Tape<W> tape; int head, pc, A, halted; uint64_t eq0, eq1, eq2, eq3; uint8_t t;
+    Tape<W> tape; int head, pc, A, halted; uint64_t eq[NWM]; uint8_t t;
+    /* eq[] is indexed with a runtime word index only through these two, fully unrolled selects, so it stays in registers */
+    __device__ __forceinline__ uint64_t eq_get(int wi) const { uint64_t r = 0;
+        #pragma unroll
+        for (int k = 0; k < NWM; k++) r |= (k == wi) ? eq[k] : 0ULL;
+        return r; }
+    __device__ __forceinline__ void eq_put(int wi, uint64_t e) {
+        #pragma unroll
+        for (int k = 0; k < NWM; k++) if (k == wi) eq[k] = e; }
     __device__ __forceinline__ void eq_bit(int c, int on) {
         uint64_t b = 1ULL << (c & 63); int wi = c >> 6;
-        uint64_t e = wi == 0 ? eq0 : wi == 1 ? eq1 : wi == 2 ? eq2 : eq3;
-        e = on ? (e | b) : (e & ~b);
-        if (wi == 0) eq0 = e; else if (wi == 1) eq1 = e; else if (wi == 2) eq2 = e; else eq3 = e;
+        uint64_t e = eq_get(wi);
+        eq_put(wi, on ? (e | b) : (e & ~b));
     }
     __device__ __forceinline__ void init(int k, int i) {
         head = pc = A = halted = 0; t = c_target[k][i];
@@ -136,7 +151,8 @@ template <int W> struct Sim {
         const int ninit = c_ninit[k];
         for (int j = 0; j < ninit; j++) tape.set(j, c_init[k][i][j]);
         const uint64_t all = t == 0 ? ~0ULL : 0ULL;
-        eq0 = eq1 = eq2 = eq3 = all;
+        #pragma unroll
+        for (int k2 = 0; k2 < NWM; k2++) eq[k2] = all;
         for (int c = 0; c < ninit; c++) eq_bit(c, tape.get(c) == t);
     }
     __device__ __forceinline__ int hok(int excl0) const { return tape.get(head) == t && !(excl0 && head == 0); }
@@ -149,12 +165,12 @@ template <int W> struct Sim {
         pc = pc + 1 == L ? 0 : pc + 1;
         uint8_t v = tape.get(head), nv = v;
         switch (op) {
-        case R1: head = (head + 1) & 255; break;
-        case L1: head = (head - 1) & 255; break;
-        case R2: head = (head + 2) & 255; break;
-        case L2: head = (head - 2) & 255; break;
-        case R3: head = (head + 3) & 255; break;
-        case L3: head = (head - 3) & 255; break;
+        case R1: head = (head + 1) & RMASK; break;
+        case L1: head = (head - 1) & RMASK; break;
+        case R2: head = (head + 2) & RMASK; break;
+        case L2: head = (head - 2) & RMASK; break;
+        case R3: head = (head + 3) & RMASK; break;
+        case L3: head = (head - 3) & RMASK; break;
         case INC: nv = (uint8_t)((v + 1) & mask); break;
         case DEC: nv = (uint8_t)((v - 1) & mask); break;
         case FLIP: nv = v ^ 1; break;
@@ -162,16 +178,16 @@ template <int W> struct Sim {
         case ZERO: nv = 0; break;
         case SET: nv = mask; break;
         case SHL: nv = (uint8_t)((v << 1) & mask); break;
-        case INC_R1: nv = (uint8_t)((v + 1) & mask); head = (head + 1) & 255; break;
-        case INC_L1: nv = (uint8_t)((v + 1) & mask); head = (head - 1) & 255; break;
-        case FLIP_R1: nv = v ^ 1; head = (head + 1) & 255; break;
-        case FLIP_L1: nv = v ^ 1; head = (head - 1) & 255; break;
-        case FLIP_R2: nv = v ^ 1; head = (head + 2) & 255; break;
-        case FLIP_R3: nv = v ^ 1; head = (head + 3) & 255; break;
-        case SET_R1: nv = mask; head = (head + 1) & 255; break;
-        case SET_R3: nv = mask; head = (head + 3) & 255; break;
-        case ZERO_R1: nv = 0; head = (head + 1) & 255; break;
-        case ZERO_R3: nv = 0; head = (head + 3) & 255; break;
+        case INC_R1: nv = (uint8_t)((v + 1) & mask); head = (head + 1) & RMASK; break;
+        case INC_L1: nv = (uint8_t)((v + 1) & mask); head = (head - 1) & RMASK; break;
+        case FLIP_R1: nv = v ^ 1; head = (head + 1) & RMASK; break;
+        case FLIP_L1: nv = v ^ 1; head = (head - 1) & RMASK; break;
+        case FLIP_R2: nv = v ^ 1; head = (head + 2) & RMASK; break;
+        case FLIP_R3: nv = v ^ 1; head = (head + 3) & RMASK; break;
+        case SET_R1: nv = mask; head = (head + 1) & RMASK; break;
+        case SET_R3: nv = mask; head = (head + 3) & RMASK; break;
+        case ZERO_R1: nv = 0; head = (head + 1) & RMASK; break;
+        case ZERO_R3: nv = 0; head = (head + 3) & RMASK; break;
         case SKZ: if (v == 0) pc = pc + 1 == L ? 0 : pc + 1; break;
         case SKNZ: if (v != 0) pc = pc + 1 == L ? 0 : pc + 1; break;
         case JZS: if (v == 0) pc = 0; break;
@@ -184,10 +200,10 @@ template <int W> struct Sim {
         case SWAP: nv = (uint8_t)A; A = v; break;
         case ADDA: nv = (uint8_t)((v + A) & mask); break;
         case EAT: A = v; nv = 0; break;
-        case MATE_A: nv = (uint8_t)((v + A + 1) & mask); head = (head + 1) & 255; break;
-        case MATE_B: nv = (uint8_t)((A + 1) & mask); head = (head + 1) & 255; break;
+        case MATE_A: nv = (uint8_t)((v + A + 1) & mask); head = (head + 1) & RMASK; break;
+        case MATE_B: nv = (uint8_t)((A + 1) & mask); head = (head + 1) & RMASK; break;
         case SLEEP: if (A == 0) pc = pc + 1 == L ? 0 : pc + 1; break;
-        case WASTE: nv = mask; A = 0; head = (head - 1) & 255; break;
+        case WASTE: nv = mask; A = 0; head = (head - 1) & RMASK; break;
         default: break;
         }
         if (nv != v) { tape.set(wh, nv); eq_bit(wh, nv == t); }
@@ -208,27 +224,45 @@ __device__ int eval_any(uint32_t pb, int L, int steps, int k, uint64_t *smem, un
     uint64_t any1 = 0, any2 = 0, any3 = 0, any4 = 0;
     for (int s = 0; s < steps; s++) {
         sim[0].step(pb, L); sim[1].step(pb, L); sim[2].step(pb, L); sim[3].step(pb, L);
-        uint64_t m0 = sim[0].eq0 & cell0, m1 = sim[0].eq1, m2 = sim[0].eq2, m3 = sim[0].eq3;
+        uint64_t m[NWM], o;
+        #pragma unroll
+        for (int w = 0; w < NWM; w++) m[w] = sim[0].eq[w];
+        m[0] &= cell0;
         int h = sim[0].hok(excl0);
-        any1 |= m0 | m1 | m2 | m3 | (uint64_t)h;
-        m0 &= sim[1].eq0; m1 &= sim[1].eq1; m2 &= sim[1].eq2; m3 &= sim[1].eq3; h &= sim[1].hok(excl0);
-        any2 |= m0 | m1 | m2 | m3 | (uint64_t)h;
-        m0 &= sim[2].eq0; m1 &= sim[2].eq1; m2 &= sim[2].eq2; m3 &= sim[2].eq3; h &= sim[2].hok(excl0);
-        any3 |= m0 | m1 | m2 | m3 | (uint64_t)h;
-        m0 &= sim[3].eq0; m1 &= sim[3].eq1; m2 &= sim[3].eq2; m3 &= sim[3].eq3; h &= sim[3].hok(excl0);
-        any4 |= m0 | m1 | m2 | m3 | (uint64_t)h;
+        o = (uint64_t)h;
+        #pragma unroll
+        for (int w = 0; w < NWM; w++) o |= m[w];
+        any1 |= o;
+        #pragma unroll
+        for (int w = 0; w < NWM; w++) m[w] &= sim[1].eq[w];
+        h &= sim[1].hok(excl0); o = (uint64_t)h;
+        #pragma unroll
+        for (int w = 0; w < NWM; w++) o |= m[w];
+        any2 |= o;
+        #pragma unroll
+        for (int w = 0; w < NWM; w++) m[w] &= sim[2].eq[w];
+        h &= sim[2].hok(excl0); o = (uint64_t)h;
+        #pragma unroll
+        for (int w = 0; w < NWM; w++) o |= m[w];
+        any3 |= o;
+        #pragma unroll
+        for (int w = 0; w < NWM; w++) m[w] &= sim[3].eq[w];
+        h &= sim[3].hok(excl0); o = (uint64_t)h;
+        #pragma unroll
+        for (int w = 0; w < NWM; w++) o |= m[w];
+        any4 |= o;
     }
     if (!any4) return any3 ? 3 : any2 ? 2 : any1 ? 1 : 0;
     /* phase 2: survivor of four inputs; re-run the four in lockstep storing cand[s], then the remaining inputs */
-    uint64_t cand[MAXSTEPS][4];
-    uint64_t hok[4] = {0, 0, 0, 0};
+    uint64_t cand[MAXSTEPS][NWM];
+    uint64_t hok[SW];
+    for (int w = 0; w < SW; w++) hok[w] = 0;
     for (int j = 0; j < NSIM; j++) sim[j].init(k, j);
     for (int s = 0; s < steps; s++) {
         sim[0].step(pb, L); sim[1].step(pb, L); sim[2].step(pb, L); sim[3].step(pb, L);
-        cand[s][0] = sim[0].eq0 & sim[1].eq0 & sim[2].eq0 & sim[3].eq0 & cell0;
-        cand[s][1] = sim[0].eq1 & sim[1].eq1 & sim[2].eq1 & sim[3].eq1;
-        cand[s][2] = sim[0].eq2 & sim[1].eq2 & sim[2].eq2 & sim[3].eq2;
-        cand[s][3] = sim[0].eq3 & sim[1].eq3 & sim[2].eq3 & sim[3].eq3;
+        #pragma unroll
+        for (int w = 0; w < NWM; w++) cand[s][w] = sim[0].eq[w] & sim[1].eq[w] & sim[2].eq[w] & sim[3].eq[w];
+        cand[s][0] &= cell0;
         int h = sim[0].hok(excl0) & sim[1].hok(excl0) & sim[2].hok(excl0) & sim[3].hok(excl0);
         if (h) hok[s >> 6] |= 1ULL << (s & 63);
     }
@@ -237,16 +271,22 @@ __device__ int eval_any(uint32_t pb, int L, int steps, int k, uint64_t *smem, un
         uint64_t alive = 0;
         for (int s = 0; s < steps; s++) {
             sim[0].step(pb, L);
-            cand[s][0] &= sim[0].eq0; cand[s][1] &= sim[0].eq1; cand[s][2] &= sim[0].eq2; cand[s][3] &= sim[0].eq3;
+            uint64_t o = 0;
+            #pragma unroll
+            for (int w = 0; w < NWM; w++) { cand[s][w] &= sim[0].eq[w]; o |= cand[s][w]; }
             uint64_t hb = 1ULL << (s & 63);
             if (!sim[0].hok(excl0)) hok[s >> 6] &= ~hb;
-            alive |= cand[s][0] | cand[s][1] | cand[s][2] | cand[s][3] | (hok[s >> 6] & hb);
+            alive |= o | (hok[s >> 6] & hb);
         }
         if (!alive) return i;
     }
-    stepmask[0] = stepmask[1] = stepmask[2] = stepmask[3] = 0;
-    for (int s = 0; s < steps; s++)
-        if ((cand[s][0] | cand[s][1] | cand[s][2] | cand[s][3]) || (hok[s >> 6] >> (s & 63) & 1)) stepmask[s >> 6] |= 1ULL << (s & 63);
+    for (int w = 0; w < SW; w++) stepmask[w] = 0;
+    for (int s = 0; s < steps; s++) {
+        uint64_t o = 0;
+        #pragma unroll
+        for (int w = 0; w < NWM; w++) o |= cand[s][w];
+        if (o || (hok[s >> 6] >> (s & 63) & 1)) stepmask[s >> 6] |= 1ULL << (s & 63);
+    }
     return nin;
 }
 
@@ -263,12 +303,12 @@ __global__ void k_any(unsigned long long start, unsigned long long count, int L,
         unsigned long long q = start + idx;
         uint32_t pb = (uint32_t)q;
         for (int k = 0; k < np; k++) {
-            unsigned long long sm[4];
+            unsigned long long sm[SW];
             int ns = eval_any<W>(pb, L, steps, k, smem, sm);
             atomicAdd(&sh[k * (MAXIN + 1) + ns], 1ULL);
             if (ns == c_nin[k]) {
                 unsigned slot = atomicAdd(nfound, 1u);
-                if (slot < maxfound) { Found f; f.q = q; f.stepmask[0] = sm[0]; f.stepmask[1] = sm[1]; f.stepmask[2] = sm[2]; f.stepmask[3] = sm[3]; f.prim = k; f.pad = 0; found[slot] = f; }
+                if (slot < maxfound) { Found f; f.q = q; for (int w = 0; w < SW; w++) f.stepmask[w] = sm[w]; f.prim = k; f.pad = 0; found[slot] = f; }
                 for (int s = 0; s < steps; s++) if (sm[s >> 6] >> (s & 63) & 1) atomicAdd(&fbs[k * MAXSTEPS + s], 1ULL);
             }
         }
@@ -303,14 +343,14 @@ static void launch(unsigned blocks, int tpb, size_t smem, unsigned long long sta
 
 int main(int argc, char **argv)
 {
-    if (argc < 8) { fprintf(stderr, "usage: u2_mac_any_gpu PRIMS W L steps OPS start count [--gpu i] [--chunk n] [--tpb n]\n"); return 2; }
+    if (argc < 8) { fprintf(stderr, "usage: u2_mac_any_gpu PRIMS W L steps OPS start count [--gpu i] [--chunk n] [--tpb n] [--maxin n]\n"); return 2; }
     char names[256]; strncpy(names, argv[1], 255); names[255] = 0;
     int W = atoi(argv[2]), L = atoi(argv[3]), steps = atoi(argv[4]);
     int table[4];
     if (!parse_ops(argv[5], table)) { fprintf(stderr, "unknown operation in %s\n", argv[5]); return 2; }
     for (int i = 0; i < 4; i++) if (table[i] == OPEN || table[i] == CLOSE) { fprintf(stderr, "OPEN/CLOSE machines are not supported on the GPU\n"); return 2; }
     unsigned long long start = strtoull(argv[6], 0, 0), count = strtoull(argv[7], 0, 0);
-    int gpu = 0; unsigned long long chunk = 1ULL << 22; int tpb = 128; int maxin = 0;
+    int gpu = 0; unsigned long long chunk = 1ULL << 22; int tpb = NCELL > 256 ? 64 : 128; int maxin = 0;
     for (int a = 8; a + 1 < argc; a += 2) {
         if (!strcmp(argv[a], "--gpu")) gpu = atoi(argv[a + 1]);
         else if (!strcmp(argv[a], "--chunk")) chunk = strtoull(argv[a + 1], 0, 0);
@@ -326,8 +366,8 @@ int main(int argc, char **argv)
         if (prims[np].nin < NSIM) { fprintf(stderr, "primitive %s has fewer than %d inputs\n", tok, NSIM); return 2; }
         np++;
     }
-    CK(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
     CK(cudaSetDevice(gpu));
+    CK(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
     cudaDeviceProp prop; CK(cudaGetDeviceProperties(&prop, gpu));
     CK(cudaMemcpyToSymbol(c_table, table, sizeof table));
     {
@@ -369,7 +409,7 @@ int main(int argc, char **argv)
     std::sort(found.begin(), found.end(), [](const Found &a, const Found &b) { return a.prim != b.prim ? a.prim < b.prim : a.q < b.q; });
     printf("machine\t%s,%s,%s,%s\nmode\tprimany\nW\t%d\nL\t%d\nsteps\t%d\nstart\t%llu\nprograms\t%llu\n",
            NAMES[table[0]], NAMES[table[1]], NAMES[table[2]], NAMES[table[3]], W, L, steps, start, count);
-    char rg[4096];
+    char rg[8192];
     for (int k = 0; k < np; k++) {
         const Prim *p = &prims[k];
         printf("prim\t%s\ninputs\t%d\nexcluded_cell0\t%d\norder", p->name, p->nin, p->excl0);
@@ -391,7 +431,7 @@ int main(int argc, char **argv)
     if (overflow) printf("found_overflow\t%llu\n", overflow);
     fflush(stdout);
     char host[64] = "?"; gethostname(host, sizeof host);
-    fprintf(stderr, "mode=primany prims=%s ops=%s,%s,%s,%s W=%d L=%d steps=%d programs=%llu start=%llu secs=%.1f threads=0 host=%s device=gpu%d:%s tpb=%d smem=%zu%s\n",
-            argv[1], NAMES[table[0]], NAMES[table[1]], NAMES[table[2]], NAMES[table[3]], W, L, steps, count, start, secs, host, gpu, prop.name, tpb, smem, overflow ? " FOUND_OVERFLOW" : "");
+    fprintf(stderr, "mode=primany prims=%s ops=%s,%s,%s,%s W=%d L=%d steps=%d ncell=%d programs=%llu start=%llu secs=%.1f threads=0 host=%s device=gpu%d:%s tpb=%d smem=%zu%s\n",
+            argv[1], NAMES[table[0]], NAMES[table[1]], NAMES[table[2]], NAMES[table[3]], W, L, steps, NCELL, count, start, secs, host, gpu, prop.name, tpb, smem, overflow ? " FOUND_OVERFLOW" : "");
     return overflow ? 4 : 0;
 }

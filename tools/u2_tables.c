@@ -30,7 +30,12 @@
 
 #define NOPS 41
 #define NBASE 36   /* table ids rank 4-subsets of the first 36 operations only; the biological operations are used by name */
-#define NCELL 256
+#ifndef NCELL
+#define NCELL 256   /* ring size; -DNCELL=512 builds the 512-cell variant (a power of two) */
+#endif
+#define RMASK (NCELL - 1)
+#define NW (NCELL / 64)   /* 64-bit words of a cell mask */
+static inline uint64_t orw(const uint64_t *m) { uint64_t r = 0; for (int k = 0; k < NW; k++) r |= m[k]; return r; }   /* OR of a cell mask */
 #define MAXL 16   /* prim mode runs 16-symbol programs; the table modes stay at L <= 12 */
 static const char *NAMES[NOPS] = {
     "R1", "L1", "R2", "L2", "R3", "L3", "INC", "DEC", "FLIP", "NOT", "ZERO", "SET", "SHL",
@@ -68,12 +73,12 @@ static void run(const int *table, const uint8_t *prog, int L, int W, int steps, 
         pc = (pc + 1) % L;
         uint8_t v = tape[head];
         switch (op) {
-        case R1: head = (head + 1) & 255; break;
-        case L1: head = (head - 1) & 255; break;
-        case R2: head = (head + 2) & 255; break;
-        case L2: head = (head - 2) & 255; break;
-        case R3: head = (head + 3) & 255; break;
-        case L3: head = (head - 3) & 255; break;
+        case R1: head = (head + 1) & RMASK; break;
+        case L1: head = (head - 1) & RMASK; break;
+        case R2: head = (head + 2) & RMASK; break;
+        case L2: head = (head - 2) & RMASK; break;
+        case R3: head = (head + 3) & RMASK; break;
+        case L3: head = (head - 3) & RMASK; break;
         case INC: tape[head] = (uint8_t)((v + 1) & mask); break;
         case DEC: tape[head] = (uint8_t)((v - 1) & mask); break;
         case FLIP: tape[head] = v ^ 1; break;
@@ -81,16 +86,16 @@ static void run(const int *table, const uint8_t *prog, int L, int W, int steps, 
         case ZERO: tape[head] = 0; break;
         case SET: tape[head] = mask; break;
         case SHL: tape[head] = (uint8_t)((v << 1) & mask); break;
-        case INC_R1: tape[head] = (uint8_t)((v + 1) & mask); head = (head + 1) & 255; break;
-        case INC_L1: tape[head] = (uint8_t)((v + 1) & mask); head = (head - 1) & 255; break;
-        case FLIP_R1: tape[head] = v ^ 1; head = (head + 1) & 255; break;
-        case FLIP_L1: tape[head] = v ^ 1; head = (head - 1) & 255; break;
-        case FLIP_R2: tape[head] = v ^ 1; head = (head + 2) & 255; break;
-        case FLIP_R3: tape[head] = v ^ 1; head = (head + 3) & 255; break;
-        case SET_R1: tape[head] = mask; head = (head + 1) & 255; break;
-        case SET_R3: tape[head] = mask; head = (head + 3) & 255; break;
-        case ZERO_R1: tape[head] = 0; head = (head + 1) & 255; break;
-        case ZERO_R3: tape[head] = 0; head = (head + 3) & 255; break;
+        case INC_R1: tape[head] = (uint8_t)((v + 1) & mask); head = (head + 1) & RMASK; break;
+        case INC_L1: tape[head] = (uint8_t)((v + 1) & mask); head = (head - 1) & RMASK; break;
+        case FLIP_R1: tape[head] = v ^ 1; head = (head + 1) & RMASK; break;
+        case FLIP_L1: tape[head] = v ^ 1; head = (head - 1) & RMASK; break;
+        case FLIP_R2: tape[head] = v ^ 1; head = (head + 2) & RMASK; break;
+        case FLIP_R3: tape[head] = v ^ 1; head = (head + 3) & RMASK; break;
+        case SET_R1: tape[head] = mask; head = (head + 1) & RMASK; break;
+        case SET_R3: tape[head] = mask; head = (head + 3) & RMASK; break;
+        case ZERO_R1: tape[head] = 0; head = (head + 1) & RMASK; break;
+        case ZERO_R3: tape[head] = 0; head = (head + 3) & RMASK; break;
         case SKZ: if (v == 0) pc = (pc + 1) % L; break;
         case SKNZ: if (v != 0) pc = (pc + 1) % L; break;
         case JZS: if (v == 0) pc = 0; break;
@@ -105,10 +110,10 @@ static void run(const int *table, const uint8_t *prog, int L, int W, int steps, 
         case SWAP: tape[head] = (uint8_t)A; A = v; break;
         case ADDA: tape[head] = (uint8_t)((v + A) & mask); break;
         case EAT: A = v; tape[head] = 0; break;                                            /* eat: cell into the stomach, cell emptied */
-        case MATE_A: tape[head] = (uint8_t)((v + A + 1) & mask); head = (head + 1) & 255; break;  /* mate: cell += A + 1, step right */
-        case MATE_B: tape[head] = (uint8_t)((A + 1) & mask); head = (head + 1) & 255; break;      /* mate: cell = A + 1, step right */
+        case MATE_A: tape[head] = (uint8_t)((v + A + 1) & mask); head = (head + 1) & RMASK; break;  /* mate: cell += A + 1, step right */
+        case MATE_B: tape[head] = (uint8_t)((A + 1) & mask); head = (head + 1) & RMASK; break;      /* mate: cell = A + 1, step right */
         case SLEEP: if (A == 0) pc = (pc + 1) % L; break;                                  /* sleep: skip next if no energy */
-        case WASTE: tape[head] = mask; A = 0; head = (head - 1) & 255; break;             /* waste: cell = all ones, stomach emptied, step left */
+        case WASTE: tape[head] = mask; A = 0; head = (head - 1) & RMASK; break;             /* waste: cell = all ones, stomach emptied, step left */
         }
         done = step;
         if (halted) break;
@@ -359,18 +364,18 @@ static int prim_build(Prim *p, const char *name, int W)
 /* returns the number of inputs the program survived (== p->nin: found); mask/headok describe the output cells */
 static int prim_eval(const int *table, const uint8_t *prog, int L, int W, int steps, const Prim *p, State *st, uint64_t *mask, int *headok)
 {
-    mask[0] = mask[1] = mask[2] = mask[3] = ~0ULL;
+    for (int w = 0; w < NW; w++) mask[w] = ~0ULL;
     if (p->excl0) mask[0] &= ~1ULL;
     *headok = 1;
     for (int i = 0; i < p->nin; i++) {
         run(table, prog, L, W, steps, st, p->init[i], p->ninit);
         uint8_t t = p->target[i];
-        for (int w = 0; w < 4; w++) {
+        for (int w = 0; w < NW; w++) {
             uint64_t m = mask[w];
             while (m) { int b = __builtin_ctzll(m); m &= m - 1; if (st->tape[64 * w + b] != t) mask[w] &= ~(1ULL << b); }
         }
         if (*headok && (st->tape[st->head] != t || (p->excl0 && st->head == 0))) *headok = 0;
-        if (!(mask[0] | mask[1] | mask[2] | mask[3]) && !*headok) return i;
+        if (!orw(mask) && !*headok) return i;
     }
     return p->nin;
 }
@@ -407,7 +412,7 @@ static int prim_mode(int argc, char **argv)
         int tid = omp_get_thread_num();
         unsigned long long *h = hist + (size_t)tid * np * (MAXIN + 1);
         Buf *fb = found + (size_t)tid * np;
-        uint8_t prog[MAXL]; State st; uint64_t mask[4]; int headok;
+        uint8_t prog[MAXL]; State st; uint64_t mask[NW]; int headok;
         char line[512];
         #pragma omp for schedule(dynamic, 65536)
         for (unsigned long long q = start; q < start + count; q++) {
@@ -457,6 +462,9 @@ static int prim_mode(int argc, char **argv)
  *
  *   u2_tables primany PRIMS W L steps OPS start count threads [maxin]
  *
+ * Ring size and step limit are compile-time: NCELL (256) and MAXSTEPS (256); gcc -DNCELL=512 -DMAXSTEPS=512 builds the
+ * 512-cell, 512-budget variant of docs/14 section 11 (every head move wraps with & (NCELL - 1)).
+ *
  * Same machine, programs, primitives, inputs and input order as prim mode (maxin > 0 keeps only the first maxin
  * inputs of every primitive, which exhibits the programs that survive that many). A program is the primitive "at budget s"
  * when one FIXED cell, or the cell under the head after exactly s instructions, holds the target after exactly s
@@ -470,9 +478,12 @@ static int prim_mode(int argc, char **argv)
  *   F <prim> <program> <steps as ranges, e.g. 5-7,64> <s:cells:h;...> (cells = comma list or -, h = head rule holds)
  * The op switch below is a verbatim copy of the one in run() (inserted by tools/u2_mac_any.py's patch of this file).
  */
-#define MAXSTEPS 256
+#ifndef MAXSTEPS
+#define MAXSTEPS 256   /* largest step budget of primany; -DMAXSTEPS=512 for the 512-budget variant */
+#endif
+#define SW (MAXSTEPS / 64)   /* 64-bit words of a step mask */
 static int primany_eval(const int *table, const uint8_t *prog, int L, int W, int steps, const Prim *p, uint8_t *tape,
-                        uint64_t (*cand)[4], uint64_t *hok)
+                        uint64_t (*cand)[NW], uint64_t *hok)
 {
     uint8_t mask = (uint8_t)((1 << W) - 1);
     int match[MAXL];
@@ -492,8 +503,8 @@ static int primany_eval(const int *table, const uint8_t *prog, int L, int W, int
         const uint8_t t = p->target[i];
         memset(tape, 0, NCELL);
         for (int j = 0; j < p->ninit; j++) tape[j] = p->init[i][j];
-        uint64_t eq[4];
-        for (int k = 0; k < 4; k++) eq[k] = t == 0 ? ~0ULL : 0;
+        uint64_t eq[NW];
+        for (int k = 0; k < NW; k++) eq[k] = t == 0 ? ~0ULL : 0;
         for (int c = 0; c < p->ninit; c++) { if (tape[c] == t) eq[0] |= 1ULL << c; else eq[0] &= ~(1ULL << c); }
         int head = 0, pc = 0, A = 0, halted = 0;
         uint64_t alive = 0;
@@ -504,12 +515,12 @@ static int primany_eval(const int *table, const uint8_t *prog, int L, int W, int
                 pc = (pc + 1) % L;
                 uint8_t v = tape[head];
                 switch (op) {
-                case R1: head = (head + 1) & 255; break;
-                case L1: head = (head - 1) & 255; break;
-                case R2: head = (head + 2) & 255; break;
-                case L2: head = (head - 2) & 255; break;
-                case R3: head = (head + 3) & 255; break;
-                case L3: head = (head - 3) & 255; break;
+                case R1: head = (head + 1) & RMASK; break;
+                case L1: head = (head - 1) & RMASK; break;
+                case R2: head = (head + 2) & RMASK; break;
+                case L2: head = (head - 2) & RMASK; break;
+                case R3: head = (head + 3) & RMASK; break;
+                case L3: head = (head - 3) & RMASK; break;
                 case INC: tape[head] = (uint8_t)((v + 1) & mask); break;
                 case DEC: tape[head] = (uint8_t)((v - 1) & mask); break;
                 case FLIP: tape[head] = v ^ 1; break;
@@ -517,16 +528,16 @@ static int primany_eval(const int *table, const uint8_t *prog, int L, int W, int
                 case ZERO: tape[head] = 0; break;
                 case SET: tape[head] = mask; break;
                 case SHL: tape[head] = (uint8_t)((v << 1) & mask); break;
-                case INC_R1: tape[head] = (uint8_t)((v + 1) & mask); head = (head + 1) & 255; break;
-                case INC_L1: tape[head] = (uint8_t)((v + 1) & mask); head = (head - 1) & 255; break;
-                case FLIP_R1: tape[head] = v ^ 1; head = (head + 1) & 255; break;
-                case FLIP_L1: tape[head] = v ^ 1; head = (head - 1) & 255; break;
-                case FLIP_R2: tape[head] = v ^ 1; head = (head + 2) & 255; break;
-                case FLIP_R3: tape[head] = v ^ 1; head = (head + 3) & 255; break;
-                case SET_R1: tape[head] = mask; head = (head + 1) & 255; break;
-                case SET_R3: tape[head] = mask; head = (head + 3) & 255; break;
-                case ZERO_R1: tape[head] = 0; head = (head + 1) & 255; break;
-                case ZERO_R3: tape[head] = 0; head = (head + 3) & 255; break;
+                case INC_R1: tape[head] = (uint8_t)((v + 1) & mask); head = (head + 1) & RMASK; break;
+                case INC_L1: tape[head] = (uint8_t)((v + 1) & mask); head = (head - 1) & RMASK; break;
+                case FLIP_R1: tape[head] = v ^ 1; head = (head + 1) & RMASK; break;
+                case FLIP_L1: tape[head] = v ^ 1; head = (head - 1) & RMASK; break;
+                case FLIP_R2: tape[head] = v ^ 1; head = (head + 2) & RMASK; break;
+                case FLIP_R3: tape[head] = v ^ 1; head = (head + 3) & RMASK; break;
+                case SET_R1: tape[head] = mask; head = (head + 1) & RMASK; break;
+                case SET_R3: tape[head] = mask; head = (head + 3) & RMASK; break;
+                case ZERO_R1: tape[head] = 0; head = (head + 1) & RMASK; break;
+                case ZERO_R3: tape[head] = 0; head = (head + 3) & RMASK; break;
                 case SKZ: if (v == 0) pc = (pc + 1) % L; break;
                 case SKNZ: if (v != 0) pc = (pc + 1) % L; break;
                 case JZS: if (v == 0) pc = 0; break;
@@ -541,10 +552,10 @@ static int primany_eval(const int *table, const uint8_t *prog, int L, int W, int
                 case SWAP: tape[head] = (uint8_t)A; A = v; break;
                 case ADDA: tape[head] = (uint8_t)((v + A) & mask); break;
                 case EAT: A = v; tape[head] = 0; break;                                            /* eat: cell into the stomach, cell emptied */
-                case MATE_A: tape[head] = (uint8_t)((v + A + 1) & mask); head = (head + 1) & 255; break;  /* mate: cell += A + 1, step right */
-                case MATE_B: tape[head] = (uint8_t)((A + 1) & mask); head = (head + 1) & 255; break;      /* mate: cell = A + 1, step right */
+                case MATE_A: tape[head] = (uint8_t)((v + A + 1) & mask); head = (head + 1) & RMASK; break;  /* mate: cell += A + 1, step right */
+                case MATE_B: tape[head] = (uint8_t)((A + 1) & mask); head = (head + 1) & RMASK; break;      /* mate: cell = A + 1, step right */
                 case SLEEP: if (A == 0) pc = (pc + 1) % L; break;                                  /* sleep: skip next if no energy */
-                case WASTE: tape[head] = mask; A = 0; head = (head - 1) & 255; break;             /* waste: cell = all ones, stomach emptied, step left */
+                case WASTE: tape[head] = mask; A = 0; head = (head - 1) & RMASK; break;             /* waste: cell = all ones, stomach emptied, step left */
                 }
                 uint8_t nv = tape[wh];
                 if (nv != v) { if (nv == t) eq[wh >> 6] |= 1ULL << (wh & 63); else eq[wh >> 6] &= ~(1ULL << (wh & 63)); }
@@ -553,13 +564,14 @@ static int primany_eval(const int *table, const uint8_t *prog, int L, int W, int
             uint64_t *c = cand[s];
             uint64_t hb = 1ULL << (s & 63);
             if (i == 0) {
-                c[0] = eq[0] & cell0; c[1] = eq[1]; c[2] = eq[2]; c[3] = eq[3];
+                for (int k = 0; k < NW; k++) c[k] = eq[k];
+                c[0] &= cell0;
                 if (h) hok[s >> 6] |= hb; else hok[s >> 6] &= ~hb;
             } else {
-                c[0] &= eq[0]; c[1] &= eq[1]; c[2] &= eq[2]; c[3] &= eq[3];
+                for (int k = 0; k < NW; k++) c[k] &= eq[k];
                 if (!h) hok[s >> 6] &= ~hb;
             }
-            alive |= c[0] | c[1] | c[2] | c[3] | (hok[s >> 6] & hb);
+            alive |= orw(c) | (hok[s >> 6] & hb);
         }
         if (!alive) return i;
     }
@@ -594,7 +606,7 @@ static int primany_mode(int argc, char **argv)
         unsigned long long *fb_s = fbs + (size_t)tid * np * MAXSTEPS;
         Buf *fb = found + (size_t)tid * np;
         uint8_t prog[MAXL], tape[NCELL];
-        uint64_t cand[MAXSTEPS][4], hok[4];
+        uint64_t cand[MAXSTEPS][NW], hok[SW];
         const size_t cap = 1 << 20;
         char *line = malloc(cap);
         #pragma omp for schedule(dynamic, 16384)
@@ -610,7 +622,7 @@ static int primany_mode(int argc, char **argv)
                     /* step ranges */
                     int run_start = -1, first = 1;
                     for (int s = 0; s <= steps; s++) {
-                        int on = s < steps && ((cand[s][0] | cand[s][1] | cand[s][2] | cand[s][3]) || (hok[s >> 6] >> (s & 63) & 1));
+                        int on = s < steps && (orw(cand[s]) || (hok[s >> 6] >> (s & 63) & 1));
                         if (on && run_start < 0) run_start = s;
                         if (!on && run_start >= 0) {
                             if (s - 1 > run_start) n += (size_t)snprintf(line + n, cap - n, first ? "%d-%d" : ",%d-%d", run_start + 1, s);
@@ -622,7 +634,7 @@ static int primany_mode(int argc, char **argv)
                     first = 1;
                     for (int s = 0; s < steps; s++) {
                         int hb = (int)(hok[s >> 6] >> (s & 63) & 1);
-                        if (!(cand[s][0] | cand[s][1] | cand[s][2] | cand[s][3]) && !hb) continue;
+                        if (!orw(cand[s]) && !hb) continue;
                         fb_s[k * MAXSTEPS + s]++;
                         if (n + 2048 > cap) { line[n++] = '!'; break; }   /* never expected: 1 MB per found program */
                         n += (size_t)snprintf(line + n, cap - n, first ? "%d:" : ";%d:", s + 1);
@@ -659,8 +671,8 @@ static int primany_mode(int argc, char **argv)
     }
     fflush(stdout);
     char host[64] = "?"; gethostname(host, sizeof host);
-    fprintf(stderr, "mode=primany prims=%s ops=%s,%s,%s,%s W=%d L=%d steps=%d programs=%llu start=%llu secs=%.1f threads=%d host=%s device=cpu\n",
-            argv[2], NAMES[table[0]], NAMES[table[1]], NAMES[table[2]], NAMES[table[3]], W, L, steps, count, start, secs, threads, host);
+    fprintf(stderr, "mode=primany prims=%s ops=%s,%s,%s,%s W=%d L=%d steps=%d ncell=%d programs=%llu start=%llu secs=%.1f threads=%d host=%s device=cpu\n",
+            argv[2], NAMES[table[0]], NAMES[table[1]], NAMES[table[2]], NAMES[table[3]], W, L, steps, NCELL, count, start, secs, threads, host);
     free(hist); free(fbs); free(found);
     return 0;
 }

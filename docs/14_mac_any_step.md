@@ -4,7 +4,8 @@ Date: 2026-10-10. docs/13 settled that no program of 1 to 16 symbols of machine 
 (W = 2, ring of 256 two-bit cells, head at 0, PC wraps) computes acc + w * x mod 4 when the tape is read after
 exactly 64 or exactly 256 instructions. Those are two snapshots. A program that has the right answer on the tape
 after, say, 100 instructions and overwrites it before 256 is invisible to both. This note closes that gap: every
-program of 1 to 16 symbols is checked at **every budget s = 1, 2, ..., 256**, in both weight encodings.
+program of 1 to 16 symbols is checked at **every budget s = 1, 2, ..., 256**, in both weight encodings. Section 11
+repeats everything on a ring of 512 cells with budgets 1 to 512.
 
 **Result: no program of 1 to 16 symbols of machine 50098 is a multiply-accumulate at any budget from 1 to 256
 instructions, in either weight encoding.** 5,726,623,060 programs per encoding, each checked at all 256 budgets
@@ -262,8 +263,8 @@ route (the found adder and multiplier, a copy between them) remains the only one
 - The layout is fixed as in docs/13: inputs in cells 0, 1, 2 in the order (acc, w, x), head at 0, output in one
   fixed cell or under the head, mod 4 with no carry. Swapped inputs, split outputs or outputs defined relative to
   the head's start are not covered.
-- Budgets 1 to 256 only. The candidate mask has one slot per step, so a larger budget is a recompile (MAXSTEPS) and
-  proportionally more time; nothing suggests a 300-step program where no 256-step one exists, but it is not excluded.
+- Budgets 1 to 256 on the 256-cell ring (sections 6 and 7) and 1 to 512 on a 512-cell ring (section 11). The candidate
+  mask has one slot per step, so a larger budget is a recompile (MAXSTEPS) and proportionally more time.
 - Exactly this machine and these two encodings.
 - The GPU program refuses machines with OPEN/CLOSE (no bracket matching) and widths other than 1, 2 and 4 bits (packed
   tapes); the CPU mode has neither limit.
@@ -284,4 +285,165 @@ python tools/u2_mac_any.py calibrate        # 13 symbols on every device, speeds
 python tools/u2_mac_any.py launch --L 13 --L 14 --L 15 --L 16
 python tools/u2_mac_any.py status --L 13 --L 14 --L 15 --L 16
 python tools/u2_mac_any.py collect --L 13 --L 14 --L 15 --L 16
+```
+
+## 11. The same on a ring of 512 cells with budgets 1 to 512
+
+Asked on 2026-10-10 after section 6: the machine's ring is 256 cells and the budget 256 instructions; does a larger
+ring with twice the budget change anything? The ring size matters even at 256 steps, because a program that walks
+one way (FLIP_R2 moves the head two cells per instruction) wraps around a 256-cell ring within 128 instructions and
+then overwrites what it left behind; on 512 cells it does not. So this is a different, larger machine variant, and
+its results are not a superset of sections 6 and 7: a program can be a primitive at some budget on one ring and not on
+the other.
+
+**Result: no program of 1 to 16 symbols is a multiply-accumulate at any budget from 1 to 512 on a ring of 512
+cells either, in either encoding.** Validated the same way as the small ring (reference, CPU and two GPUs identical for 1 to 11 symbols; nine devices identical at 13; four device kinds identical on 2^24-program overlaps at 13 to 16), run on the nine devices in 15 min 53 s. The frontier is exactly the one of the small ring: 18, 20, 20, 22 triples (signed) and 18, 19, 21, 24 (BitNet) at 13 to 16 symbols, and no budget between 257 and 512 adds a surviving program.
+
+### What changed in the tools
+
+Ring size and step limit are compile-time parameters of both programs (`-DNCELL=512 -DMAXSTEPS=512`; every head
+move wraps with `& (NCELL - 1)`, the cell masks have NCELL / 64 words, the step masks MAXSTEPS / 64). The default
+build is unchanged: with the parameters at 256 the C sweeper gives byte-identical output to the committed binary for
+the any-step mode and for the snapshot `prim` mode of docs/13 (checked on adler40 before the variant was built). The
+driver takes `--ncell 512 --steps 512`, builds and names the variant binaries (`u2_tables_any_n512_s512`,
+`u2_mac_any_gpu_n512_s512`), keeps its results in `results/u2_mac_any_n512_s512/`, and sizes the overlap ranges at
+2^24 programs per length (the AMD CPU runs the variant at 0.33 M programs/s). The reference and `u2_ops.run` got a
+ring-size argument (`u2_ops.run(..., ncell=512)`, default unchanged); the reference self-check against `u2_ops.run`
+on 1,500 random cases passes on both ring sizes. The GPU kernel uses 64 threads per block on 512 cells (four packed
+128-byte tapes per thread, 32 KB of shared memory per block).
+
+### Validation on the 512-cell ring
+
+Same procedure as section 3: Python reference on the workstation (24 processes), CPU mode on adler40, GPU program on
+the RTX 4090 and on a RTX 3060, compared per primitive in survivors, found programs with per-step cells and head
+flags, and `found_by_step`. `results/u2_mac_any_n512_s512/validation_L11.json`, `ref_L*.json`.
+
+| length | primitives | found programs (any budget 1..512, 512 cells) | reference | all identical |
+|---|---|---|---|---|
+| 1 to 3 | all six | none | 0.2 to 0.6 s | yes |
+| 4 | all six | COPY 2 | 0.8 s | yes |
+| 5 | all six | COPY 17 (16 on 256 cells) | 1.3 s | yes |
+| 6 | all six | COPY 145 (121) | 3.0 s | yes |
+| 7 | all six | COPY 831 (693), CARRY 4 | 9.8 s | yes |
+| 8 | all six | COPY 4,000 (3,266), CARRY 13, ADD 1 | 35.2 s | yes |
+| 9 | ADD, MUL_T, MAC_T, MAC_B, CARRY | ADD 1, CARRY 45 (40) | 133.0 s | yes |
+| 10 | ADD, MUL_T, MAC_T, MAC_B, CARRY | ADD 7 (5), MUL_T 19 (11), CARRY 164 (124) | 649.8 s | yes |
+| 11 | MAC_T, MAC_B | none | 694.9 s | yes |
+
+The extra copiers and carries are programs that run off the 256-cell ring's far side: on 512 cells they keep going
+and some of them land a copy at a budget the smaller ring never shows. The multiply-accumulate counts are zero on
+both rings at every length.
+
+### Calibration (13 symbols, both encodings, every device at once; `calibration_L13.json`)
+
+| device | seconds | M programs/s | relative to 256 cells / 256 budgets |
+|---|---:|---:|---|
+| adler40-cpu | 107.3 | 0.63 | 0.48 x |
+| adler40-gpu0 (RTX 4090) | 19.3 | 3.48 | 0.25 x |
+| adler40-gpu1 (RTX 4080) | 30.6 | 2.19 | 0.24 x |
+| falke64-cpu | 223.7 | 0.30 | 0.48 x |
+| knecht24-cpu | 202.4 | 0.33 | 0.42 x |
+| knecht24-gpu0, 1, 2 (RTX 3060) | 107.9, 106.2, 105.3 | 0.62, 0.63, 0.64 | 0.26 x |
+| specht32-cpu | 333.8 | 0.20 | 0.48 x |
+
+9.0 M programs/s in all (33.4 on the small ring); all nine outputs identical. Twice the budget and twice the mask
+width cost the CPUs a factor of two; the GPUs lose another factor of two because a thread's four tapes now take 512
+bytes of shared memory, which halves the resident warps.
+
+### Results (launched 16:01:05, collected 16:17; `results/u2_mac_any_n512_s512/any_L13.json` to `any_L16.json`)
+
+| 512 cells, every budget 1..512 | 13, MAC_T | 13, MAC_B | 14, MAC_T | 14, MAC_B | 15, MAC_T | 15, MAC_B | 16, MAC_T | 16, MAC_B |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| programs | 67,108,864 | 67,108,864 | 268,435,456 | 268,435,456 | 1,073,741,824 | 1,073,741,824 | 4,294,967,296 | 4,294,967,296 |
+| alive after inputs 1 to 3 | all | all | all | all | all | all | all | all |
+| after 4 | 17,448,280 | 15,768,554 | 70,611,070 | 63,890,743 | 286,112,339 | 259,179,631 | 1,151,348,609 | 1,044,052,813 |
+| after 5 | 6,162,467 | 6,194,611 | 25,047,935 | 25,206,521 | 102,862,325 | 103,520,498 | 414,329,982 | 417,062,676 |
+| after 6 | 3,674,487 | 3,704,525 | 14,819,249 | 14,921,992 | 60,070,607 | 60,412,710 | 241,176,670 | 242,459,565 |
+| after 9 | 38,426 | 37,896 | 146,368 | 147,183 | 568,717 | 575,490 | 2,192,266 | 2,228,716 |
+| after 12 | 3,456 | 3,167 | 10,468 | 9,779 | 33,548 | 32,240 | 108,799 | 108,080 |
+| after 13 | 872 | 687 | 2,523 | 2,066 | 9,066 | 7,634 | 27,438 | 25,105 |
+| after 14 | 193 | 112 | 607 | 418 | 2,081 | 1,542 | 6,627 | 5,627 |
+| after 15 | 87 | 37 | 255 | 121 | 890 | 428 | 2,566 | 1,462 |
+| after 16 | 46 | 14 | 131 | 38 | 420 | 155 | 1,208 | 526 |
+| after 17 | 11 | 10 | 41 | 33 | 172 | 109 | 574 | 390 |
+| after 18 | 2 | 3 | 7 | 9 | 37 | 30 | 145 | 89 |
+| after 19 | **0** | **0** | 4 | 3 | 30 | 10 | 120 | 19 |
+| after 20 | 0 | 0 | 1 | **0** | 7 | 6 | 29 | 8 |
+| after 21 | 0 | 0 | **0** | 0 | **0** | 6 | 7 | 8 |
+| after 22 | 0 | 0 | 0 | 0 | 0 | **0** | 5 | 2 |
+| after 23 | 0 | 0 | 0 | 0 | 0 | 0 | **0** | 1 |
+| after 24 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
+| after 25 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | **0** |
+| **multiply-accumulates at any budget 1..512 (alive after 48)** | **0** | **0** | **0** | **0** | **0** | **0** | **0** | **0** |
+
+`found_by_step` is zero at every one of the 512 budgets. More programs survive the early inputs on the larger ring
+(7 to 10 % more after input 4, 15 to 20 % more after input 12: programs whose head runs around the small ring and
+spoils its own work are no longer spoiled), but the frontier is the same at every length and encoding as on 256
+cells, down to the number of programs alive there: 18 (2 programs), 20 (1), 20 (7), 22 (5) triples for MAC_T and
+18 (3), 19 (3), 21 (6), 24 (1) for MAC_B at 13 to 16 symbols, dying on the same triples. The frontier programs are
+listed below; they are the same 28 programs as in section 7, with the same cells and the same budgets up to 256 (table below). Budgets 257 to 512 add nothing: no program holds a candidate at any of them that it does not
+already hold at some budget below 257 for every input it survives. The twelve w = 0 triples and the twelve zero-target
+triples are never reached.
+
+Runs executed per encoding: 0.30 billion at 13 symbols, 1.19 at 14, 4.75 at 15, 19.0 at 16, each 512 instructions.
+
+### Run record
+
+| device | 13 | 14 | 15 | 16 symbols | overlaps 13 / 14 / 15 / 16 (2^24 each) | device total |
+|---|---|---|---|---|---|---|
+| adler40-cpu (24 thr) | 4,653,500 programs, 7 s | 18,613,998, 29 s | 74,455,993, 117 s | 297,823,972, 475 s | 26.6 / 26.7 / 28.1 / 24.5 s | 841.4 s |
+| adler40-gpu0 (RTX 4090) | 25,871,529, 7 s | 103,486,115, 26 s | 413,944,459, 102 s | 1,655,777,835, 406 s | 4.0 / 3.7 / 5.0 / 2.9 s | 575.9 s |
+| adler40-gpu1 (RTX 4080) | 16,317,664, 7 s | 65,270,654, 25 s | 261,082,616, 100 s | 1,044,330,465, 388 s | | 550.8 s |
+| falke64-cpu (12 thr) | 2,232,099, 7 s | 8,928,395, 28 s | 35,713,581, 111 s | 142,854,324, 445 s | | 814.6 s |
+| knecht24-cpu (24 thr) | 2,466,999, 8 s | 9,867,994, 30 s | 39,471,977, 120 s | 157,887,906, 483 s | 49.3 / 49.2 / 50.8 / 48.0 s | 1,040.9 s |
+| knecht24-gpu0 (RTX 3060) | 4,627,623, 11 s | 18,510,491, 41 s | 74,041,965, 165 s | 296,167,861, 638 s | 23.8 / 21.6 / 28.2 / 17.7 s | 1,053.4 s |
+| knecht24-gpu1 (RTX 3060) | 4,701,700, 10 s | 18,806,799, 40 s | 75,227,194, 165 s | 300,908,778, 644 s | | 966.2 s |
+| knecht24-gpu2 (RTX 3060) | 4,741,885, 10 s | 18,967,540, 38 s | 75,870,162, 154 s | 303,480,648, 614 s | | 922.1 s |
+| specht32-cpu (12 thr) | 1,495,865, 8 s | 5,983,470, 32 s | 23,933,877, 129 s | 95,735,507, 508 s | | 1,006.9 s |
+
+Launched 16:01:05, last shard (knecht24-gpu0's 16-symbol overlap) done 16:16:58 workstation time: 15 min 53 s wall,
+18.6 CPU-core-hours plus 1.13 GPU-hours, nice 10, nothing else of ours on the nodes. Checks at collection as in
+section 6; the 2^24-program overlap ranges are identical on the Intel CPU, the AMD CPU, the RTX 4090 and a RTX 3060 at
+all four lengths (96 survivor counts, 1,024 found_by_step counts and the empty found lists each).
+
+### The frontier programs on the 512-cell ring
+
+Recovered as in section 7 (`tools/u2_mac_any_exhibit.py --ncell 512 --steps 512`: GPU runs with the input list cut at
+the frontier, per-step cells from the CPU mode, re-verification with the reference and `u2_ops.run` on the 512-cell
+ring; `results/u2_mac_any_n512_s512/exhibit/`). **They are the same 28 programs as in section 7**, with the same result
+cells and the same budgets up to 256; the larger ring and the longer run change only the ranges that continue past
+the old end of the run, for 9 of the 28 programs:
+
+| symbols | encoding | program | triples | budgets on 256 cells (1..256) | budgets on 512 cells (1..512) |
+|---|---|---|---:|---|---|
+| 13 | BitNet | `0113102020111` | 18 | 87-256 | 87-512 |
+| 13 | BitNet | `0113331020211` | 18 | 89-256 | 89-512 |
+| 13 | signed | `3110112110221` | 18 | 223 | 223,294,365,436,507 |
+| 14 | BitNet | `00111100300111` | 19 | 172-256 | 172-512 |
+| 14 | BitNet | `00111110030110` | 19 | 179-256 | 179-512 |
+| 14 | BitNet | `00111110031001` | 19 | 179-256 | 179-512 |
+| 16 | signed | `0112110113102000` | 22 | 116-256 | 116-512 |
+| 16 | signed | `1210110113102000` | 22 | 116-256 | 116-512 |
+| 16 | signed | `1211001113102000` | 22 | 116-256 | 116-512 |
+
+Eight of these simply keep the result in place from the first budget to the end of the run (256 was the end of the
+run, not of the program). The 13-symbol program `3110112110221`, whose 18 triples agree under the head at budget 223
+only, agrees again every 71 instructions: at 294, 365, 436 and 507, a loop that passes the right cell under the head
+once per period. The other 19 programs have the same ranges on both rings, so none of the 28 ever touched the far
+side of the 256-cell ring within its range. The 24-triple program `2111012110003111` holds at budgets 115 and 116 on
+both rings and fails on w = 0 at both.
+
+### Files and commands of this section
+
+- `results/u2_mac_any_n512_s512/`: `ref_L1.json` to `ref_L11.json`, `validation_L11.json`, `calibration_L13.json`,
+  `plan_any_L13_L14_L15_L16.json`, `any_L13.json` to `any_L16.json`, `raw/`, `exhibit/`.
+
+```
+python tools/u2_mac_any.py build --ncell 512 --steps 512
+python tools/u2_mac_any.py ref --ncell 512 --steps 512
+python tools/u2_mac_any.py validate --ncell 512 --steps 512 --Lmax 11
+python tools/u2_mac_any.py calibrate --ncell 512 --steps 512
+python tools/u2_mac_any.py launch --ncell 512 --steps 512 --L 13 --L 14 --L 15 --L 16
+python tools/u2_mac_any.py collect --ncell 512 --steps 512 --L 13 --L 14 --L 15 --L 16
+python tools/u2_mac_any_exhibit.py --ncell 512 --steps 512
 ```

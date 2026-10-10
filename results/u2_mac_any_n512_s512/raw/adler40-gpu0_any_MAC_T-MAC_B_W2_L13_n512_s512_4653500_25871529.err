@@ -1,0 +1,2 @@
+mode=primany prims=MAC_T,MAC_B ops=INC_R1,INC_L1,FLIP_R2,JNZB W=2 L=13 steps=512 ncell=512 programs=25871529 start=4653500 secs=6.6 threads=0 host=adler40 device=gpu0:NVIDIA GeForce RTX 4090 tpb=64 smem=32768
+done

@@ -1,0 +1,472 @@
+{
+ "launched": "2026-10-10T16:01:09",
+ "machine": "INC_R1,INC_L1,FLIP_R2,JNZB",
+ "table_id": 50098,
+ "W": 2,
+ "steps": 512,
+ "prims": "MAC_T,MAC_B",
+ "binaries": {
+  "cpu": "u2_tables_any_n512_s512",
+  "gpu": "u2_mac_any_gpu_n512_s512"
+ },
+ "lengths": [
+  13,
+  14,
+  15,
+  16
+ ],
+ "programs": {
+  "13": 67108864,
+  "14": 268435456,
+  "15": 1073741824,
+  "16": 4294967296
+ },
+ "devices": {
+  "adler40-cpu": [
+   "adler40",
+   "cpu",
+   24
+  ],
+  "adler40-gpu0": [
+   "adler40",
+   "gpu",
+   0
+  ],
+  "adler40-gpu1": [
+   "adler40",
+   "gpu",
+   1
+  ],
+  "falke64-cpu": [
+   "falke64",
+   "cpu",
+   12
+  ],
+  "knecht24-cpu": [
+   "knecht24",
+   "cpu",
+   24
+  ],
+  "knecht24-gpu0": [
+   "knecht24",
+   "gpu",
+   0
+  ],
+  "knecht24-gpu1": [
+   "knecht24",
+   "gpu",
+   1
+  ],
+  "knecht24-gpu2": [
+   "knecht24",
+   "gpu",
+   2
+  ],
+  "specht32-cpu": [
+   "specht32",
+   "cpu",
+   12
+  ]
+ },
+ "speeds_programs_per_s": {
+  "adler40-cpu": 625432.0969245108,
+  "adler40-gpu0": 3477143.212435233,
+  "adler40-gpu1": 2193100.1307189544,
+  "falke64-cpu": 299994.921770228,
+  "knecht24-cpu": 331565.53359683795,
+  "knecht24-gpu0": 621954.2539388322,
+  "knecht24-gpu1": 631910.2071563088,
+  "knecht24-gpu2": 637311.1490978157,
+  "specht32-cpu": 201045.12881965248
+ },
+ "overlap": {
+  "13": [
+   10000000,
+   16777216
+  ],
+  "14": [
+   100000000,
+   16777216
+  ],
+  "15": [
+   123456789,
+   16777216
+  ],
+  "16": [
+   3000000000,
+   16777216
+  ]
+ },
+ "overlap_devices": [
+  "adler40-cpu",
+  "knecht24-cpu",
+  "adler40-gpu0",
+  "knecht24-gpu0"
+ ],
+ "runs": [
+  {
+   "device": "adler40-cpu",
+   "L": 13,
+   "start": 0,
+   "count": 4653500,
+   "overlap": false
+  },
+  {
+   "device": "adler40-cpu",
+   "L": 14,
+   "start": 0,
+   "count": 18613998,
+   "overlap": false
+  },
+  {
+   "device": "adler40-cpu",
+   "L": 15,
+   "start": 0,
+   "count": 74455993,
+   "overlap": false
+  },
+  {
+   "device": "adler40-cpu",
+   "L": 16,
+   "start": 0,
+   "count": 297823972,
+   "overlap": false
+  },
+  {
+   "device": "adler40-cpu",
+   "L": 13,
+   "start": 10000000,
+   "count": 16777216,
+   "overlap": true
+  },
+  {
+   "device": "adler40-cpu",
+   "L": 14,
+   "start": 100000000,
+   "count": 16777216,
+   "overlap": true
+  },
+  {
+   "device": "adler40-cpu",
+   "L": 15,
+   "start": 123456789,
+   "count": 16777216,
+   "overlap": true
+  },
+  {
+   "device": "adler40-cpu",
+   "L": 16,
+   "start": 3000000000,
+   "count": 16777216,
+   "overlap": true
+  },
+  {
+   "device": "adler40-gpu0",
+   "L": 13,
+   "start": 4653500,
+   "count": 25871529,
+   "overlap": false
+  },
+  {
+   "device": "adler40-gpu0",
+   "L": 14,
+   "start": 18613998,
+   "count": 103486115,
+   "overlap": false
+  },
+  {
+   "device": "adler40-gpu0",
+   "L": 15,
+   "start": 74455993,
+   "count": 413944459,
+   "overlap": false
+  },
+  {
+   "device": "adler40-gpu0",
+   "L": 16,
+   "start": 297823972,
+   "count": 1655777835,
+   "overlap": false
+  },
+  {
+   "device": "adler40-gpu0",
+   "L": 13,
+   "start": 10000000,
+   "count": 16777216,
+   "overlap": true
+  },
+  {
+   "device": "adler40-gpu0",
+   "L": 14,
+   "start": 100000000,
+   "count": 16777216,
+   "overlap": true
+  },
+  {
+   "device": "adler40-gpu0",
+   "L": 15,
+   "start": 123456789,
+   "count": 16777216,
+   "overlap": true
+  },
+  {
+   "device": "adler40-gpu0",
+   "L": 16,
+   "start": 3000000000,
+   "count": 16777216,
+   "overlap": true
+  },
+  {
+   "device": "adler40-gpu1",
+   "L": 13,
+   "start": 30525029,
+   "count": 16317664,
+   "overlap": false
+  },
+  {
+   "device": "adler40-gpu1",
+   "L": 14,
+   "start": 122100113,
+   "count": 65270654,
+   "overlap": false
+  },
+  {
+   "device": "adler40-gpu1",
+   "L": 15,
+   "start": 488400452,
+   "count": 261082616,
+   "overlap": false
+  },
+  {
+   "device": "adler40-gpu1",
+   "L": 16,
+   "start": 1953601807,
+   "count": 1044330465,
+   "overlap": false
+  },
+  {
+   "device": "falke64-cpu",
+   "L": 13,
+   "start": 46842693,
+   "count": 2232099,
+   "overlap": false
+  },
+  {
+   "device": "falke64-cpu",
+   "L": 14,
+   "start": 187370767,
+   "count": 8928395,
+   "overlap": false
+  },
+  {
+   "device": "falke64-cpu",
+   "L": 15,
+   "start": 749483068,
+   "count": 35713581,
+   "overlap": false
+  },
+  {
+   "device": "falke64-cpu",
+   "L": 16,
+   "start": 2997932272,
+   "count": 142854324,
+   "overlap": false
+  },
+  {
+   "device": "knecht24-cpu",
+   "L": 13,
+   "start": 49074792,
+   "count": 2466999,
+   "overlap": false
+  },
+  {
+   "device": "knecht24-cpu",
+   "L": 14,
+   "start": 196299162,
+   "count": 9867994,
+   "overlap": false
+  },
+  {
+   "device": "knecht24-cpu",
+   "L": 15,
+   "start": 785196649,
+   "count": 39471977,
+   "overlap": false
+  },
+  {
+   "device": "knecht24-cpu",
+   "L": 16,
+   "start": 3140786596,
+   "count": 157887906,
+   "overlap": false
+  },
+  {
+   "device": "knecht24-cpu",
+   "L": 13,
+   "start": 10000000,
+   "count": 16777216,
+   "overlap": true
+  },
+  {
+   "device": "knecht24-cpu",
+   "L": 14,
+   "start": 100000000,
+   "count": 16777216,
+   "overlap": true
+  },
+  {
+   "device": "knecht24-cpu",
+   "L": 15,
+   "start": 123456789,
+   "count": 16777216,
+   "overlap": true
+  },
+  {
+   "device": "knecht24-cpu",
+   "L": 16,
+   "start": 3000000000,
+   "count": 16777216,
+   "overlap": true
+  },
+  {
+   "device": "knecht24-gpu0",
+   "L": 13,
+   "start": 51541791,
+   "count": 4627623,
+   "overlap": false
+  },
+  {
+   "device": "knecht24-gpu0",
+   "L": 14,
+   "start": 206167156,
+   "count": 18510491,
+   "overlap": false
+  },
+  {
+   "device": "knecht24-gpu0",
+   "L": 15,
+   "start": 824668626,
+   "count": 74041965,
+   "overlap": false
+  },
+  {
+   "device": "knecht24-gpu0",
+   "L": 16,
+   "start": 3298674502,
+   "count": 296167861,
+   "overlap": false
+  },
+  {
+   "device": "knecht24-gpu0",
+   "L": 13,
+   "start": 10000000,
+   "count": 16777216,
+   "overlap": true
+  },
+  {
+   "device": "knecht24-gpu0",
+   "L": 14,
+   "start": 100000000,
+   "count": 16777216,
+   "overlap": true
+  },
+  {
+   "device": "knecht24-gpu0",
+   "L": 15,
+   "start": 123456789,
+   "count": 16777216,
+   "overlap": true
+  },
+  {
+   "device": "knecht24-gpu0",
+   "L": 16,
+   "start": 3000000000,
+   "count": 16777216,
+   "overlap": true
+  },
+  {
+   "device": "knecht24-gpu1",
+   "L": 13,
+   "start": 56169414,
+   "count": 4701700,
+   "overlap": false
+  },
+  {
+   "device": "knecht24-gpu1",
+   "L": 14,
+   "start": 224677647,
+   "count": 18806799,
+   "overlap": false
+  },
+  {
+   "device": "knecht24-gpu1",
+   "L": 15,
+   "start": 898710591,
+   "count": 75227194,
+   "overlap": false
+  },
+  {
+   "device": "knecht24-gpu1",
+   "L": 16,
+   "start": 3594842363,
+   "count": 300908778,
+   "overlap": false
+  },
+  {
+   "device": "knecht24-gpu2",
+   "L": 13,
+   "start": 60871114,
+   "count": 4741885,
+   "overlap": false
+  },
+  {
+   "device": "knecht24-gpu2",
+   "L": 14,
+   "start": 243484446,
+   "count": 18967540,
+   "overlap": false
+  },
+  {
+   "device": "knecht24-gpu2",
+   "L": 15,
+   "start": 973937785,
+   "count": 75870162,
+   "overlap": false
+  },
+  {
+   "device": "knecht24-gpu2",
+   "L": 16,
+   "start": 3895751141,
+   "count": 303480648,
+   "overlap": false
+  },
+  {
+   "device": "specht32-cpu",
+   "L": 13,
+   "start": 65612999,
+   "count": 1495865,
+   "overlap": false
+  },
+  {
+   "device": "specht32-cpu",
+   "L": 14,
+   "start": 262451986,
+   "count": 5983470,
+   "overlap": false
+  },
+  {
+   "device": "specht32-cpu",
+   "L": 15,
+   "start": 1049807947,
+   "count": 23933877,
+   "overlap": false
+  },
+  {
+   "device": "specht32-cpu",
+   "L": 16,
+   "start": 4199231789,
+   "count": 95735507,
+   "overlap": false
+  }
+ ]
+}

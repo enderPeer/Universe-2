@@ -35,8 +35,9 @@ from u2_mac import MACHINE, W as W_DEFAULT, inputs_of  # noqa: E402
 N = 256
 
 
-def step_states(table, program, W, steps, init):
-    """The state after each of the first `steps` instructions: a list of (tape bytes, head). After HALT the state repeats."""
+def step_states(table, program, W, steps, init, N=N):
+    """The state after each of the first `steps` instructions: a list of (tape bytes, head). After HALT the state repeats.
+    N is the ring size (256; 512 for the variant of docs/14 section 11)."""
     mask = (1 << W) - 1
     tape = bytearray(N)
     for i, v in enumerate(init):
@@ -109,17 +110,17 @@ def step_states(table, program, W, steps, init):
     return out
 
 
-def tapes_array(table, program, W, steps, init):
-    """(steps x 256) uint8 array of the tape after each step, and the head after each step (steps,)."""
-    st = step_states(table, program, W, steps, init)
-    T = np.frombuffer(b"".join(t for t, _ in st), dtype=np.uint8).reshape(steps, N)
+def tapes_array(table, program, W, steps, init, ncell=N):
+    """(steps x ncell) uint8 array of the tape after each step, and the head after each step (steps,)."""
+    st = step_states(table, program, W, steps, init, ncell)
+    T = np.frombuffer(b"".join(t for t, _ in st), dtype=np.uint8).reshape(steps, ncell)
     H = np.fromiter((h for _, h in st), dtype=np.int64, count=steps)
     return T, H
 
 
-def eval_any(table, program, W, steps, prim, maxin=0):
+def eval_any(table, program, W, steps, prim, maxin=0, ncell=N):
     """(inputs survived, per-step detail) for one program and primitive; detail = [(s, cells, head_flag)] when found.
-    maxin > 0 keeps only the first maxin inputs (the frontier exhibits of docs/14 section 7)."""
+    maxin > 0 keeps only the first maxin inputs (the frontier exhibits of docs/14 section 7); ncell is the ring size."""
     inputs = inputs_of(prim)
     if maxin > 0:
         inputs = inputs[:maxin]
@@ -127,7 +128,7 @@ def eval_any(table, program, W, steps, prim, maxin=0):
     cand = None
     hok = None
     for i, (init, target) in enumerate(inputs):
-        T, H = tapes_array(table, program, W, steps, list(init))
+        T, H = tapes_array(table, program, W, steps, list(init), ncell)
         eq = T == target
         if excl0:
             eq[:, 0] = False
@@ -163,12 +164,12 @@ def ranges(steps_list):
 
 
 def chunk_job(args):
-    table, L, W, steps, prims, q0, q1 = args
+    table, L, W, steps, prims, q0, q1, ncell = args
     res = {p: {"hist": [0] * (len(inputs_of(p)) + 1), "found": [], "fbs": [0] * steps} for p in prims}
     for q in range(q0, q1):
         program = [(q >> (2 * (L - 1 - i))) & 3 for i in range(L)]
         for p in prims:
-            ns, detail = eval_any(table, program, W, steps, p)
+            ns, detail = eval_any(table, program, W, steps, p, 0, ncell)
             res[p]["hist"][ns] += 1
             if detail is not None:
                 res[p]["found"].append(["".join(map(str, program)), ranges([d[0] for d in detail]), [[d[0], d[1], int(d[2])] for d in detail]])
@@ -177,11 +178,11 @@ def chunk_job(args):
     return res
 
 
-def search(table, L, W, steps, prims, procs=1):
+def search(table, L, W, steps, prims, procs=1, ncell=N):
     total = 4 ** L
     nchunks = max(1, min(total, procs * 8))
     bounds = [(total * i // nchunks, total * (i + 1) // nchunks) for i in range(nchunks)]
-    jobs = [(table, L, W, steps, prims, a, b) for a, b in bounds if b > a]
+    jobs = [(table, L, W, steps, prims, a, b, ncell) for a, b in bounds if b > a]
     if procs > 1:
         with ProcessPoolExecutor(procs) as ex:
             parts = list(ex.map(chunk_job, jobs))
@@ -199,8 +200,8 @@ def search(table, L, W, steps, prims, procs=1):
     return out
 
 
-def selfcheck(n, seed=1):
-    """step_states against u2_ops.run on random machines, programs, inputs and budgets."""
+def selfcheck(n, seed=1, ncell=N, max_steps=256):
+    """step_states against u2_ops.run on random machines, programs, inputs and budgets (ring of ncell cells)."""
     rnd = random.Random(seed)
     machines = [MACHINE, "INC,INC_R1,INC_L1,JNZB", "L1,INC_L1,FLIP_R2,JNZB", "R1,INC_L1,OPEN,CLOSE", "INC_R1,HALT,SKZ,L1", "LDA,STA,R1,JNZS"]
     for _ in range(n):
@@ -209,12 +210,12 @@ def selfcheck(n, seed=1):
         program = [rnd.randrange(4) for _ in range(L)]
         W = rnd.choice([1, 2, 2, 2, 3])
         init = [rnd.randrange(1 << W) for _ in range(rnd.randint(0, 3))]
-        steps = rnd.randint(1, 256)
-        st = step_states(table, program, W, steps, init)
+        steps = rnd.randint(1, max_steps)
+        st = step_states(table, program, W, steps, init, ncell)
         for s in sorted(set([steps, rnd.randint(1, steps), rnd.randint(1, steps)])):
-            ref = u2_ops.run(table, program, W, s, init=init)
+            ref = u2_ops.run(table, program, W, s, init=init, ncell=ncell)
             tape, head = st[s - 1]
-            nz = {i: tape[i] for i in range(N) if tape[i]}
+            nz = {i: tape[i] for i in range(ncell) if tape[i]}
             assert nz == ref["tape_nonzero"] and head == ref["head"], (table, program, W, init, s)
     return True
 
@@ -230,30 +231,31 @@ def main():
     ap.add_argument("--out")
     ap.add_argument("--program", help="evaluate one program instead of all of length L")
     ap.add_argument("--selfcheck", type=int, metavar="N")
+    ap.add_argument("--ncell", type=int, default=N, help="ring size (default 256; 512 for docs/14 section 11)")
     a = ap.parse_args()
     table = u2_ops.parse_table(a.machine)
     prims = a.prims.split(",")
     if a.selfcheck:
         t0 = time.time()
-        selfcheck(a.selfcheck)
-        print(f"selfcheck ok: {a.selfcheck} random (machine, program, input, budget) cases agree with u2_ops.run, {time.time() - t0:.1f} s")
+        selfcheck(a.selfcheck, 1, a.ncell, a.steps)
+        print(f"selfcheck ok: {a.selfcheck} random (machine, program, input, budget) cases agree with u2_ops.run on a ring of {a.ncell}, {time.time() - t0:.1f} s")
         return
     if a.program:
         program = [int(c) for c in a.program]
         for p in prims:
-            ns, detail = eval_any(table, program, a.W, a.steps, p)
+            ns, detail = eval_any(table, program, a.W, a.steps, p, 0, a.ncell)
             print(p, "inputs survived", ns, "of", len(inputs_of(p)), "" if detail is None else ranges([d[0] for d in detail]))
             if detail:
                 for s, cells, h in detail:
                     print(f"   step {s}: cells {cells} head {h}")
         return
     t0 = time.time()
-    res = search(table, a.L, a.W, a.steps, prims, a.procs)
+    res = search(table, a.L, a.W, a.steps, prims, a.procs, a.ncell)
     secs = time.time() - t0
     for p in prims:
         r = res[p]
         print(f"L={a.L} {p}: {r['programs']:,} programs, survivors {r['survivors_after_input'][:6]}..., found {r['found']}")
-    doc = {"machine": a.machine, "W": a.W, "L": a.L, "steps": a.steps, "programs": 4 ** a.L, "secs": round(secs, 1), "procs": a.procs,
+    doc = {"machine": a.machine, "W": a.W, "L": a.L, "steps": a.steps, "ncell": a.ncell, "programs": 4 ** a.L, "secs": round(secs, 1), "procs": a.procs,
            "reference": "tools/u2_mac_any_ref.py", "primitives": res}
     if a.out:
         pathlib.Path(a.out).parent.mkdir(parents=True, exist_ok=True)

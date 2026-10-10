@@ -15,6 +15,10 @@ overlap ranges are run twice.
   python tools/u2_mac_any.py launch --L 13 --L 14 --L 15 --L 16
   python tools/u2_mac_any.py status --L 13 --L 14 --L 15 --L 16
   python tools/u2_mac_any.py collect --L 13 --L 14 --L 15 --L 16   # -> results/u2_mac_any/any_L13.json .. any_L16.json
+
+--ncell 512 --steps 512 (docs/14 section 11) does all of the above for a ring of 512 cells and budgets 1..512: the
+binaries are compiled with -DNCELL=512 -DMAXSTEPS=512 under the names u2_tables_any_n512_s512 / u2_mac_any_gpu_n512_s512,
+the results go to results/u2_mac_any_n512_s512/, file stems carry _n512_s512, and the overlap ranges are 2^24 programs.
 """
 import argparse
 import json
@@ -30,6 +34,7 @@ from u2_mac import MACHINE, TABLE_ID, W, inputs_of, ssh  # noqa: E402
 import u2_mac_any_ref as ref  # noqa: E402
 
 STEPS = 256
+NCELL = 256              # ring size; --ncell 512 --steps 512 selects the variant of docs/14 section 11 (own binaries, own results dir)
 PRIMS = "MAC_T,MAC_B"
 CPU_BIN, GPU_BIN = "u2_tables_any", "u2_mac_any_gpu"
 NODES = {"adler40": {"threads": 24, "gpus": {0: "RTX 4090", 1: "RTX 4080"}, "arch": "sm_89"},
@@ -53,11 +58,27 @@ def set_cal(L):
     global CAL_L, CALIBRATION
     CAL_L = L
     CALIBRATION = OUT / f"calibration_L{L}.json"
+
+
+def variant():
+    return "" if (NCELL, STEPS) == (256, 256) else f"_n{NCELL}_s{STEPS}"
+
+
+def set_variant(ncell, steps):
+    """Ring size and step limit of the binaries (compile-time there): names, results directory and reference follow."""
+    global NCELL, STEPS, CPU_BIN, GPU_BIN, OUT, OVERLAP
+    NCELL, STEPS = ncell, steps
+    assert ncell & (ncell - 1) == 0 and ncell % 64 == 0 and steps % 64 == 0, "ring size a power of two, steps a multiple of 64"
+    CPU_BIN, GPU_BIN = "u2_tables_any" + variant(), "u2_mac_any_gpu" + variant()
+    OUT = pathlib.Path("results/u2_mac_any" + variant())
+    if variant():   # 2^24 programs per overlap range: the slowest overlap device (the AMD CPU) runs at 0.33 M programs/s here
+        OVERLAP = {L: (s, 1 << 24) for L, (s, _) in OVERLAP.items()}
+    set_cal(CAL_L)
 VALIDATE_DEVICES = ("adler40-cpu", "adler40-gpu0", "knecht24-gpu0")
 
 
 def name(L, start, count, prims=PRIMS):
-    return f"any_{prims.replace(',', '-')}_W{W}_L{L}_s{STEPS}_{start}_{count}"
+    return f"any_{prims.replace(',', '-')}_W{W}_L{L}{'' if NCELL == 256 else f'_n{NCELL}'}_s{STEPS}_{start}_{count}"
 
 
 def out_stem(dev, L, start, count, prims=PRIMS):
@@ -120,7 +141,7 @@ def fetch(dev, L, start, count, prims=PRIMS, save_raw=True):
     assert done, f"{dev} {stem}: not done"
     assert "found_overflow" not in head, (dev, stem, "GPU found buffer overflow")
     assert int(head["programs"]) == count and int(head["start"]) == start and int(head["L"]) == L and head["machine"] == MACHINE and int(head["steps"]) == STEPS, (dev, head)
-    assert int(kv["programs"]) == count and int(kv["start"]) == start and kv["host"] == node, (dev, kv)
+    assert int(kv["programs"]) == count and int(kv["start"]) == start and kv["host"] == node and int(kv.get("ncell", 256)) == NCELL, (dev, kv)
     assert kv["device"].startswith("gpu" if DEVICES[dev][1] == "gpu" else "cpu"), (dev, kv["device"])
     for p in prims.split(","):
         assert prs[p]["found_count"] == len(prs[p]["found"]), (dev, stem, p)
@@ -165,11 +186,12 @@ def build(nodes=None):
         d = NODES[n]
         r = subprocess.run(["scp", "-q", "tools/u2_tables.c", f"{n}:~/universe2/{CPU_BIN}.c"], capture_output=True, text=True)
         assert r.returncode == 0, (n, r.stderr)
-        cmd = f"cd ~/universe2 && gcc -O3 -march=native -fopenmp -std=c11 -Wall -Wextra {CPU_BIN}.c -o {CPU_BIN} 2>&1 | grep -c warning; ls -la {CPU_BIN} | cut -d' ' -f5-"
+        defs = "" if not variant() else f" -DNCELL={NCELL} -DMAXSTEPS={STEPS}"
+        cmd = f"cd ~/universe2 && gcc -O3 -march=native -fopenmp -std=c11 -Wall -Wextra{defs} {CPU_BIN}.c -o {CPU_BIN} 2>&1 | grep -c warning; ls -la {CPU_BIN} | cut -d' ' -f5-"
         if d["gpus"]:
             r = subprocess.run(["scp", "-q", "gpu/u2_mac_any.cu", f"{n}:~/universe2/u2_mac_any.cu"], capture_output=True, text=True)
             assert r.returncode == 0, (n, r.stderr)
-            cmd += f"; nvcc -O3 -std=c++17 -arch={d['arch']} -o {GPU_BIN} u2_mac_any.cu 2>&1 | grep -c -i warning; ls -la {GPU_BIN} | cut -d' ' -f5-"
+            cmd += f"; nvcc -O3 -std=c++17 -arch={d['arch']}{defs} -o {GPU_BIN} u2_mac_any.cu 2>&1 | grep -c -i warning; ls -la {GPU_BIN} | cut -d' ' -f5-"
         r = ssh(n, cmd, timeout=900)
         print(n, r.stdout.strip().replace("\n", " | "), r.stderr.strip())
     selfcheck()
@@ -185,7 +207,9 @@ def selfcheck():
         prs = res[j][1]
         same = same_results(base, prs, "COPY,MAC_T")
         copier = [f for f in prs["COPY"]["found"] if f[0] == "01302"]
-        good = same and prs["COPY"]["survivors"] == [1023, 117, 34, 16] and prs["COPY"]["found_count"] == 16 and copier and copier[0][1] == "57-64" and prs["MAC_T"]["found_count"] == 0
+        good = same and copier and copier[0][1].startswith("57-64") and prs["MAC_T"]["found_count"] == 0
+        if not variant():   # the exact 256-cell, 256-budget numbers (the variant of section 11 has 17 copiers, one more)
+            good = good and prs["COPY"]["survivors"] == [1023, 117, 34, 16] and prs["COPY"]["found_count"] == 16 and copier[0][1] == "57-64"
         ok &= bool(good)
         print(f"{j[0]:14s} {res[j][2]['device']:36s} {res[j][2]['secs']} s  {'SELF-CHECK OK' if good else 'SELF-CHECK FAILED'}")
     print("ALL DEVICES AGREE" if ok else "MISMATCH")
@@ -199,7 +223,7 @@ def run_ref(procs=24):
         path = OUT / f"ref_L{l}.json"
         if path.exists():
             continue
-        subprocess.run([sys.executable, "tools/u2_mac_any_ref.py", "--L", str(l), "--prims", prims, "--procs", str(procs), "--out", str(path)], check=True)
+        subprocess.run([sys.executable, "tools/u2_mac_any_ref.py", "--L", str(l), "--prims", prims, "--procs", str(procs), "--ncell", str(NCELL), "--steps", str(STEPS), "--out", str(path)], check=True)
 
 
 def validate(L_max=12):
@@ -210,6 +234,7 @@ def validate(L_max=12):
     for l in range(1, L_max + 1):
         rp = OUT / f"ref_L{l}.json"
         rj = json.loads(rp.read_text())
+        assert rj["steps"] == STEPS and rj.get("ncell", 256) == NCELL, (rp, rj["steps"], rj.get("ncell"))
         prims = ",".join(p for p in ("MAC_T", "MAC_B", "ADD", "MUL_T", "COPY", "CARRY") if p in rj["primitives"])
         jobs = [(dev, l, 0, 4 ** l, prims) for dev in VALIDATE_DEVICES]
         # reuse finished runs
@@ -250,7 +275,7 @@ def validate(L_max=12):
     dom = {}
     for st in (64, 256):
         vp = pathlib.Path(f"results/u2_mac/validation_L12_s{st}.json")
-        if L_max == 12 and vp.exists():
+        if L_max == 12 and not variant() and vp.exists():
             v = json.loads(vp.read_text())
             for p in PRIMS.split(","):
                 snap = v["primitives"][p]["survivors_after_input"]
@@ -435,7 +460,10 @@ def main():
     ap.add_argument("--Lmax", type=int, default=12, help="validate: lengths 1..Lmax")
     ap.add_argument("--procs", type=int, default=24, help="ref: local processes")
     ap.add_argument("--calL", type=int, default=CAL_L, help="calibration length (calibrate runs it; launch/status/collect read its speeds)")
+    ap.add_argument("--ncell", type=int, default=NCELL, help="ring size of the binaries (256; 512 with --steps 512 for docs/14 section 11)")
+    ap.add_argument("--steps", type=int, default=STEPS, help="largest budget (256; the binaries are compiled for it)")
     a = ap.parse_args()
+    set_variant(a.ncell, a.steps)
     set_cal(a.calL)
     Ls = a.L or [13, 14, 15, 16]
     if a.action == "build":

@@ -1,0 +1,2 @@
+mode=primany prims=MAC_T,MAC_B,ADD,MUL_T,COPY,CARRY ops=INC_R1,INC_L1,FLIP_R2,JNZB W=2 L=3 steps=512 ncell=512 programs=64 start=0 secs=0.0 threads=24 host=adler40 device=cpu
+done

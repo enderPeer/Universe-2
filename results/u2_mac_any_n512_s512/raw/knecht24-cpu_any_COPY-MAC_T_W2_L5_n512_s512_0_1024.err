@@ -1,0 +1,2 @@
+mode=primany prims=COPY,MAC_T ops=INC_R1,INC_L1,FLIP_R2,JNZB W=2 L=5 steps=512 ncell=512 programs=1024 start=0 secs=0.0 threads=24 host=knecht24 device=cpu
+done

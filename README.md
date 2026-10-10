@@ -73,7 +73,8 @@ best program 22 triples), and ([docs/14](docs/14_mac_any_step.md)) **at every st
 a `primany` mode of the C sweeper and a CUDA twin, checked against a Python per-step reference up to 12 symbols and
 against each other on every length, swept all 5,726,623,060 programs per encoding on the four nodes' CPUs and five
 GPUs in under 8 minutes. No program is a multiply-accumulate at any budget; the best 16-symbol program handles all 24
-triples with w = +1 and w = -1 at some budget and fails when w = 0.
+triples with w = +1 and w = -1 at some budget and fails when w = 0. The same holds on a ring of 512 cells with
+budgets 1 to 512 (docs/14 section 11, 16 minutes), with the same frontier.
 
 **The DNA-1 copier sweep** ([docs/11](docs/11_dna1_copier_sweep.md)): every gene of 2 to 7 codons (64 + 4,096 +
 262,144 + 16,777,216 + 1,073,741,824 + 68,719,476,736 codon strings after START) alone in a blank 8-slot world with
