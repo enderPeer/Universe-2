@@ -23,7 +23,7 @@ specified at design level with predictions. Section 12 lists the decisions that 
 | 4 | lights in the firmament for signs, seasons, days and years | sun height by latitude, **seasons** with opposite phase in the two zones (hemispheres), a moon, stars; **SENSE** (branch on a sky signal) and **WAIT** (sleep) | timing behaviour, dormancy, seasonal strategies | implemented, verified (section 14) |
 | 5 | water creatures and birds | **predation** (energy taken from a neighbour), **motion** (swimming; flying across the firmament), **foreign execution** (a processor may run a neighbour's gene, so parasites can arise) | heterotrophs, trophic levels, migration between hemispheres, parasites | implemented, verified (section 15) |
 | 6 | land animals; then humans | **tasks** on a working tape rewarded with energy (stepping stones from the docs/07 function library); **signals** between neighbours; the **interface** for a learned controller (the "human" layer), specified, not built | computation selected by the environment, communication, the slot for learning minds | implemented except the human layer (section 16) |
-| 7 | the work completed; rest | **no design change**: the frozen rule set runs long and unattended with open-endedness measurements (evolutionary activity against a neutral shadow, novelty, complexity) and stated criteria for open-ended against plateau | the test | design |
+| 7 | the work completed; rest | **no design change**: the frozen rule set runs long and unattended with open-endedness measurements (evolutionary activity against a neutral shadow, novelty, complexity) and stated criteria for open-ended against plateau | the test | measurements built; first world at 2 x 10^6 ticks: plateau (section 17) |
 
 **Changes against the suggested mapping, and why.** (a) Energy enters on day 1, not day 3: day 1 is "light", and
 light that does nothing is not a layer; with day 1 alone the light already sets the rate of living (organisms run
@@ -352,7 +352,7 @@ SIGNAL, LISTEN, OUT) and `"tasks"`, the cumulative number of rewarded answers pe
   named-task bonus), so that a matrix controller can be dropped in; matrix's JSONL experience export is the dataset
   format. Building it is the next project after days 4 to 6, not part of DNA-3.
 
-## 9. Day 7: rest (design)
+## 9. Day 7: rest (design; the measurements are built and applied in section 17)
 
 No rule changes after day 6: the rule set is frozen (a version string in the run header) and runs long and
 unattended: 2,999,999,488 cells on the RTX 4090 for 10^7 ticks (about 11 h at the 1,024-cell slot size, 40 h at
@@ -870,3 +870,204 @@ income closes in every census line.
 4. Seen along the way: WAIT, EAT and MOVE spread here too (108,344, 61,152 and 83,979 carriers at tick 102,399), and
    SIGNAL and LISTEN are carried by 27,785 and 18,881 organisms; whether the signals carry information has not been
    tested.
+
+## 17. Day 7 measured: evolutionary activity against a neutral shadow (O7)
+
+Section 9 asked for Bedau and Packard's evolutionary activity of operation sequences against a neutral shadow, new
+activity, diversity, novelty, complexity, and three criteria fixed before the run. This section builds the measurement
+(an engine output and an analysis tool), applies it to a fresh day-1-6 world, `O7_day7`, and reports the criteria.
+
+### 17.1 The op census (engine output, verified not to change the world)
+
+`gpu/dna_world.cu --op-census FILE` writes at every census the full histogram of operation sequences of the living:
+each live processor's gene (codons 0 .. first STOP) mapped to operations, synonymous codons collapsed, keyed by the op
+hash (FNV-1a 64 over the engine's operation numbers). Per census one line `C tick live births divide_births
+op_faithful spontaneous deaths changed n_seq`, then `S ophash ops` the first time the process prints a sequence, and
+`H ophash count zone0 t0 t1 t2 t3` per sequence (carriers in zone 0; carriers whose day-6 streak for task k is 3, i.e.
+paid on their last answer). `op_faithful` counts DIVIDE births whose child has the parent's operation sequence (the
+op-level analogue of `faithful`), `changed` the living whose sequence differs from the one they were born with (writes
+into a living gene). The option is output only: it adds per-slot buffers and a flag the rules never read, is not
+hashed and not in the reference, and the Proc layout and checkpoint (version 3) are unchanged, so a run can be resumed
+with or without it.
+
+- **Hash check.** `tools/dna3_verify.py` with the engine run under `--op-census` on six configurations (dna2_seeded,
+  dna3_soup, day4_g255_single_soup, day5_plant_mu, day6_tasker_x1, day6_plant_mu; RTX 3060 of knecht24, binary
+  `dna_world3i`): **6 of 6 identical on every tick, 4,000 tick hashes, 400 census lines, 4,478 birth rows**, while the
+  op census was written (100 census blocks in the last configuration).
+- **Content check.** A 2,048-tick day-6 world (x^1 seed, mu 0.03) with a checkpoint at the last census: the 133
+  operation sequences and 864 carriers of the last op census are identical, sequence by sequence and count by count,
+  to the ones read from the checkpoint (the reading of `tools/dna3_ckpt_genes.py`, hashed with the engine's
+  operation numbers; the reference numbers R3 and L3 differently, so the hash is defined on the engine's enum).
+
+### 17.2 The activity tool and the shadow
+
+`tools/dna3_activity.py RUN.ops` computes, census by census:
+
+- **Activity.** Component = operation sequence; its activity at census k is the sum of its census counts up to k
+  (Bedau's component activity, the convention of Universe-1 docs/12). A sequence that disappears and returns keeps its
+  activity.
+- **Neutral shadow.** A population of genomes without selection driven by the world's census-level demography: in the
+  interval before each census it receives exactly the world's DIVIDE births (each copies a uniformly random member),
+  spontaneous births (a random expressible gene) and deaths (uniformly random members), spread evenly over substeps of
+  at most 2 % of the population (births pick parents at the start of a substep and refill its deaths), so the shadow's
+  population equals the world's at every census (checked at every census of every run below: no mismatch, no lost
+  birth or death). A birth changes the operation sequence with the world's measured probability for that interval,
+  u = 1 - op_faithful / divide_births. **How the shadow is approximated** (it is driven from census-level counts, not
+  from the births themselves): (i) events inside an interval are spread evenly over the substeps, so the shadow
+  follows the world's population only at census resolution; (ii) a changed birth gets one uniformly random point
+  mutation among the single-cell changes of the copied cells (codons 1 .. len - 1 and the STOP) that change the
+  operation sequence and leave the child expressible, and a mutated STOP reads through into random codons up to the
+  next STOP (the world reads the slot's old content, often a relative's gene); the shadow's genomes carry codons, so
+  recurrent mutation re-creates sequences in the shadow as in the world (`--shadow alleles`, every change a new
+  sequence, is the lower bar); (iii) no in-life changes (the world's `changed` count is 30 to 60 of ~200,000 to
+  370,000 living, so this omission is negligible); (iv) no space. Three replicate shadows with different random
+  streams run in parallel processes.
+- **Threshold.** theta(k) = the 99th percentile of the activities of the shadow sequences present at census k (mean
+  over the three shadows). A world sequence present at k is *adaptive* if its activity exceeds theta(k).
+- **The mutational cloud, and "established" sequences.** In the world, purifying selection holds a few dominant
+  sequences at tens of thousands of carriers, and their one-step mutants are re-created every tick; a neighbour that
+  is even slightly deleterious is present at every census at a few to a few hundred carriers and accumulates
+  activity without being adapted in its own right. A neutral shadow cannot have this cloud (without selection nothing
+  is dominant: at u of 3 to 4 % per birth and 30 to 60 generations per census interval, a sequence that is not
+  maintained loses most of its carriers to mutation within one interval). At tick 122,879 of O7, 400 of the 436
+  adaptive sequences with fewer than 200 carriers were one operation away from a sequence with 200 or more. The tool
+  therefore reports a second, stricter variant: an adaptive sequence counts as *established* if its count exceeds what
+  mutation from its present one-step neighbours j (one operation substituted, or j truncated to it) would maintain if
+  it were exactly as fit as they are, sum_j c_j / (9 len_j) (in mutation-selection balance a neighbour with
+  disadvantage s holds c_j u q / (u + s) carriers, q = its share of j's changed births; for s = 0 this is c_j q,
+  independent of u; q = 1 / (9 len_j) assumes one of j's 9 len_j single-cell changes per relation). The fast
+  computation was checked against a brute-force pairwise comparison on 300 sequences (identical).
+- **Per census**: diversity (distinct sequences), adaptive diversity, *new* adaptive sequences (adaptive for the first
+  time), *novel* ones among them (whose set of operations no earlier adaptive sequence had), cumulative and mean
+  activity, and complexity over the adaptive sequences: distinct operations, length, tasks performed (task k counts
+  for a sequence when at least half of its carriers are at streak 3 for k), trophic level (1 plant, 2 mixotroph =
+  HARVEST and EAT, 3 heterotroph = EAT only), and the shares of adaptive carriers using SENSE, SIGNAL and MOVE
+  (maxima and carrier-weighted means). The same for the established variant.
+- **Criteria of section 9**, over the analysed censuses split into quarters: (1) new adaptive sequences per census in
+  Q4 at least half of Q2; (2) some complexity measure reaches a new maximum in Q4 (above its maximum over Q1 to Q3);
+  (3) adaptive diversity in the second half never below half its mean over the run. Open-ended if all hold, plateau
+  if (1) fails, bounded if (1) holds and (2) fails. The tool also reports (2) restricted to the maxima (distinct
+  operations, tasks, trophic level), since a mean or a share can set a new maximum by fluctuation.
+
+### 17.3 O7: a fresh day-1-6 world
+
+`O7_day7`: the O6 world (10^8 cells, 640 x 640 slots of 256 cells, land-cell 64, days 1 to 6, `--shade --T 0`, mu
+0.001, 4,096 plant seeds `ATG AGA GCT CTT TTA GGT` in the sea, census every 10,240 ticks) with **seed 2** (O6 has seed
+1; with seed 1 the deterministic engine would replay O6 exactly), so its own terrain (200,568 land slots, 1,280
+firmament) and its own history. Started 2026-10-10 22:32 UTC with `tools/dna3_open.sh` and `dna_world3i --op-census` on
+adler40's RTX 4080 (GPU 1; knecht24's three 3060s and the 4090 were busy), about 400 ticks/s at full population. It
+keeps running; everything below is from its first 195 censuses (ticks 10,239 to 1,996,799). The energy ledger closes
+in all 198 census lines fetched. Files: `results/dna3/open/O7_day7/` (census series, top genes, `activity.json`,
+`activity.png`, `sensitivity.json`); the op census itself (95 MB, 30 MB gzipped) stays on adler40
+(`~/universe2/dna3/open/O7_day7.ops`).
+
+| tick | alive | zone 0 / zone 1 | with OUT | rewarded answers x^1 / x+1 / x^3 / x-1 (cumulative) | distinct genes |
+|---:|---:|---|---:|---|---:|
+| 10,239 | 68,565 | 47,390 / 21,175 | 94 | 3,443 / 3,541 / 3,543 / 3,430 | 757 |
+| 102,399 | 205,580 | 127,141 / 78,439 | 20,995 | 67,963 / 72,012 / 66,895 / 66,440 | 11,650 |
+| 409,599 | 204,179 | 117,139 / 87,040 | 11,522 | 106,893 / 112,240 / 92,308 / 91,910 | 18,723 |
+| 501,759 | 257,435 | 114,036 / 143,399 | 105,703 | 1.52 G / 230 M / 0.58 M / 229 M | 19,104 |
+| 798,719 | 372,407 | 183,823 / 188,584 | 370,057 | 93.6 G / 15.3 G / 43.9 M / 15.4 G | 19,237 |
+| 1,996,799 | 374,427 | 186,607 / 187,820 | 373,266 | 592 G / 102 G / 14.1 G / 104 G | 25,680 |
+
+1. **Computation evolved again, later, and as x^1.** For 450,000 ticks the world was a plant world like O6 before its
+   tasks (rewarded answers at the guessing rate, about 0.25 per tick and task in the whole world). The first carriers at streak
+   3 appear at tick 450,559 (1,141 for x^1); by tick 798,719, 99.4 % of 372,407 organisms carry OUT and the population
+   has grown by 80 % (from about 205,000). At tick 1,996,799 an organism earns 14.57 units per tick from tasks, 1.47
+   from HARVEST, 0.11 from passive light and 0.29 by eating, and runs 14.94 instructions per tick. O6 found x+1 within
+   30,000 ticks; O7 found x^1 after 450,000 (x+1 and x-1 are paid as by-products: x^1 equals x+1 for even and x-1 for
+   odd x). The leading sequence at the end, `START SENSE ALLOC COPY TERM DIVIDE HARVEST SENSE HARVEST HARVEST OUT ALLOC
+   IN STA COPY HARVEST FLIP LDA` (22,612 carriers), again wraps the computation (`IN ... FLIP LDA`, answered by OUT on
+   the next pass) around the copy loop. One trend the criteria below do not see: carriers at streak 3 for x^3 rose from
+   106 (tick 563,199) to 3,168 (829,439) and 18,910 (1,996,799); x^3 also equals x+1 or x-1 for half the inputs, and
+   whether these carriers compute x^3 has not been traced.
+2. **This time the innovation crossed the firmament.** The program core `OUT ALLOC IN STA COPY` first appears at tick
+   450,559, in zone 1 only, and stays in zone 1 for 70,000 ticks while it spreads there (82,289 carriers at 501,759,
+   none in zone 0). Zone 0 has its first carrier at tick 522,239, then 8,915 at 532,479, of which 8,876 carry MOVE (the
+   flight operation), and 132,662 at 634,879; by tick 798,719 both hemispheres are full and computing. The identical
+   core, first seen in zone 1 and arriving in zone 0 in fliers, says the program was carried across by flight (O6:
+   held back for 70,000 ticks and more); individual flights were not traced.
+3. **Copy fidelity is not constant.** The op-level change per birth u was 0.030 to 0.038 before tick 500,000, 0.05 by
+   750,000, rose to 0.12 at 993,279 and **0.24 at 1,239,039** (codon level: 24.1 % of the births unfaithful), and fell
+   back to 0.065 by the end, while the most common sequence was `START SENSE DIVIDE SIGNAL TERM DIVIDE HARVEST MOVE COPYR HARVEST OUT ALLOC IN STA
+   COPY WAIT FLIP LDA`. What
+   made a quarter of the copies wrong for 300,000 ticks has not been traced. The shadow follows u by construction
+   (its diversity rose from 24,000 to 162,000 sequences and fell to 71,000), so the threshold moved too: theta 86 to
+   120 up to tick 640,000, 20 at the peak of u, 337 at the end.
+
+### 17.4 Day-7 statistics and the three criteria
+
+Main analysis (99th percentile, genome shadow, 3 replicates; per census means over each quarter of the 195 censuses):
+
+| quarter (ticks) | new adaptive (established) | novel established | shadow new adaptive | adaptive (established) present | distinct sequences / shadow | max distinct ops | max tasks | max trophic |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Q1 10,239 - 501,759 | 96.1 (81.7) | 33.4 | 130.6 | 1,030 (638) | 7,118 / 23,912 | 15 | 1 | 2 |
+| Q2 511,999 - 1,003,519 | 118.6 (79.0) | 33.8 | 169.3 | 2,142 (1,557) | 10,414 / 60,414 | 28 | 3 | 2 |
+| Q3 1,013,759 - 1,495,039 | 135.8 (101.1) | 42.8 | 284.2 | 7,376 (4,578) | 13,166 / 111,150 | 29 | 3 | 3 |
+| Q4 1,505,279 - 1,996,799 | **2.9 (6.0)** | **1.3** | 82.6 | 5,258 (3,529) | 14,396 / 79,904 | 25 | 3 | 3 |
+
+(max distinct ops, tasks and trophic level over the established sequences; the established variant's maxima are the
+ones shown.) Over the 195 censuses 210,211 distinct sequences were seen, 17,180 became adaptive and 13,024 established.
+
+**Criteria (section 9), evaluated as stated:**
+- (1) new adaptive sequences per census, Q4 against Q2: 2.9 against 118.6 (established: 6.0 against 79.0). **Fails.**
+- (2) a new complexity maximum in Q4: none of the nine measures (max distinct operations 25 in Q4 against 29 before;
+  max tasks 3 and max trophic level 3 already reached in Q2 and Q3; means and shares below their earlier maxima).
+  **Fails.**
+- (3) adaptive diversity in the second half never below half its mean: minimum 3,973 against a mean of 3,934
+  (established 2,558 against 2,565). **Holds.**
+
+**Verdict at 2 x 10^6 ticks: plateau**, for all components and for the established ones.
+
+Sensitivity (`sensitivity.json`; new adaptive per census Q2 -> Q4, all / established, and the verdict):
+
+| variant | all | established | (2) holds for | verdict |
+|---|---|---|---|---|
+| main (99th percentile, genome shadow) | 118.6 -> 2.9 | 79.0 -> 6.0 | - | plateau |
+| other shadow random streams | 118.5 -> 3.0 | 79.0 -> 6.2 | - | plateau |
+| 95th percentile | 205.8 -> 9.5 | 138.0 -> 13.5 | mean tasks (established) | plateau |
+| 99.9th percentile | 41.8 -> 4.7 | 35.1 -> 4.7 | max trophic, mean tasks | plateau |
+| infinite-alleles shadow | 145.4 -> 3.6 | 95.0 -> 7.2 | - | plateau |
+| cloud factor 3 | 118.6 -> 2.9 | 57.7 -> 4.6 | - | plateau |
+| first 0.50 M ticks (49 censuses) | 133.2 -> 74.2 | 115.5 -> 69.0 | max tasks, means, SENSE, SIGNAL | **open-ended** |
+| first 1.00 M ticks (98 censuses) | 89.6 -> 164.1 | 75.2 -> 91.9 | max distinct ops, means, SENSE, SIGNAL | **open-ended** |
+
+The drop is not an effect of the rising threshold: with the 95th percentile, Q4's threshold (median 84) is lower than
+Q2's under the 99th (median 154), and Q4 still has 9.5 new adaptive sequences per census against 118.6. With the 95th
+and 99th percentiles and the alleles shadow, the shadow has 28 to 79 times the world's rate of new adaptive sequences
+in Q4 (main: 82.6 against 2.9); at the 99.9th percentile the shadow itself has almost none (0.4 per census).
+
+### 17.5 Reading
+
+1. **Bursts, then a plateau.** New adaptive activity came in waves: the diversification of the plants (Q1), the
+   origin and spread of computation with its crossing of the firmament (ticks 450,000 to 630,000), and a third burst
+   around ticks 1.0 to 1.3 million that coincides with the episode of low copy fidelity. After tick 1.4 million almost
+   nothing new becomes adaptive (0 to 10 per census, established 0 to 20), far below the shadow's rate, although distinct sequences still
+   creep up (13,875 to 14,801): the world turns over rare variants, none of which establishes. Structure is fixed: the
+   leading sequences hold their places, and no complexity measure grows.
+2. **The verdict depends on the horizon.** Judged at 0.5 or 1.0 million ticks, the same world passes all three
+   criteria, because its quarters straddle a burst; at 2 million it is a plateau. The criteria of section 9 test the
+   last quarter against the second, so a few early transitions followed by stasis look open-ended until the run is
+   about twice as long as the time of the last transition. The run continues; at the 10^7 ticks of section 9 the
+   verdict will say whether another transition comes after tick 2 million.
+3. **Prediction of section 9**: "a plateau without tasks, bounded or open-ended only with the task ladder; the honest
+   prior is plateau." This is a day-6 world with the ladder: so far a plateau, after the ladder's first rung was
+   climbed (x^1, with x+1 and x-1 as by-products); the harder rungs (x^3 and x-1 as computations of their own, two more
+   INC) have not clearly been reached.
+4. **Caveats.** One world, one horizon. Census resolution: sequences that live and die between two censuses (10,240
+   ticks, 30 to 60 generations) are invisible to world and shadow alike. The shadow is driven from census-level counts
+   (17.2) and its mutation model is a single point mutation per changed birth with read-through into random codons.
+   The established filter is a rough estimate of mutational supply (one cell change per neighbour relation, average
+   lifetimes) and does not count read-through extensions as supply; with factor 3 it removes more sequences without
+   changing the verdict. Operation-level neutral variants still count as components (synonyms do not). "Tasks
+   performed" counts streaks, which include by-products of other tasks. A gene without a STOP inside its slot reads 85
+   codons (the max length 85 of the plot), an artifact of read-through, not of design.
+
+Reproduction:
+
+```bash
+nvcc -O3 -std=c++17 -arch=sm_89 -o dna_world3i gpu/dna_world.cu
+python tools/dna3_verify.py --host knecht24 --bin '~/universe2/dna3/dna_world3i --op-census /tmp/dna3v_opc.ops' --gpu 0 --out VERIFY --only dna2_seeded,dna3_soup,day4_g255_single_soup,day5_plant_mu,day6_tasker_x1,day6_plant_mu
+MODES=plant,clade,traits,animals sh dna3_open.sh O7_day7 ./dna_world3i 1 10240 102400 "--n-seed 4096 --seed-terrain sea --genome \"ATG AGA GCT CTT TTA GGT\"" --days 1,2,3,4,5,6 --N 104857600 --G 256 --seed 2 --mu 0.001 --W 640 --land-cell 64 --shade --T 0 --op-census O7_day7.ops
+python tools/dna3_activity.py O7_day7.ops --seed-genome "ATG AGA GCT CTT TTA GGT" --max-census 195 --out O7_activity
+```

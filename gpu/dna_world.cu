@@ -46,6 +46,16 @@
  *          --slot-map-mode m   comma list of depth (FILE itself, the docs/12 map), gene, clade, energy, plant (FILE.<m>);
  *                              with day 2 the terrain goes to FILE.terrain once. The clade (founder slot) is output only.
  *          The warp-reduced ledger in k_execute uses __shfl_down_sync, so every thread of the grid reaches the end.
+ *          --op-census FILE    (docs/17 day 7, output only: not hashed, not in the reference, no effect on the world) at
+ *                              every census the full histogram of operation sequences of the living (codons 0 .. first
+ *                              STOP mapped to operations, synonyms collapsed; op hash = FNV-1a 64 over the operation
+ *                              numbers): "C tick live births divide_births op_faithful spontaneous deaths changed
+ *                              n_seq" per census (births since the last census; op_faithful = DIVIDE births whose
+ *                              child has the parent's operation sequence; changed = living processors whose operation
+ *                              sequence differs from the one they were born with, or had at the start or resume of
+ *                              this process), "S ophash ops" the first time a sequence is printed by this process,
+ *                              and "H ophash count zone0 t0 t1 t2 t3" per sequence (carriers in zone 0; carriers whose
+ *                              day-6 streak for task k is 3, i.e. paid on their last answer)
  * stdout:  "tick <t> hash <16 hex>" = the state after tick t (t = 0 .. ticks-1, as sim/dna_ref.py prints it),
  *          "census {json}" lines with the reference's key order.
  * stderr:  configuration, then one summary line: ticks, seconds, ticks per second, device memory.
@@ -68,6 +78,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 #include <algorithm>
 #include <chrono>
 
@@ -207,6 +218,7 @@ struct Params {
     int d6; i64 c_walk, task_bonus;                   /* docs/17 day 6 */
     i64 year_days, moon_days, season_amp, lat_amp, lmoon;
     i64 W, R, firm;
+    int opc;                  /* --op-census (docs/17 day 7): output only, never read by the world's rules */
 };
 
 /* the ten 64-bit fields of section 4 in the hash order of section 8, then the docs/17 day-1 energy store E
@@ -244,6 +256,7 @@ struct World {
     i32 *eat_target, *move_op, *move_to;   /* day 5: prey of this tick's EAT, MOVE operand, granted move target */
     i64 *e_loss, *e_gain, *move_cost;      /* day 5: predation results, cost of a proposed move */
     u8 *sig_old; u64 *task_count;          /* day 6: signals at the start of the tick; rewarded answers per task */
+    u64 *ophash, *opbirth, *op_cnt; u8 *opflag;   /* --op-census, output only: op hash now / at birth, op-faithful births, flags */
 };
 
 /* ---------------------------------------------------------------- 2-bit cell access (section 1 layout) */
@@ -295,6 +308,19 @@ __host__ __device__ inline u64 gene_hash(const u8 *f, u64 base, const u8 *table,
         u32 c = codon_at(f, base, k);
         if (table[c] == STOP) break;
         h = (h ^ (u64)c) * 1099511628211ULL;
+    }
+    return h;
+}
+
+/* --op-census (docs/17 day 7): FNV-1a 64 over the operation numbers of the gene (START included, STOP excluded), so
+ * synonymous spellings share one hash */
+__host__ __device__ inline u64 op_hash(const u8 *f, u64 base, const u8 *table, i64 maxk)
+{
+    u64 h = 14695981039346656037ULL;
+    for (i64 k = 0; k <= maxk; k++) {
+        u32 o = table[codon_at(f, base, k)];
+        if (o == STOP) break;
+        h = (h ^ (u64)o) * 1099511628211ULL;
     }
     return h;
 }
@@ -679,6 +705,7 @@ __global__ void k_move(World w, Params P)
         q.E -= w.move_cost[s]; spent = (u64)w.move_cost[s];
         q.xs = q.xs == s ? c : q.xs;
         w.proc[c] = q; w.live[s] = 0; w.live[c] = 1; w.clade[c] = w.clade[s];
+        if (P.opc) w.opbirth[c] = w.opbirth[s];   /* output only */
     }
     warp_add(&w.ledger[11], spent);
 }
@@ -702,6 +729,11 @@ __global__ void k_births(World w, Params P, i64 t)
     w.ghash[c] = ch;
     atomicAdd((unsigned long long *)&w.counters[0], 1ULL);
     if (ph == ch) atomicAdd((unsigned long long *)&w.counters[1], 1ULL);
+    if (P.opc) {   /* output only */
+        u64 po = op_hash(w.fwd, (u64)s * P.G, w.table, P.maxk), co = op_hash(w.fwd, (u64)c * P.G, w.table, P.maxk);
+        w.opbirth[c] = co;
+        if (po == co) atomicAdd((unsigned long long *)&w.op_cnt[0], 1ULL);
+    }
     if (w.log) { u32 n = atomicAdd(w.log_n, 1u); if (n < w.log_cap) { BirthRec r = { (i32)s, (i32)c, (i32)q.depth, (i32)w.proc[s].age, w.div_copied[s], ph, ch, w.proc[s].P }; w.log[n] = r; } }
 }
 
@@ -803,6 +835,7 @@ __global__ void k_inflow_births(World w, Params P, i64 t)
     if (P.d1 && P.e_spont) atomicAdd((unsigned long long *)&w.ledger[2], (unsigned long long)P.e_spont);
     u64 ch = gene_hash(w.fwd, base, w.table, P.maxk);
     w.ghash[d] = ch;
+    if (P.opc) w.opbirth[d] = op_hash(w.fwd, base, w.table, P.maxk);   /* output only */
     atomicAdd((unsigned long long *)&w.counters[0], 1ULL);
     atomicAdd((unsigned long long *)&w.counters[2], 1ULL);
     if (w.log) { u32 n = atomicAdd(w.log_n, 1u); if (n < w.log_cap) { BirthRec r = { -1, (i32)d, 0, -1, -1, 0, ch, -1 }; w.log[n] = r; } }
@@ -833,6 +866,27 @@ __global__ void k_census(World w, Params P)
         warp_add(&w.cens_acc[7], ea); warp_add(&w.cens_acc[8], mv); warp_add(&w.cens_acc[9], ex); warp_add(&w.cens_acc[10], fo);
         warp_add(&w.cens_acc[11], sg); warp_add(&w.cens_acc[12], li); warp_add(&w.cens_acc[13], tk);
     }
+}
+
+/* --op-census (docs/17 day 7, output only): the op hash of every live processor and a flag byte: bit k (k = 0..3) =
+ * the day-6 streak of task k is 3, bit 6 = zone 0, bit 7 = the operation sequence differs from the one at birth */
+__global__ void k_opcensus(World w, Params P)
+{
+    i64 s = (i64)blockIdx.x * blockDim.x + threadIdx.x;
+    if (s >= P.S || !w.live[s]) return;
+    u64 o = op_hash(w.fwd, (u64)s * P.G, w.table, P.maxk);
+    u8 fl = 0;
+    if (P.d6) { i64 st = w.proc[s].streak; for (int k = 0; k < 4; k++) if (((st >> (2 * k)) & 3) == 3) fl |= (u8)(1 << k); }
+    if (s / P.W < P.R / 2) fl |= 64;
+    if (o != w.opbirth[s]) fl |= 128;
+    w.ophash[s] = o; w.opflag[s] = fl;
+}
+
+/* --op-census: at the start (fresh or resumed) every living processor's current sequence counts as its birth sequence */
+__global__ void k_opbirth_init(World w, Params P)
+{
+    i64 s = (i64)blockIdx.x * blockDim.x + threadIdx.x;
+    if (s < P.S && w.live[s]) w.opbirth[s] = op_hash(w.fwd, (u64)s * P.G, w.table, P.maxk);
 }
 
 /* output only (docs/17): one byte per slot for the slot-map modes gene, clade, energy, plant (after k_census, which
@@ -900,6 +954,7 @@ struct Host {
     i64 depth_cap = 0;                       /* --depth-cap: 0 = the reference's uncapped depth_hist */
     FILE *top_f = NULL, *map_f = NULL;       /* --top-genes, --slot-map */
     std::vector<u8> map_frame;
+    FILE *op_f = NULL; std::set<u64> op_named; u64 op_prev = 0;   /* --op-census */
 };
 
 /* the codons of slot `base` up to the first STOP, as letters and as operation names (one small device read) */
@@ -1057,6 +1112,46 @@ static std::string census_json(Host &h, i64 tick, const u64 prev[5], bool have_h
     return js;
 }
 
+/* --op-census (docs/17 day 7): the histogram of operation sequences of the living, after census_json (which leaves
+ * the live slots in h.depth); since-last counters are relative to prev[] as in the census */
+static void op_census(Host &h, i64 tick, const u64 prev[5])
+{
+    i64 S = h.P.S;
+    k_opcensus<<<(unsigned)((S + 255) / 256), 256>>>(h.w, h.P);
+    CUDA_CHECK(cudaGetLastError());
+    std::vector<u64> oh((size_t)S); std::vector<u8> fl((size_t)S); u64 opc;
+    CUDA_CHECK(cudaMemcpy(oh.data(), h.w.ophash, S * sizeof(u64), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(fl.data(), h.w.opflag, S, cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(&opc, h.w.op_cnt, sizeof opc, cudaMemcpyDeviceToHost));
+    struct Agg { u64 n = 0, z0 = 0, t[4] = { 0, 0, 0, 0 }; i64 carrier = -1; };
+    std::map<u64, Agg> by;
+    u64 live = 0, changed = 0;
+    for (i64 s = 0; s < S; s++) if (h.depth[s] >= 0) {
+        Agg &a = by[oh[s]]; a.n++; live++;
+        if (a.carrier < 0) a.carrier = s;
+        u8 f = fl[s];
+        for (int k = 0; k < 4; k++) if (f & (1 << k)) a.t[k]++;
+        if (f & 64) a.z0++;
+        if (f & 128) changed++;
+    }
+    u64 births = h.counters[0] - prev[0], spont = h.counters[2] - prev[2];
+    fprintf(h.op_f, "C %lld %llu %llu %llu %llu %llu %llu %llu %zu\n", (long long)tick, (unsigned long long)live, (unsigned long long)births,
+            (unsigned long long)(births - spont), (unsigned long long)(opc - h.op_prev), (unsigned long long)spont,
+            (unsigned long long)(h.counters[3] - prev[3]), (unsigned long long)changed, by.size());
+    h.op_prev = opc;
+    for (auto &kv : by) {
+        if (!h.op_named.count(kv.first)) {
+            std::string codons, ops; read_gene(h, (u64)kv.second.carrier * h.P.G, codons, ops);
+            fprintf(h.op_f, "S %016llx %s\n", (unsigned long long)kv.first, ops.c_str());
+            h.op_named.insert(kv.first);
+        }
+        const Agg &a = kv.second;
+        fprintf(h.op_f, "H %016llx %llu %llu %llu %llu %llu %llu\n", (unsigned long long)kv.first, (unsigned long long)a.n, (unsigned long long)a.z0,
+                (unsigned long long)a.t[0], (unsigned long long)a.t[1], (unsigned long long)a.t[2], (unsigned long long)a.t[3]);
+    }
+    fflush(h.op_f);
+}
+
 /* write the first ncells cell values of slot `base` into both strands on the device, via the host (seeding only) */
 static void write_slot(Host &h, u64 base, const std::vector<u8> &vals, i64 ncells)
 {
@@ -1128,7 +1223,7 @@ static void usage()
                     "  --no-double --uniform-code --blank --genome \"ATG GCT ...\" --n-seed k --hash-every k --no-hash --hash-init\n"
                     "  --census-every k --births FILE --dump FILE --out FILE --gpu i\n"
                     "  --log-births FILE --log-filter divide|faithful|all --log-every k --log-codons --depth-cap K --top-genes FILE --slot-map FILE\n"
-                    "  --max-seconds s]\n");
+                    "  --max-seconds s --op-census FILE]\n");
     exit(1);
 }
 
@@ -1149,6 +1244,7 @@ int main(int argc, char **argv)
     i64 year_days = 16, moon_days = 8, season_amp = -1, lat_amp = 8, lmoon = 1; bool shade = false;
     i64 c_move = 2, c_fly = 8, eat_shift = 1, eat_eff = 8, c_walk = 4, task_bonus = 8;
     std::string ckpt_path, resume_path; i64 ckpt_every = 0;
+    std::string op_path;   /* --op-census (docs/17 day 7) */
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         auto next = [&]() -> const char * { if (i + 1 >= argc) usage(); return argv[++i]; };
@@ -1185,6 +1281,7 @@ int main(int argc, char **argv)
         else if (a == "--log-codons") log_codons = true;
         else if (a == "--max-seconds") max_seconds = atof(next());
         else if (a == "--top-genes") top_path = next();
+        else if (a == "--op-census") op_path = next();
         else if (a == "--slot-map") map_path = next();
         else if (a == "--dna3") day[1] = day[2] = day[3] = true;
         else if (a == "--days") { std::string v = next(); for (char c : v) { if (c >= '1' && c <= '6') day[c - '0'] = true;
@@ -1280,6 +1377,7 @@ int main(int argc, char **argv)
     if (d2) make_terrain(h.terrain, seed, S, Wg, firm, d3, land_cell, land_thr); else h.terrain.assign((size_t)S, 0);
     u8 *table = h.table; build_table(table, uniform, dna2, d3, d4, d5, d6);
     h.depth_cap = depth_cap;
+    P.opc = op_path.empty() ? 0 : 1;
 
     CUDA_CHECK(cudaSetDevice(gpu));
     size_t mem_free0, mem_total; CUDA_CHECK(cudaMemGetInfo(&mem_free0, &mem_total));
@@ -1304,6 +1402,8 @@ int main(int argc, char **argv)
         CUDA_CHECK(cudaMemset(w.eat_target, 0xFF, S * 4)); CUDA_CHECK(cudaMemset(w.move_op, 0xFF, S * 4)); CUDA_CHECK(cudaMemset(w.move_to, 0xFF, S * 4));
     }
     dalloc((void **)&w.clade, S * sizeof(i32)); dalloc((void **)&w.cens_acc, 14 * sizeof(u64));
+    if (P.opc) { dalloc((void **)&w.ophash, S * sizeof(u64)); dalloc((void **)&w.opbirth, S * sizeof(u64)); dalloc((void **)&w.opflag, S);
+                 dalloc((void **)&w.op_cnt, sizeof(u64)); }
     if (d2) { dalloc((void **)&w.claim64, S * sizeof(u64)); dalloc((void **)&w.alloc_cand, S * sizeof(i32)); CUDA_CHECK(cudaMemset(w.claim64, 0xFF, S * sizeof(u64))); }
     CUDA_CHECK(cudaMemcpy(w.terrain, h.terrain.data(), S, cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemset(w.claimed_by, 0xFF, S * sizeof(i32)));
@@ -1330,6 +1430,8 @@ int main(int argc, char **argv)
     }
     if (!top_path.empty()) { h.top_f = fopen(top_path.c_str(), resume_path.empty() ? "w" : "a"); if (!h.top_f) { fprintf(stderr, "cannot write %s\n", top_path.c_str()); return 1; }
                              if (resume_path.empty()) fprintf(h.top_f, "#tick\thash\tcount\tslot\tdepth\tcodons\tops\n"); }
+    if (P.opc) { h.op_f = fopen(op_path.c_str(), resume_path.empty() ? "w" : "a"); if (!h.op_f) { fprintf(stderr, "cannot write %s\n", op_path.c_str()); return 1; }
+                 if (resume_path.empty()) fprintf(h.op_f, "# op census (docs/17 day 7): C tick live births divide_births op_faithful spontaneous deaths changed n_seq / S ophash ops / H ophash count zone0 t0 t1 t2 t3\n"); }
     if (!map_path.empty()) {
         /* docs/17: --slot-map-mode is a comma list of depth (the docs/12 map, written to FILE itself), gene, clade,
          * energy, plant (written to FILE.<mode>); with day 2 the terrain goes to FILE.terrain once */
@@ -1452,6 +1554,7 @@ int main(int argc, char **argv)
         if (t_first >= ticks) { fprintf(stderr, "checkpoint is at tick %lld, nothing to do for --ticks %lld\n", (long long)t_first, (long long)ticks); return 1; }
         fprintf(stderr, "resumed from %s at tick %lld\n", resume_path.c_str(), (long long)t_first);
     }
+    if (P.opc) { k_opbirth_init<<<(unsigned)((S + 255) / 256), 256>>>(w, P); CUDA_CHECK(cudaGetLastError()); }
     if (ckpt_every > 0 && census_every > 0 && ckpt_every % census_every) { fprintf(stderr, "--checkpoint-every must be a multiple of --census-every\n"); return 1; }
     CUDA_CHECK(cudaDeviceSynchronize());
     size_t mem_free1; CUDA_CHECK(cudaMemGetInfo(&mem_free1, &mem_total));
@@ -1469,6 +1572,7 @@ int main(int argc, char **argv)
         if (census_due(t)) {
             std::string js = census_json(h, t, prev, hh, hv);
             printf("census %s\n", js.c_str());
+            if (h.op_f) op_census(h, t, prev);
             memcpy(prev, h.counters, sizeof prev);
             if (t == ticks - 1 && !out_path.empty()) { FILE *f = fopen(out_path.c_str(), "w"); if (f) { fprintf(f, "%s\n", js.c_str()); fclose(f); } else fprintf(stderr, "cannot write %s\n", out_path.c_str()); }
         }
@@ -1549,6 +1653,7 @@ int main(int argc, char **argv)
     if (births_f) fclose(births_f);
     if (log_f) fclose(log_f);
     if (h.top_f) fclose(h.top_f);
+    if (h.op_f) fclose(h.op_f);
     if (h.map_f) fclose(h.map_f);
     for (FILE *f : h.map_files) fclose(f);
     i64 live_n = 0; CUDA_CHECK(cudaMemcpy(h.live.data(), w.live, S, cudaMemcpyDeviceToHost)); for (i64 s = 0; s < S; s++) live_n += h.live[s];
