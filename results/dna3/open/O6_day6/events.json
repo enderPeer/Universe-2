@@ -196,5 +196,12 @@
   "ops": "START HARVEST ALLOC COPY TERM DIVIDE MOVE L3 HARVEST MOVE EXEC",
   "codons": "ATG AGA GCT CTT TTG GGT ACG GAC AGA ACG GTA",
   "count": 5879
+ },
+ {
+  "tick": 1535999,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST WAIT COPY TERM DIVIDE HARVEST ALLOC WAIT HARVEST WAIT",
+  "codons": "ATG AGA AGC CTT TTA GGA AGA GCC AGC AGA AGC",
+  "count": 4616
  }
 ]

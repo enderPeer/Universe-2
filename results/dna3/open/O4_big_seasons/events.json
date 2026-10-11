@@ -225,5 +225,12 @@
   "event": "sleepers above 50 %",
   "count": 2422144,
   "live": 4671853
+ },
+ {
+  "tick": 235519,
+  "event": "new operation sequence in the top 10",
+  "ops": "START TERM DIVIDE ALLOC WAIT HARVEST WAIT HARVEST WAIT COPY HARVEST",
+  "codons": "ATG TTA GGC GCC AGC AGG AGC AGG AGC CTG AGA",
+  "count": 22001
  }
 ]
