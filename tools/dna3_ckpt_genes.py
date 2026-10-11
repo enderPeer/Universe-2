@@ -36,18 +36,11 @@ def table_for(days, uniform):
     return t
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("ckpt")
-    ap.add_argument("--days", default="1,2,3,4,5,6")
-    ap.add_argument("--uniform-code", action="store_true")
-    ap.add_argument("--with", dest="with_op", default=None)
-    ap.add_argument("--top", type=int, default=30)
-    ap.add_argument("--json", default=None)
-    a = ap.parse_args()
-    days = [int(x) for x in a.days.split(",")]
-    table = table_for(days, a.uniform_code)
-    with open(a.ckpt, "rb") as f:
+def read_genes(path, table, with_op=None):
+    """The living genes of an engine checkpoint: (tick, live, by_ops, spell) with by_ops a Counter of operation
+    sequences (space-separated names, START first, STOP excluded) and spell[ops] a Counter of their codon spellings.
+    with_op keeps only genes whose codons 1 .. len-1 contain that operation (name)."""
+    with open(path, "rb") as f:
         magic = f.read(8)
         ver, N, G, S, seed, flags, t_next = struct.unpack("<7Q", f.read(56))
         if magic != b"DNA3CKPT" or ver not in (3, 4):
@@ -59,14 +52,13 @@ def main():
     maxc = G // 3
     slots = np.nonzero(live)[0]
     # unpack only the codon cells of the live slots
-    cells = np.zeros((len(slots), 3 * maxc), dtype=np.uint8)
     idx = (slots[:, None] * G + np.arange(3 * maxc)[None, :])
     cells = (fwd_packed[idx >> 2] >> ((idx & 3) * 2).astype(np.uint8)) & 3
     codons = cells[:, 0::3] * 16 + cells[:, 1::3] * 4 + cells[:, 2::3]
     tab = np.array(table, dtype=np.int16)
     ops = tab[codons]
     by_ops, spell = collections.Counter(), collections.defaultdict(collections.Counter)
-    want = R.OP_INDEX[a.with_op] if a.with_op else None
+    want = R.OP_INDEX[with_op] if with_op else None
     for row_c, row_o in zip(codons, ops):
         stop = np.nonzero(row_o == R.STOP)[0]
         n = stop[0] if len(stop) else maxc
@@ -76,8 +68,23 @@ def main():
         key = " ".join(R.OP_NAMES[x] for x in o)
         by_ops[key] += 1
         spell[key][" ".join(R.codon_text(int(c)) for c in row_c[:n])] += 1
+    return t_next, int(len(slots)), by_ops, spell
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("ckpt")
+    ap.add_argument("--days", default="1,2,3,4,5,6")
+    ap.add_argument("--uniform-code", action="store_true")
+    ap.add_argument("--with", dest="with_op", default=None)
+    ap.add_argument("--top", type=int, default=30)
+    ap.add_argument("--json", default=None)
+    a = ap.parse_args()
+    days = [int(x) for x in a.days.split(",")]
+    table = table_for(days, a.uniform_code)
+    t_next, n_live, by_ops, spell = read_genes(a.ckpt, table, a.with_op)
     total = sum(by_ops.values())
-    print("checkpoint at tick %d: %d live, %d selected genes, %d operation sequences" % (t_next, len(slots), total, len(by_ops)))
+    print("checkpoint at tick %d: %d live, %d selected genes, %d operation sequences" % (t_next, n_live, total, len(by_ops)))
     out = []
     for key, cnt in by_ops.most_common(a.top):
         sp, sc = spell[key].most_common(1)[0]
@@ -85,7 +92,7 @@ def main():
         out.append({"count": cnt, "ops": key, "spelling": sp, "spelling_count": sc})
     if a.json:
         with open(a.json, "w") as f:
-            json.dump({"tick": t_next, "live": int(len(slots)), "selected": total, "sequences": len(by_ops), "top": out}, f, indent=1)
+            json.dump({"tick": t_next, "live": n_live, "selected": total, "sequences": len(by_ops), "top": out}, f, indent=1)
 
 
 if __name__ == "__main__":

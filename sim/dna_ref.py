@@ -524,6 +524,9 @@ class World:
         self.tmask = [0] * S                    # docs/17 day 6: 1 while the last input awaits its one answer
         self.streak = [0] * S                   # docs/17 day 6: per task k a 2-bit count of correct answers in a row
         self.task_count = [0] * (LADDER_NTASK if ladder else len(DNA3_TASKS))
+        self.answers = 0                        # diagnostics for tools/dna3_extract_solutions.py --verify (docs/17
+        self.inputs_seen = [0] * 16             # section 19): answers given at OUT, inputs drawn at IN, correct
+        self.correct = [0] * len(self.task_count)   # answers per task whatever the streak; not hashed, not printed
         self.ldir = [8] * S                     # docs/17 section 18: direction of the last LISTEN, 8 = none
         self.xs = [0] * S                       # docs/17 day 5: the slot whose gene the processor executes
         self.energy_init = 0
@@ -1034,11 +1037,13 @@ class World:
                             L = gene_len(fwd, is_stop, base, maxc)
                         self.xin[s] = xv
                         self.tmask[s] = 1
+                        self.inputs_seen[xv] += 1
                     elif op == OUT and ladder:
                         # docs/17 section 18: the answer is the two I/O cells; per task a 3-bit streak of correct
                         # answers in a row; a task pays when its streak reaches streak_len, scaled by its regional pool
                         if self.tmask[s]:
                             self.tmask[s] = 0
+                            self.answers += 1
                             xi, st = self.xin[s], self.streak[s]
                             v = 4 * fwd[own_hi - 2] + fwd[own_hi - 1]
                             ld = self.ldir[s]
@@ -1057,6 +1062,7 @@ class World:
                                 else:
                                     rank = LADDER_SOCIAL_RANK
                                     ok = nlo >= 0 and (v & 3) == ((xi & 3) ^ nlo)
+                                self.correct[k] += ok
                                 c = (st >> (3 * k)) & 7
                                 c = min(7, c + 1) if ok else 0
                                 st = (st & ~(7 << (3 * k))) | (c << (3 * k))
@@ -1082,14 +1088,17 @@ class World:
                             L = gene_len(fwd, is_stop, base, maxc)
                         self.xin[s] = A
                         self.tmask[s] = 1
+                        self.inputs_seen[A] += 1
                     elif op == OUT:
                         # docs/17 day 6: the one answer to the last input; per task a correct answer raises its streak
                         # (to at most 3) and a wrong one resets it; a task pays its bonus when its streak is 3
                         if self.tmask[s]:
                             self.tmask[s] = 0
+                            self.answers += 1
                             xi, st = self.xin[s], self.streak[s]
                             for k, (_n, f, rank) in enumerate(DNA3_TASKS):
                                 c = (st >> (2 * k)) & 3
+                                self.correct[k] += f(xi) == A
                                 c = min(3, c + 1) if f(xi) == A else 0
                                 st = (st & ~(3 << (2 * k))) | (c << (2 * k))
                                 if c == 3:

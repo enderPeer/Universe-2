@@ -1,0 +1,291 @@
+{
+ "schema": "dna3-solutions-v1",
+ "mode": "day6",
+ "source": "results/dna3/open/O7_day7/O7_day7.top.gz",
+ "tick": 2027519,
+ "sequences": 7,
+ "organisms": 33734,
+ "slices": 7,
+ "accepted": 7,
+ "rejects": {},
+ "functions": [
+  {
+   "truth": [
+    1,
+    0,
+    3,
+    2
+   ],
+   "tasks": [
+    "x^1"
+   ],
+   "best_body": [
+    "FLIP",
+    "LDA"
+   ],
+   "best_len": 2,
+   "carriers": 33734,
+   "genes": [
+    {
+     "ops": "START SENSE DIVIDE SIGNAL TERM DIVIDE SENSE MOVE SKZ HARVEST OUT ALLOC IN STA COPY HARVEST FLIP LDA",
+     "carriers": 11502,
+     "in_index": 12,
+     "static_body": [
+      "STA",
+      "NOP",
+      "NOP",
+      "FLIP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "SKZ",
+      "NOP"
+     ],
+     "minimal_body": [
+      "FLIP",
+      "LDA"
+     ],
+     "spelling": "ATG AGT GGC CGA TTA GGT AGT ACA TTC AGG TCG GCA TCA CAC CTT AGG AAT TAC",
+     "verify": {
+      "answers": 5328,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       0
+      ]
+     },
+     "verified_tasks": [
+      "x^1"
+     ]
+    },
+    {
+     "ops": "START SENSE ALLOC COPY TERM DIVIDE HARVEST SENSE HARVEST HARVEST OUT ALLOC IN STA COPY HARVEST FLIP LDA",
+     "carriers": 6529,
+     "in_index": 12,
+     "static_body": [
+      "STA",
+      "NOP",
+      "NOP",
+      "FLIP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP"
+     ],
+     "minimal_body": [
+      "FLIP",
+      "LDA"
+     ],
+     "spelling": "ATG AGT GCT CTA TTA GGT AGG AGT AGG AGG TCG GCA TCA CAC CTT AGA AAT TAT",
+     "verify": {
+      "answers": 5104,
+      "all_inputs": true,
+      "live": 15,
+      "tasks": [
+       0
+      ]
+     },
+     "verified_tasks": [
+      "x^1"
+     ]
+    },
+    {
+     "ops": "START SENSE DIVIDE SIGNAL TERM DIVIDE SENSE EAT SKNZ HARVEST OUT ALLOC IN LDA COPY HARVEST FLIP LDA",
+     "carriers": 3435,
+     "in_index": 12,
+     "static_body": [
+      "LDA",
+      "NOP",
+      "NOP",
+      "FLIP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "SKNZ",
+      "NOP"
+     ],
+     "minimal_body": [
+      "FLIP",
+      "LDA"
+     ],
+     "spelling": "ATG AGT GGC CGA TTA GGT AGT CCA ATA AGG TCG GCA TCA TAC CTT AGA AAT TAT",
+     "verify": {
+      "answers": 5459,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       0
+      ]
+     },
+     "verified_tasks": [
+      "x^1"
+     ]
+    },
+    {
+     "ops": "START SENSE DIVIDE SIGNAL TERM DIVIDE SENSE EAT R1 HARVEST OUT ALLOC IN STA COPY HARVEST FLIP LDA",
+     "carriers": 3348,
+     "in_index": 12,
+     "static_body": [
+      "STA",
+      "NOP",
+      "NOP",
+      "FLIP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "R1",
+      "NOP"
+     ],
+     "minimal_body": [
+      "FLIP",
+      "LDA"
+     ],
+     "spelling": "ATG AGT GGC CGA TTA GGT AGT CCA TCT AGG TCG GCA TCA CAC CTT AGG AAT TAT",
+     "verify": {
+      "answers": 5258,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       0
+      ]
+     },
+     "verified_tasks": [
+      "x^1"
+     ]
+    },
+    {
+     "ops": "START SENSE DIVIDE SIGNAL TERM DIVIDE HARVEST MOVE COPYR HARVEST OUT ALLOC IN STA COPY WAIT FLIP LDA",
+     "carriers": 3100,
+     "in_index": 12,
+     "static_body": [
+      "STA",
+      "NOP",
+      "NOP",
+      "FLIP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP"
+     ],
+     "minimal_body": [
+      "FLIP",
+      "LDA"
+     ],
+     "spelling": "ATG AGT GGC CGA TTA GGT AGA ACA TGT AGG TCG GCA TCA CAC CTT AGC AAT TAT",
+     "verify": {
+      "answers": 2118,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       0
+      ]
+     },
+     "verified_tasks": [
+      "x^1"
+     ]
+    },
+    {
+     "ops": "START SENSE ALLOC COPY TERM DIVIDE HARVEST SENSE HARVEST HARVEST OUT ALLOC IN COPY COPY HARVEST FLIP LDA",
+     "carriers": 2998,
+     "in_index": 12,
+     "static_body": [
+      "NOP",
+      "NOP",
+      "NOP",
+      "FLIP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP"
+     ],
+     "minimal_body": [
+      "FLIP",
+      "LDA"
+     ],
+     "spelling": "ATG AGT GCC CTA TTA GGA AGG AGT AGA AGG TCG GCA TCA CTC CTT AGA AAT TAC",
+     "verify": {
+      "answers": 6146,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       0
+      ]
+     },
+     "verified_tasks": [
+      "x^1"
+     ]
+    },
+    {
+     "ops": "START SENSE R1 COPY TERM DIVIDE SENSE MOVE SKNZ HARVEST OUT ALLOC IN STA COPY HARVEST FLIP LDA",
+     "carriers": 2822,
+     "in_index": 12,
+     "static_body": [
+      "STA",
+      "NOP",
+      "NOP",
+      "FLIP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "SKNZ",
+      "NOP"
+     ],
+     "minimal_body": [
+      "FLIP",
+      "LDA"
+     ],
+     "spelling": "ATG AGT TCC CTC TTA GGT AGT ACA ATT AGG TCG GCA TCA CAC CTT AGA AAT TAT",
+     "verify": {
+      "answers": 5923,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       0
+      ]
+     },
+     "verified_tasks": [
+      "x^1"
+     ]
+    }
+   ]
+  }
+ ]
+}

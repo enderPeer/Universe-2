@@ -1166,3 +1166,188 @@ without a carry: that is the 4-bit x+1 on 12 of 16 inputs, so with streak 7 they
 of tasks with substantial reward counts and as patchiness in the traits map; (iv) the social task is the hardest to
 start (it needs a signalling neighbour and a listening partner at once) and may not appear in the first 10^5 ticks;
 (v) if any of this works, the day-7 statistics of D8 show new adaptive activity after the fork where D7 shows none.
+
+## 19. Promoting discoveries to instructions: the harvest-promote loop (extractor built; `--macros` specified, not implemented)
+
+Section 17 found the plateau (new adaptive sequences per census 118.6 in Q2, 2.9 in Q4; no established sequence ever
+paid for more than 3 tasks) and section 18 is the first attempt to break it by giving the organisms more to climb.
+D8's first census (18.4) shows the other half of the problem: the ladder's rank-4 task x+1 was "paid" 4,144 M times
+within 5,120 ticks, by D7's old `OUT IN INC` genes, which add 1 to the low cell without a carry and are right on 12 of
+16 inputs; the real rank-3 and rank-4 solutions (15-x in 7 instructions, x+1 with carry in 8 or more) have 17 and
+43,219 rewarded answers, the guessing rate. In O7 a solution of 1 instruction (FLIP) took 450,000 ticks to arise; the
+space of programs grows by a factor of about 30 per instruction, so a rung that needs 8 new instructions at once is
+not reachable by point mutation from a gene that computes nothing, and the ladder's stepping stones only help while
+each step is 1 or 2 instructions long. Golem's curriculum pilot (enderPeer/Golem, `docs/conversation-world.md`) adds a
+third fact: the one program extracted from O6 (x+1) was useless to a language model as text to imitate (0 of 16
+probes); an evolved program is worth something only when it can be *called*.
+
+The loop proposed here makes every solved task a single instruction of the next epoch:
+
+1. **Harvest.** The extractor (19.1) reads every living gene of a world, cuts out the computation between IN and OUT,
+   reduces it to a minimal program on the organisms' own machine and verifies it in the reference VM.
+2. **Promote.** The best evolved program per task becomes a **macro**: a codon that executes that program (19.2).
+   Only evolved bodies are promoted, never hand-written ones; the macro costs exactly what its body costs, so the
+   shortcut is in gene length and mutational distance, not in energy.
+3. **Run** the next epoch with the macros, and harvest again. Composition happens in the genes (`IN M1 M2 OUT`).
+
+Whether the loop turns the plateau into a staircase is the A/B experiment of 19.3; the first harvests (O6, O7) are in
+19.4.
+
+### 19.1 The extractor (`tools/dna3_extract_solutions.py`, built)
+
+**Sources.** An engine checkpoint (`--ckpt`, every living gene with its spellings, through `read_genes` of
+`tools/dna3_ckpt_genes.py`), the JSON of that tool (`--genes`), the top-genes TSV of a run (`--top FILE[.gz]
+[--tick T]`) or genes on the command line (`--ops`). `--mode day6` is the 2-bit task world of day 6 (input in cell G-1,
+answer = A at OUT), `--mode ladder` the 4-bit world of section 18 (halves in cells G-2 and G-1, answer = the two
+cells).
+
+**Model.** A gene is run from each of its IN codons on an abstract processor: pc, the head H as an offset from the I/O
+cell, A and the I/O cells are exact; every other cell is unknown. Operations that cannot touch H, A or the I/O cells
+are no-ops for the data path (COPY, COPYR, HARVEST, ALLOC, DIVIDE, SIGNAL, WAIT, EAT, MOVE, SETP, SETQ, REWIND);
+SEEK, SENSE, EAT, MOVE, EXEC and LISTEN consume their operand codon as in the world (NOP when it lies beyond the gene);
+the wrap rule applies. Branches whose outcome the model cannot know (SENSE on the sky, TERM on the copy state, SKZ /
+SKNZ / JNZB on a cell that is unknown) are followed both ways, up to 4,096 paths per input. A path is **fatal** when it
+hangs (256 operations), when EXEC would run a neighbour's gene, when the answer depends on an unknown value (LISTEN,
+LDA off the I/O cells, SEEK), or when the gene writes into its own codons between IN and OUT (self-modification; the
+model does not follow it). A path that meets a second IN before OUT gives no answer and is harmless (the next input is
+answered instead). A slice is **accepted** when no path is fatal and, for every input, every answering path gives the
+same answer; the answers are its truth table.
+
+**Body and minimisation.** The accepted slice's **static body** is its codons between IN and OUT in loop order with
+every non-data operation and every operand replaced by NOP, so that skips and JNZB keep their targets (an OUT in an
+operand position ends the body: it is executed on the paths that skip the operation before it). The body must
+reproduce the truth table on the body machine of `tools/dna3_ladder_rank.py` (the machine on which section 18 ranks
+the tasks; its `run` now also accepts NOP, R3 and L3, and a head that moves off the I/O cells and back without an
+access there; shortest lengths are unchanged, output identical to length 5), or the slice is reported as "body
+mismatch". It is then minimised by greedy deletion: an instruction is removed whenever the truth table stays the same
+and no input hangs, until nothing can be removed. The result is the evolved program in the units of the ranks.
+
+**Verification (`--verify`).** The gene's recorded spelling is seeded alone in a 4 x 4-slot world of the unchanged
+reference (`sim/dna_ref.py`: days 1 to 6, `--ladder` in ladder mode, 256-cell slots, mu 0, D 0, F 0, blank tape,
+T 0, no firmament, all sea, emax = e_seed = 2^20, eshift 0, streak 1, no pools, seed 7) for `--verify-ticks` ticks
+(default 400), and the reference counts, in three diagnostic fields added for this purpose (`answers`, `inputs_seen`,
+`correct[k]`; not hashed, not printed; the reference's hashes are unchanged, checked on a ladder and a day-6 world of
+80 ticks), the answers the organism and its clones give and how many were correct per task. A task is **verified**
+when every answer was correct and every input value was drawn. This runs the real VM with its sky, seasons, copying
+and division, not the model; the model decides what to minimise, the VM decides what is true.
+
+**Output.** `--json` writes the library (`dna3-solutions-v1`): one record per distinct truth table with the tasks it
+matches, the shortest evolved body, the carriers (organisms) and, per gene, the IN position, the static and the
+minimal body, the spelling and the verification; plus the rejected organisms by reason. `--promote` writes the macro
+file of 19.2 (`dna3-macros-v1`): one macro per task, the shortest evolved body of length >= 2 (a one-instruction
+solution is already an instruction), each body promoted once under its hardest task, hardest tasks first, then the
+most carried, at most `--max-macros` (8); donor codons (19.2) assigned by rising use among the living spellings, so a
+fork takes the codon the population needs least.
+
+### 19.2 Rules (`--macros FILE`, a day-6 option; exact; not implemented)
+
+**The file.** JSON with `macros`: a list of at most 8 entries `{name, codon, body}`, in order M0, M1, ...; `body` is 1
+to 32 operations from the body set **B = {NOP, FLIP, INC, LDA, STA, L1, R1, R3, L3, SKZ, SKNZ, JNZB}** (the operations
+that act on H, A and the tape and nothing else; no copying, no energy, no neighbours, no operands, no macro codons:
+bodies are flat).
+
+**Codon table.** Under the standard code a macro's codon must be one of the **donors** CTA, CTG (from COPY, which
+keeps CTT, CTC), GCA, GCG (ALLOC keeps GCT, GCC), GGA, GGG (DIVIDE keeps GGT, GGC), ATA (SKNZ keeps ATT, ATC), TGC
+(COPYR keeps TGT): every operation keeps at least two synonyms. Under `--uniform-code` macro i is codon value 32 + i.
+In operation sequences, the op census and the census the macro is its own operation named `M0` .. `M7`.
+
+**State.** Every processor gains `mk` (the macro being executed, -1 none) and `mpc` (index into its body), hashed as the
+18th and 19th little-endian u64 after `ldir` (-1 as 0xFFFF...). Both are -1 / 0 at birth, move with the processor
+(MOVE) and are untouched by EXEC: a body runs on the processor's own H, A, slot and claimed child whatever gene it was
+fetched from.
+
+**Execution** (step 1, inside the instruction loop of day 1): each iteration pays its unit (E -= 1, one of the budget
+b) exactly as for a codon. If `mk >= 0` the operation is `body[mpc]` and `mpc += 1`; no codon is fetched and `pc` is
+untouched. Otherwise the codon is fetched and `pc += 1` as before, and if its operation is a macro M, `mk = M`,
+`mpc = 0`: the macro codon's unit is paid and it executes nothing itself. Body operations act exactly as the same
+operations of docs/09 (write rule, snapshot rule, H, A, own gene length recomputed after a write into the own slot),
+except control: SKZ / SKNZ skip within the body (`mpc += 1`), JNZB does `mpc -= 2` and a result below 0 becomes 0
+(there is no START in a body). After the operation, if `mpc >= len(body)`: `mk = -1`. The gene's wrap rule applies only
+to codon fetches. A body that spans several ticks (budget or energy exhausted) resumes where it stopped: a macro is
+exactly its body inlined, with one difference of substance, that the gene is one codon longer instead of
+`len(body)`. A body that never terminates (JNZB on a cell that never becomes 0) holds the processor until it starves,
+as a gene-level loop does. A length change of the own gene during a body has no effect until the next codon fetch.
+WAIT and MOVE cannot occur in bodies, so a body never ends the tick by itself.
+
+**Why these rules** (*choice*). (a) The macro costs exactly what its body costs: no free computation; what it buys is
+that a rank-4 program is one mutation away instead of eight. (b) Resuming across ticks (rather than all-or-nothing)
+keeps the macro bit-identical to inline code and needs no energy pre-check. (c) No nesting: a body is what the
+extractor verified, flat; composition is the genes' job, and a composed solution is what the next harvest extracts
+and promotes as one flat body. (d) Donors from the 4-codon families keep every operation; the cost of a thinner COPY
+family on replicator density (docs/16) is measured by the control arm C of 19.3, not assumed.
+
+**Checkpoint, census, resume.** Checkpoint version 5 adds `mk`, `mpc` per processor and the macro table (names,
+codons, bodies) after the pools. `--resume` of a version-4 (or version-3 with `--fork --ladder`) checkpoint with
+`--macros` is a fork: `mk = -1`, `mpc = 0` for every processor. Census keys after `pools`: `"macro_users"` (live genes
+containing a macro codon in codons 1 .. len-1) and `"macro_exec"` (cumulative macro codons fetched, per macro).
+
+**Acceptance tests.** (i) Reference and engine identical on every tick on: a world seeded with `START HARVEST ALLOC
+COPY TERM DIVIDE IN M0 OUT` and a promoted 15-x body; a day-6 ladder checkpoint forked with `--macros`; the uniform
+code; a body with a JNZB loop and `--I 2` so that bodies cross tick boundaries; `--resume` of a version-5 checkpoint.
+(ii) The extractor with `--macros FILE` accepts and verifies `IN M0 OUT` with the same truth table as the body.
+(iii) A world of `IN M0 OUT` with the 15-x body pays the rank-3 task at streak 7.
+
+### 19.3 The A/B experiment (predeclared)
+
+**Epoch 1.** Three fresh ladder worlds of O7's size (10^8 cells, 640 x 640 slots of 256 cells, `--days 1,2,3,4,5,6
+--ladder --shade --T 0`, mu 0.001, 4,096 plant seeds in the sea, land-cell 64, census every 10,240 ticks, checkpoint
+every 102,400, op census on), seeds 11, 12, 13, for 2 x 10^6 ticks each (about 1.5 h per world at O7's 400 ticks/s).
+At the end: harvest with the extractor (`--ckpt`, `--verify`), promote at most 8 verified bodies of length >= 2.
+Expected from O7 and D8: solutions of rank 0 and 1 (and the pseudo-x+1 rejected as hanging), so the promoted macros
+are rank-0/1 programs and nothing hands the organisms a rank-3 or rank-4 answer.
+
+**Epoch 2.** Each epoch-1 world is forked three times from its last checkpoint for 2 x 10^6 ticks: **arm A** with
+`--macros` (its own harvest), **arm B** unchanged, **arm C** with the same donor codons mapped to NOP and no macros (the
+cost of the thinner families without the macros). Nine runs, about 13 h on one GPU.
+
+**Measurements** per census: rewarded answers per task, carriers at streak 7 per task, `macro_users`, `macro_exec`,
+distinct sequences; at the end the day-7 activity (`tools/dna3_activity.py`) and a harvest of every arm.
+"Sustained" means at least 1,000 rewarded answers per census for 10 consecutive censuses.
+
+**Criteria.** (1) *Climbing*: a rank-3 or rank-4 task (15-x, x+1, x-1, 2x, x/2, parity, a xor b, the social task
+excluded) sustained in arm A of every pair, and in arm B of at most one pair, or at less than half of B's tick in
+every pair where both reach it; arm C must not differ from B on this criterion (if it does, the donors, not the
+macros, moved the world). (2) *Activity*: new adaptive established sequences per census, Q4 against Q2 of the epoch,
+higher in A than in B in every pair. (3) *Composition*: at the end of arm A an established sequence (>= 100 carriers)
+whose accepted slice contains two different macro codons and whose function no single macro computes. The loop is
+judged to work if (1) and (2) hold; (3) is the result that would make a second epoch worth running. Failure to record:
+macro users below 1 % of the living at the end (the donors cost more than the macros pay).
+
+**Predictions, written before the run.** (i) Macros appear in arm A within 50,000 ticks of the fork (a point mutation
+between IN and OUT reaches a donor codon from 1 of 64 codons). (ii) Criterion (1) holds within 200,000 ticks in A and
+B stays at O7's and D8's level. (iii) Criterion (3): even odds; the ladder's rank-3/4 tasks are compositions of its
+rank-0/1 tasks only in part (15-x = x^3 on both cells; x+1 with carry needs a loop no rank-0/1 body contains).
+
+### 19.4 First harvests (measured)
+
+| source | mode | sequences / organisms | slices accepted | functions | minimal body | verified |
+|---|---|---:|---:|---|---|---|
+| O6 at tick 102,400 (`taskers_t102400.json`, the 15 most common taskers) | day6 | 15 / 175,635 | 14 of 14 (one sequence has no IN) | x+1, truth [1, 2, 3, 0] | `INC LDA` (2) | 14 of 14 genes, 116,325 answers all correct |
+| O7 at tick 2,027,519 (`O7_day7.top.gz`, the 7 most common sequences of the last census) | day6 | 7 / 33,734 | 7 of 7 | x^1, truth [1, 0, 3, 2] | `FLIP LDA` (2) | 7 of 7, 35,336 answers |
+| 7 hand-written ladder genes (a test of the machinery, `test_ladder_genes.json`) | ladder | 7 / 7 | 6 of 7 | x^1, 4x, a, x/4 (one body for both), 15-x | 1, 4, 4, 6, 7 | 6 of 6 |
+
+Files: `results/dna3/solutions/`. Reading: (a) O6's second most common gene, `... LDA SENSE WAIT MOVE OUT IN INC`
+(33,444), answers only when SENSE skips MOVE, because otherwise OUT is MOVE's operand: its operand AGC is codon 41,
+41 mod 4 = 1, the moon channel; the extractor accepts it (the superseded paths give no answer) and the VM confirms
+7,369 answers, all x+1. (b) The day-6 bodies are 2 long because the day-6 answer is the accumulator, so LDA is part
+of the computation; in the ladder the same genes would need no LDA. (c) The hand-written no-carry adder `IN INC LDA
+JNZB L1 INC OUT` is rejected as hanging on 12 of 16 inputs, which is what D8's 4,144 M "x+1" answers are made of. (d)
+The O7 wrap-around gene with the computation split around the copy loop (`... OUT ALLOC IN STA COPY HARVEST FLIP LDA`)
+is accepted in both modes. The promotion file of the test genes (`test_ladder_macros.json`, a format example, not for a
+run) holds 4 macros: 15-x (CTA), x/4 (CTG), 4x (GCA), a (GCG). D8's genes are on knecht24 (checkpoint
+`D8_ladder.ckpt`): `python tools/dna3_extract_solutions.py --mode ladder --ckpt D8_ladder.ckpt --verify --json
+D8_solutions.json --promote D8_macros.json` is the first real harvest; its result goes into this section.
+
+### 19.5 Open
+
+- `--macros` in the engine and the reference, verified tick by tick (19.2 acceptance tests), then the nine runs of
+  19.3.
+- When every ladder task is a macro, nothing is left to climb: the ladder must grow with the epochs (composed tasks,
+  two-operand tasks, a task library ranked on the organisms' machine, as section 18 ranked its 18); that is the next
+  section, not this one.
+- The extractor sees only computations between IN and OUT on the I/O cells. Programs that use other cells of the own
+  slot as memory are rejected as self-modifying, and the social task is not extracted (it needs a neighbour); both
+  are limits of the model, not of the organisms.
+- Golem's `program_bridge.py` exports one verified slice as Python with a fixed calling interface; the library of
+  19.1 is the input a batch version of that bridge needs, so that the archive of evolved programs becomes a tool
+  registry rather than training text.

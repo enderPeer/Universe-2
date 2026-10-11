@@ -1,0 +1,494 @@
+{
+ "schema": "dna3-solutions-v1",
+ "mode": "day6",
+ "source": "results/dna3/open/O6_day6/taskers_t102400.json",
+ "tick": 102400,
+ "sequences": 15,
+ "organisms": 175635,
+ "slices": 14,
+ "accepted": 14,
+ "rejects": {},
+ "functions": [
+  {
+   "truth": [
+    1,
+    2,
+    3,
+    0
+   ],
+   "tasks": [
+    "x+1"
+   ],
+   "best_body": [
+    "INC",
+    "LDA"
+   ],
+   "best_len": 2,
+   "carriers": 173984,
+   "genes": [
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE HARVEST HARVEST OUT IN INC",
+     "carriers": 42577,
+     "in_index": 11,
+     "static_body": [
+      "INC",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP"
+     ],
+     "minimal_body": [
+      "INC",
+      "LDA"
+     ],
+     "spelling": "ATG AGG GCT CTT TTG GGG TAT AGT AGG AGA TCG TCA CAA",
+     "verify": {
+      "answers": 8892,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       1
+      ]
+     },
+     "verified_tasks": [
+      "x+1"
+     ]
+    },
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE WAIT MOVE OUT IN INC",
+     "carriers": 33444,
+     "in_index": 11,
+     "static_body": [
+      "INC",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP"
+     ],
+     "minimal_body": [
+      "INC",
+      "LDA"
+     ],
+     "spelling": "ATG AGG GCT CTT TTG GGG TAT AGT AGC ACA TCG TCA CAA",
+     "verify": {
+      "answers": 7369,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       1
+      ]
+     },
+     "verified_tasks": [
+      "x+1"
+     ]
+    },
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE WAIT HARVEST OUT IN INC",
+     "carriers": 22734,
+     "in_index": 11,
+     "static_body": [
+      "INC",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP"
+     ],
+     "minimal_body": [
+      "INC",
+      "LDA"
+     ],
+     "spelling": "ATG AGG GCT CTT TTG GGG TAT AGT AGC AGA TCG TCA CAA",
+     "verify": {
+      "answers": 8970,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       1
+      ]
+     },
+     "verified_tasks": [
+      "x+1"
+     ]
+    },
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE TERM HARVEST OUT IN INC",
+     "carriers": 17075,
+     "in_index": 11,
+     "static_body": [
+      "INC",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP"
+     ],
+     "minimal_body": [
+      "INC",
+      "LDA"
+     ],
+     "spelling": "ATG AGA GCA CTT TTG GGT TAT AGT TTG AGA TCG TCA CAG",
+     "verify": {
+      "answers": 8892,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       1
+      ]
+     },
+     "verified_tasks": [
+      "x+1"
+     ]
+    },
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA HARVEST HARVEST HARVEST OUT IN INC",
+     "carriers": 14943,
+     "in_index": 11,
+     "static_body": [
+      "INC",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP"
+     ],
+     "minimal_body": [
+      "INC",
+      "LDA"
+     ],
+     "spelling": "ATG AGA GCT CTT TTG GGT TAT AGG AGG AGA TCG TCA CAA",
+     "verify": {
+      "answers": 7106,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       1
+      ]
+     },
+     "verified_tasks": [
+      "x+1"
+     ]
+    },
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE LISTEN SIGNAL OUT IN INC",
+     "carriers": 12692,
+     "in_index": 11,
+     "static_body": [
+      "INC",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP"
+     ],
+     "minimal_body": [
+      "INC",
+      "LDA"
+     ],
+     "spelling": "ATG AGG GCT CTT TTG GGG TAT AGT CGG CGA TCG TCA CAA",
+     "verify": {
+      "answers": 8892,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       1
+      ]
+     },
+     "verified_tasks": [
+      "x+1"
+     ]
+    },
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA HARVEST TERM HARVEST OUT IN INC",
+     "carriers": 9283,
+     "in_index": 11,
+     "static_body": [
+      "INC",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP"
+     ],
+     "minimal_body": [
+      "INC",
+      "LDA"
+     ],
+     "spelling": "ATG AGA GCA CTT TTG GGT TAT AGG TTG AGA TCG TCA CAG",
+     "verify": {
+      "answers": 8014,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       1
+      ]
+     },
+     "verified_tasks": [
+      "x+1"
+     ]
+    },
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE SENSE HARVEST OUT IN INC",
+     "carriers": 4275,
+     "in_index": 11,
+     "static_body": [
+      "INC",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP"
+     ],
+     "minimal_body": [
+      "INC",
+      "LDA"
+     ],
+     "spelling": "ATG AGG GCT CTT TTG GGC TAT AGT AGT AGA TCG TCA CAA",
+     "verify": {
+      "answers": 8547,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       1
+      ]
+     },
+     "verified_tasks": [
+      "x+1"
+     ]
+    },
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE HARVEST START OUT IN INC",
+     "carriers": 4187,
+     "in_index": 11,
+     "static_body": [
+      "INC",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP"
+     ],
+     "minimal_body": [
+      "INC",
+      "LDA"
+     ],
+     "spelling": "ATG AGG GCT CTT TTG GGG TAT AGT AGG ATG TCG TCA CAA",
+     "verify": {
+      "answers": 8892,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       1
+      ]
+     },
+     "verified_tasks": [
+      "x+1"
+     ]
+    },
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA HARVEST START HARVEST OUT IN INC",
+     "carriers": 3829,
+     "in_index": 11,
+     "static_body": [
+      "INC",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP"
+     ],
+     "minimal_body": [
+      "INC",
+      "LDA"
+     ],
+     "spelling": "ATG AGA GCT CTT TTG GGT TAT AGG ATG AGA TCG TCA CAA",
+     "verify": {
+      "answers": 7106,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       1
+      ]
+     },
+     "verified_tasks": [
+      "x+1"
+     ]
+    },
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE WAIT ALLOC OUT IN INC",
+     "carriers": 3054,
+     "in_index": 11,
+     "static_body": [
+      "INC",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP"
+     ],
+     "minimal_body": [
+      "INC",
+      "LDA"
+     ],
+     "spelling": "ATG AGG GCT CTT TTG GGG TAT AGT AGC GCA TCG TCA CAA",
+     "verify": {
+      "answers": 8970,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       1
+      ]
+     },
+     "verified_tasks": [
+      "x+1"
+     ]
+    },
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA START TERM HARVEST OUT IN INC",
+     "carriers": 2373,
+     "in_index": 11,
+     "static_body": [
+      "INC",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP"
+     ],
+     "minimal_body": [
+      "INC",
+      "LDA"
+     ],
+     "spelling": "ATG AGA GCT CTT TTG GGT TAT ATG TTA AGA TCG TCA CAA",
+     "verify": {
+      "answers": 8014,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       1
+      ]
+     },
+     "verified_tasks": [
+      "x+1"
+     ]
+    },
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA HARVEST SKNZ HARVEST OUT IN INC",
+     "carriers": 1822,
+     "in_index": 11,
+     "static_body": [
+      "INC",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "LDA",
+      "NOP",
+      "SKNZ",
+      "NOP"
+     ],
+     "minimal_body": [
+      "INC",
+      "LDA"
+     ],
+     "spelling": "ATG AGA GCT CTT TTG GGT TAT AGA ATT AGA TCG TCA CAA",
+     "verify": {
+      "answers": 7769,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       1
+      ]
+     },
+     "verified_tasks": [
+      "x+1"
+     ]
+    },
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SENSE REWIND HARVEST OUT IN INC",
+     "carriers": 1696,
+     "in_index": 11,
+     "static_body": [
+      "INC",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP"
+     ],
+     "minimal_body": [
+      "INC",
+      "LDA"
+     ],
+     "spelling": "ATG AGA GCT CTT TTG GGT TAT AGT TGG AGA TCG TCA CAA",
+     "verify": {
+      "answers": 8892,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       1
+      ]
+     },
+     "verified_tasks": [
+      "x+1"
+     ]
+    }
+   ]
+  }
+ ]
+}

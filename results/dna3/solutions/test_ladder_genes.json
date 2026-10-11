@@ -1,0 +1,365 @@
+{
+ "schema": "dna3-solutions-v1",
+ "mode": "ladder",
+ "source": "command line",
+ "tick": null,
+ "sequences": 7,
+ "organisms": 7,
+ "slices": 7,
+ "accepted": 6,
+ "rejects": {
+  "hangs": 1
+ },
+ "functions": [
+  {
+   "truth": [
+    1,
+    0,
+    3,
+    2,
+    5,
+    4,
+    7,
+    6,
+    9,
+    8,
+    11,
+    10,
+    13,
+    12,
+    15,
+    14
+   ],
+   "tasks": [
+    "x^1"
+   ],
+   "best_body": [
+    "FLIP"
+   ],
+   "best_len": 1,
+   "carriers": 2,
+   "genes": [
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE IN FLIP OUT",
+     "carriers": 1,
+     "in_index": 6,
+     "static_body": [
+      "FLIP"
+     ],
+     "minimal_body": [
+      "FLIP"
+     ],
+     "verify": {
+      "answers": 13023,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       0
+      ]
+     },
+     "verified_tasks": [
+      "x^1"
+     ]
+    },
+    {
+     "ops": "START SENSE DIVIDE SIGNAL TERM DIVIDE SENSE MOVE SKZ HARVEST OUT ALLOC IN STA COPY HARVEST FLIP LDA",
+     "carriers": 1,
+     "in_index": 12,
+     "static_body": [
+      "STA",
+      "NOP",
+      "NOP",
+      "FLIP",
+      "LDA",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "NOP",
+      "SKZ",
+      "NOP"
+     ],
+     "minimal_body": [
+      "FLIP"
+     ],
+     "verify": {
+      "answers": 5106,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       0
+      ]
+     },
+     "verified_tasks": [
+      "x^1"
+     ]
+    }
+   ]
+  },
+  {
+   "truth": [
+    0,
+    4,
+    8,
+    12,
+    0,
+    4,
+    8,
+    12,
+    0,
+    4,
+    8,
+    12,
+    0,
+    4,
+    8,
+    12
+   ],
+   "tasks": [
+    "4x"
+   ],
+   "best_body": [
+    "INC",
+    "JNZB",
+    "L1",
+    "STA"
+   ],
+   "best_len": 4,
+   "carriers": 1,
+   "genes": [
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE IN INC JNZB L1 STA OUT",
+     "carriers": 1,
+     "in_index": 6,
+     "static_body": [
+      "INC",
+      "JNZB",
+      "L1",
+      "STA"
+     ],
+     "minimal_body": [
+      "INC",
+      "JNZB",
+      "L1",
+      "STA"
+     ],
+     "verify": {
+      "answers": 6062,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       7
+      ]
+     },
+     "verified_tasks": [
+      "4x"
+     ]
+    }
+   ]
+  },
+  {
+   "truth": [
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    3
+   ],
+   "tasks": [
+    "a",
+    "x/4"
+   ],
+   "best_body": [
+    "L1",
+    "LDA",
+    "INC",
+    "JNZB",
+    "R1",
+    "STA"
+   ],
+   "best_len": 6,
+   "carriers": 1,
+   "genes": [
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE IN L1 LDA INC JNZB R1 STA OUT",
+     "carriers": 1,
+     "in_index": 6,
+     "static_body": [
+      "L1",
+      "LDA",
+      "INC",
+      "JNZB",
+      "R1",
+      "STA"
+     ],
+     "minimal_body": [
+      "L1",
+      "LDA",
+      "INC",
+      "JNZB",
+      "R1",
+      "STA"
+     ],
+     "verify": {
+      "answers": 4652,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       8,
+       11
+      ]
+     },
+     "verified_tasks": [
+      "a",
+      "x/4"
+     ]
+    }
+   ]
+  },
+  {
+   "truth": [
+    15,
+    14,
+    13,
+    12,
+    11,
+    10,
+    9,
+    8,
+    7,
+    6,
+    5,
+    4,
+    3,
+    2,
+    1,
+    0
+   ],
+   "tasks": [
+    "15-x"
+   ],
+   "best_body": [
+    "FLIP",
+    "INC",
+    "INC",
+    "L1",
+    "FLIP",
+    "INC",
+    "INC"
+   ],
+   "best_len": 7,
+   "carriers": 1,
+   "genes": [
+    {
+     "ops": "START IN FLIP INC INC L1 FLIP INC INC OUT",
+     "carriers": 1,
+     "in_index": 1,
+     "static_body": [
+      "FLIP",
+      "INC",
+      "INC",
+      "L1",
+      "FLIP",
+      "INC",
+      "INC"
+     ],
+     "minimal_body": [
+      "FLIP",
+      "INC",
+      "INC",
+      "L1",
+      "FLIP",
+      "INC",
+      "INC"
+     ],
+     "verify": {
+      "answers": 711,
+      "all_inputs": true,
+      "live": 1,
+      "tasks": [
+       12
+      ]
+     },
+     "verified_tasks": [
+      "15-x"
+     ]
+    }
+   ]
+  },
+  {
+   "truth": [
+    0,
+    0,
+    0,
+    0,
+    5,
+    5,
+    5,
+    5,
+    10,
+    10,
+    10,
+    10,
+    15,
+    15,
+    15,
+    15
+   ],
+   "tasks": [
+    "a"
+   ],
+   "best_body": [
+    "L1",
+    "LDA",
+    "R1",
+    "STA"
+   ],
+   "best_len": 4,
+   "carriers": 1,
+   "genes": [
+    {
+     "ops": "START HARVEST ALLOC COPY TERM DIVIDE IN L1 LDA R1 STA OUT",
+     "carriers": 1,
+     "in_index": 6,
+     "static_body": [
+      "L1",
+      "LDA",
+      "R1",
+      "STA"
+     ],
+     "minimal_body": [
+      "L1",
+      "LDA",
+      "R1",
+      "STA"
+     ],
+     "verify": {
+      "answers": 8220,
+      "all_inputs": true,
+      "live": 16,
+      "tasks": [
+       8
+      ]
+     },
+     "verified_tasks": [
+      "a"
+     ]
+    }
+   ]
+  }
+ ],
+ "note": "hand-written test genes for the extractor (section 19.4), not an evolved population"
+}

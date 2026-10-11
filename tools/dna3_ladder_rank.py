@@ -21,6 +21,12 @@ OPS = ("FLIP", "INC", "LDA", "STA", "L1", "R1", "SKZ", "SKNZ", "JNZB")
 
 
 def run(prog, x):
+    """The answer of prog to the 4-bit input x, or None if the program hangs or reads or writes a cell outside the
+    two I/O cells (the head may move outside and back; an access there is excluded). Besides OPS, a program may
+    contain NOP (nothing) and R3 / L3 (moves of three cells); these are for the bodies that
+    tools/dna3_extract_solutions.py cuts out of evolved genes (docs/17 section 19), the sweep of this tool uses OPS
+    only. Shortest lengths are the same under either reading of a move outside: a program that moves out and back
+    without an access there has a shorter equivalent."""
     cells = [x >> 2, x & 3]          # index 0 = high (G-2), 1 = low (G-1)
     h, a, pc, steps = 1, x & 3, 0, 0
     n = len(prog)
@@ -28,6 +34,22 @@ def run(prog, x):
         op = prog[pc]
         pc += 1
         steps += 1
+        if op == "NOP":
+            continue
+        if op == "L1":
+            h -= 1
+            continue
+        if op == "R1":
+            h += 1
+            continue
+        if op == "L3":
+            h -= 3
+            continue
+        if op == "R3":
+            h += 3
+            continue
+        if h not in (0, 1):              # an access outside the I/O cells
+            return None
         if op == "FLIP":
             cells[h] ^= 1
         elif op == "INC":
@@ -36,14 +58,6 @@ def run(prog, x):
             a = cells[h]
         elif op == "STA":
             cells[h] = a
-        elif op == "L1":
-            if h == 0:
-                return None
-            h = 0
-        elif op == "R1":
-            if h == 1:
-                return None
-            h = 1
         elif op == "SKZ":
             if cells[h] == 0:
                 pc += 1

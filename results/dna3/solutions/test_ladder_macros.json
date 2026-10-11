@@ -1,0 +1,177 @@
+{
+ "schema": "dna3-macros-v1",
+ "mode": "ladder",
+ "source": "command line",
+ "tick": null,
+ "donor_usage": {
+  "CTA": 0,
+  "CTG": 0,
+  "GCA": 0,
+  "GCG": 0,
+  "GGA": 0,
+  "GGG": 0,
+  "ATA": 0,
+  "TGC": 0
+ },
+ "macros": [
+  {
+   "name": "15-x",
+   "task": 12,
+   "rank": 3,
+   "body": [
+    "FLIP",
+    "INC",
+    "INC",
+    "L1",
+    "FLIP",
+    "INC",
+    "INC"
+   ],
+   "len": 7,
+   "truth": [
+    15,
+    14,
+    13,
+    12,
+    11,
+    10,
+    9,
+    8,
+    7,
+    6,
+    5,
+    4,
+    3,
+    2,
+    1,
+    0
+   ],
+   "tasks": [
+    "15-x"
+   ],
+   "carriers": 1,
+   "gene": "START IN FLIP INC INC L1 FLIP INC INC OUT",
+   "verified": true,
+   "codon": "CTA",
+   "macro": "M0"
+  },
+  {
+   "name": "x/4",
+   "task": 11,
+   "rank": 2,
+   "body": [
+    "L1",
+    "LDA",
+    "INC",
+    "JNZB",
+    "R1",
+    "STA"
+   ],
+   "len": 6,
+   "truth": [
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    3
+   ],
+   "tasks": [
+    "a",
+    "x/4"
+   ],
+   "carriers": 1,
+   "gene": "START HARVEST ALLOC COPY TERM DIVIDE IN L1 LDA INC JNZB R1 STA OUT",
+   "verified": true,
+   "codon": "CTG",
+   "macro": "M1"
+  },
+  {
+   "name": "4x",
+   "task": 7,
+   "rank": 1,
+   "body": [
+    "INC",
+    "JNZB",
+    "L1",
+    "STA"
+   ],
+   "len": 4,
+   "truth": [
+    0,
+    4,
+    8,
+    12,
+    0,
+    4,
+    8,
+    12,
+    0,
+    4,
+    8,
+    12,
+    0,
+    4,
+    8,
+    12
+   ],
+   "tasks": [
+    "4x"
+   ],
+   "carriers": 1,
+   "gene": "START HARVEST ALLOC COPY TERM DIVIDE IN INC JNZB L1 STA OUT",
+   "verified": true,
+   "codon": "GCA",
+   "macro": "M2"
+  },
+  {
+   "name": "a",
+   "task": 8,
+   "rank": 1,
+   "body": [
+    "L1",
+    "LDA",
+    "R1",
+    "STA"
+   ],
+   "len": 4,
+   "truth": [
+    0,
+    0,
+    0,
+    0,
+    5,
+    5,
+    5,
+    5,
+    10,
+    10,
+    10,
+    10,
+    15,
+    15,
+    15,
+    15
+   ],
+   "tasks": [
+    "a"
+   ],
+   "carriers": 1,
+   "gene": "START HARVEST ALLOC COPY TERM DIVIDE IN L1 LDA R1 STA OUT",
+   "verified": true,
+   "codon": "GCG",
+   "macro": "M3"
+  }
+ ],
+ "note": "format example from hand-written test genes (section 19.4); never a promotion file for a run: only evolved bodies are promoted"
+}
