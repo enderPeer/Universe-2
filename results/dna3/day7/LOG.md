@@ -70,3 +70,27 @@ Picture and emergence checks every 2 hours; entries below give only measured num
 - Eaters 433,285 (falling), movers 3,438,034, WAIT 28,706, SIGNAL 3,903,745, LISTEN 1,491,287; 99,101 distinct genes
   (falling); deepest lineage 797. Top-10 order unchanged; still no new operation sequence since tick 20,479.
 - About 4.4 ticks per second. O5 tick 11,335,679, O6 tick 11,130,879. Disk: adler40 108 GB, knecht24 32 GB free.
+
+## 2026-10-11 13:40 UTC: tick 235,519
+
+- 11,567,708 alive (zone 0 5,773,225 / zone 1 5,794,483): +6,000 per 10,240 ticks, nearly flat. Task code in
+  11,566,147; x-1 answers 12.72 G (+0.585 G per interval, constant). Eaters 413,249, movers 3,430,922, WAIT 28,574,
+  SIGNAL 3,915,419, LISTEN 1,486,896; 97,605 distinct genes. Top 10 unchanged. Running (dna_world3i); 107 GB free.
+
+## 2026-10-11 15:40 UTC: tick 266,239
+
+- 11,573,153 alive (zone 0 5,776,819 / zone 1 5,796,334), nearly flat. x-1 answers 14.48 G (+0.585 G per 10,240
+  ticks, constant). Eaters 406,865, movers 3,428,204, WAIT 28,492, SIGNAL 3,918,991, LISTEN 1,485,986; 96,949
+  distinct genes. Top 10 unchanged. Running; 106 GB free.
+
+## 2026-10-11 17:40 UTC: tick 296,959
+
+- 11,577,962 alive (zone 0 5,779,851 / zone 1 5,798,111). x-1 answers 16.24 G (+0.585 G per 10,240 ticks, constant).
+  Eaters 401,280, movers 3,426,571, WAIT 28,466, SIGNAL 3,922,366, LISTEN 1,484,770; 96,361 distinct genes (falling).
+  Top 10 unchanged. Running; 106 GB free.
+
+## 2026-10-11 19:40 UTC: tick 327,679
+
+- 11,581,595 alive (zone 0 5,782,453 / zone 1 5,799,142). x-1 answers 17.99 G (+0.585 G per 10,240 ticks). Eaters
+  396,592, movers 3,425,067, WAIT 28,364, SIGNAL 3,924,866, LISTEN 1,484,195; 95,857 distinct genes (falling). Top 10
+  unchanged. Running; 105 GB free.
