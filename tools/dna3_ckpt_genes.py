@@ -3,7 +3,7 @@ sequence (synonymous codons collapsed) and by spelling.
 
   python tools/dna3_ckpt_genes.py RUN.ckpt --days 1,2,3,4,5,6 [--uniform-code] [--with OUT] [--top 30] [--json out.json]
 
-The checkpoint (version 3) holds the packed forward strand and the live flags; the gene of a live slot is read from
+The checkpoint (version 3 or 4; the strands and live flags are laid out the same) holds the packed forward strand and the live flags; the gene of a live slot is read from
 codon 0 up to its first STOP with the codon table of the given days (the same tables as sim/dna_ref.py). --with OP
 keeps only genes containing that operation (e.g. OUT for the taskers of day 6, EAT for eaters). Prints the most common
 operation sequences with their counts and their most common spelling. Needs numpy; reads the whole strand (25 MB at
@@ -50,8 +50,8 @@ def main():
     with open(a.ckpt, "rb") as f:
         magic = f.read(8)
         ver, N, G, S, seed, flags, t_next = struct.unpack("<7Q", f.read(56))
-        if magic != b"DNA3CKPT" or ver != 3:
-            raise SystemExit("not a version-3 DNA-3 checkpoint")
+        if magic != b"DNA3CKPT" or ver not in (3, 4):
+            raise SystemExit("not a version-3 or version-4 DNA-3 checkpoint")
         nbytes = (N + 3) // 4
         fwd_packed = np.frombuffer(f.read(nbytes), dtype=np.uint8)
         f.seek(nbytes, 1)                                   # rev

@@ -190,6 +190,27 @@ DNA3_TASKS = (("x^1", lambda x: x ^ 1, 0), ("x+1", lambda x: (x + 1) & 3, 0), ("
               ("x-1", lambda x: (x + 3) & 3, 2))
 
 
+# docs/17 section 18, the long ladder (--ladder): tasks on the 4-bit input x (high half a in cell G-2, low half b in
+# cell G-1), answered by the two I/O cells v = 4 * cell(G-2) + cell(G-1). (name, function, mask, rank); a task is
+# correct when (v & mask) == (f(x) & mask); rank from the shortest program on the organisms' machine
+# (tools/dna3_ladder_rank.py, terminating programs only): 1 to 2 instructions rank 0, 3 to 4 rank 1, 5 to 6 rank 2, 7 rank 3, longer rank 4.
+# Only tasks that a constant answer and the plain echo (answer = x) each match on at most half (constant) or a quarter
+# (echo) of the inputs are used, so guessing earns about (1/2)^7 or (1/4)^7 of a task's reward.
+LADDER_TASKS = (
+    ("x^1", lambda x: x ^ 1, 15, 0), ("x^4", lambda x: x ^ 4, 15, 0), ("x+4", lambda x: (x + 4) & 15, 15, 0),
+    ("x&12", lambda x: x & 12, 15, 0),
+    ("x^5", lambda x: x ^ 5, 15, 1), ("x+8", lambda x: (x + 8) & 15, 15, 1), ("x&3", lambda x: x & 3, 15, 1),
+    ("4x", lambda x: (4 * x) & 15, 15, 1), ("a", lambda x: x >> 2, 3, 1),
+    ("x+1", lambda x: (x + 1) & 15, 15, 4), ("x|3", lambda x: x | 3, 15, 2), ("x/4", lambda x: x >> 2, 15, 2),
+    ("15-x", lambda x: 15 - x, 15, 3),
+    ("x-1", lambda x: (x - 1) & 15, 15, 4), ("2x", lambda x: (2 * x) & 15, 15, 4), ("x/2", lambda x: x >> 1, 15, 4),
+    ("parity", lambda x: bin(x).count("1") & 1, 15, 4), ("a xor b", lambda x: (x >> 2) ^ (x & 3), 3, 4),
+)
+LADDER_SOCIAL = len(LADDER_TASKS)          # task index 18: b xor the low half of the listened neighbour's input
+LADDER_NTASK = LADDER_SOCIAL + 1
+LADDER_SOCIAL_RANK = 3
+
+
 def dna3_day6_table(table, uniform):
     """docs/17 day 6: SIGNAL on CGA and LISTEN on CGG (Arg; L1 keeps CGT, CGC), IN on TCA and OUT on TCG (Ser; R1 keeps
     TCT, TCC); uniform code: codon values 28, 29, 30, 31."""
@@ -361,7 +382,8 @@ class World:
                  W=0, firm=1, day_len=32, light_len=None, lmax=16, emax=1024, eshift=4, e_seed=512, e_spont=128,
                  g_pass=16, gp_sea=8, gp_land=0, gh_sea=16, gh_land=32, c_copy=1, maint=1, inflow_land=False,
                  land_cell=32, land_thr=32768, year_days=16, moon_days=8, season_amp=None, lat_amp=8, lmoon=1,
-                 shade=False, c_move=2, c_fly=8, eat_shift=1, eat_eff=8, c_walk=4, task_bonus=8):
+                 shade=False, c_move=2, c_fly=8, eat_shift=1, eat_eff=8, c_walk=4, task_bonus=8,
+                 ladder=False, streak_len=7, pool_cell=32, pool_max=4096, pool_in=64):
         if G < 6:
             raise ValueError("G must be at least 6 (two codons)")                      # [13: Limits]
         if N % G:
@@ -448,6 +470,16 @@ class World:
         else:
             self.W, self.R, self.firm = 0, 0, 0
             self.terrain = None
+        # docs/17 section 18: the long ladder with depletable task pools and the social task
+        if ladder and not self.d6:
+            raise ValueError("--ladder needs day 6")
+        if ladder and (not 1 <= streak_len <= 7 or pool_cell < 0 or pool_max < 1 or pool_in < 0
+                       or (pool_cell and (self.W % pool_cell or self.R % pool_cell))):
+            raise ValueError("bad ladder parameters (1 <= streak_len <= 7, pool_cell divides W and R)")
+        self.ladder, self.streak_len = ladder, streak_len
+        self.pool_cell, self.pool_max, self.pool_in = pool_cell, pool_max, pool_in
+        self.nreg = (self.W // pool_cell) * (self.R // pool_cell) if (ladder and pool_cell) else 0
+        self.pools = [[pool_max] * LADDER_NTASK for _ in range(self.nreg)]
         self.is_stop = bytes(1 if op == STOP else 0 for op in self.table)
         # execution table: START inside a gene is NOP; a fetched STOP (only possible when the gene has
         # degenerated to len <= 1 during the tick) is NOP too [13: Degenerate genes]
@@ -491,7 +523,8 @@ class World:
         self.xin = [0] * S                      # docs/17 day 6: the input of the last IN (0..3)
         self.tmask = [0] * S                    # docs/17 day 6: 1 while the last input awaits its one answer
         self.streak = [0] * S                   # docs/17 day 6: per task k a 2-bit count of correct answers in a row
-        self.task_count = [0] * len(DNA3_TASKS)
+        self.task_count = [0] * (LADDER_NTASK if ladder else len(DNA3_TASKS))
+        self.ldir = [8] * S                     # docs/17 section 18: direction of the last LISTEN, 8 = none
         self.xs = [0] * S                       # docs/17 day 5: the slot whose gene the processor executes
         self.energy_init = 0
         self.starved = 0
@@ -552,6 +585,9 @@ class World:
         """A new processor in slot s with the initial values of section 4."""
         self.xs[s] = s
         self.sig[s] = self.xin[s] = self.tmask[s] = self.streak[s] = 0
+        self.ldir[s] = 8
+        if self.ladder:
+            self.xin[s] = 16                    # docs/17 section 18: no input yet
         self.alive[s] = 1
         self.live.add(s)
         self.pc[s] = 1
@@ -586,10 +622,83 @@ class World:
                 out += pe(self.xs[s])           # docs/17 day 5: the executed slot, a twelfth field
             if self.d6:                         # docs/17 day 6: signal, input, open tasks
                 out += pe(self.sig[s]) + pe(self.xin[s]) + pe(self.tmask[s]) + pe(self.streak[s])
+                if self.ladder:
+                    out += pe(self.ldir[s])
         out += struct.pack("<4Q", self.births, self.faithful, self.spontaneous, self.deaths)
         if self.d3:
             out += pe(self.starved)
+        if self.ladder:                         # docs/17 section 18: the task pools, region by region
+            for row in self.pools:
+                for v in row:
+                    out += pe(v)
         return bytes(out)
+
+    def load_checkpoint(self, path, fork=False, uniform=False):
+        """docs/17 section 18: continue from an engine checkpoint (gpu/dna_world.cu --checkpoint, version 3 or 4).
+        With fork=True a version-3 checkpoint (day 6 without --ladder) may be continued with --ladder: every
+        processor's task fields are reset (xin, open, streak 0, ldir none), the pools start full and the task counts
+        at 0. Returns the next tick."""
+        with open(path, "rb") as f:
+            if f.read(8) != b"DNA3CKPT":
+                raise ValueError("not a checkpoint")
+            ver, N, G, S, seed, flags, t_next = struct.unpack("<7Q", f.read(56))
+            if ver not in (3, 4) or (N, G, S, seed) != (self.N, self.G, self.S, self.seed):
+                raise ValueError("checkpoint version %d or N, G, S, seed differ" % ver)
+            want = (int(self.dna2) | int(self.d1) << 1 | int(self.d2) << 2 | int(self.d3) << 3 | int(self.d4) << 4
+                    | int(self.shade) << 5 | int(uniform) << 6 | int(self.d5) << 7 | int(self.d6) << 8
+                    | int(self.ladder) << 9)
+            if flags != want and not (fork and flags | (1 << 9) == want):
+                raise ValueError("checkpoint flags %x differ from this world's %x" % (flags, want))
+            nb = (N + 3) // 4
+
+            def unpack(b):
+                a = bytearray(4 * nb)
+                for q in range(4):
+                    a[q::4] = bytes((x >> (2 * q)) & 3 for x in b)
+                return a[:N]
+            self.fwd[:] = unpack(f.read(nb))
+            self.rev[:] = unpack(f.read(nb))
+            live = f.read(S)
+            nf = 17 if ver == 4 else 16
+            recs = f.read(8 * nf * S)
+            cb = struct.unpack("<%di" % S, f.read(4 * S))
+            f.read(4 * S)                       # clade (engine output only)
+            cnt = struct.unpack("<5Q", f.read(40))
+            led = struct.unpack("<13Q", f.read(104))
+            ntc = 19 if ver == 4 else 4
+            tc = struct.unpack("<%dQ" % ntc, f.read(8 * ntc))
+            (einit,) = struct.unpack("<Q", f.read(8))
+            pools = None
+            if ver == 4:
+                (npool,) = struct.unpack("<Q", f.read(8))
+                pools = struct.unpack("<%dq" % npool, f.read(8 * npool)) if npool else ()
+        self.live.clear()
+        for x in range(S):
+            self.alive[x] = live[x]
+            if live[x]:
+                self.live.add(x)
+                r = struct.unpack_from("<%dq" % nf, recs, 8 * nf * x)
+                (_slot, self.pc[x], self.H[x], self.P[x], self.Q[x], self.child[x], self.A[x], self.age[x],
+                 self.depth[x], self.copied[x], self.E[x], self.xs[x], self.sig[x], self.xin[x], self.tmask[x],
+                 self.streak[x]) = r[:16]
+                self.ldir[x] = r[16] if nf == 17 else 8
+                if fork and ver == 3 and self.ladder:
+                    self.tmask[x] = self.streak[x] = 0
+                    self.xin[x] = 16
+                    self.ldir[x] = 8
+            self.claimed_by[x] = cb[x]
+        self.births, self.faithful, self.spontaneous, self.deaths, self.starved = cnt
+        self.ledger = list(led)
+        self.energy_init = einit
+        if ver == 4:
+            if not (fork and flags != want):
+                self.task_count = list(tc[:len(self.task_count)])
+            if self.nreg:
+                self.pools = [list(pools[r * LADDER_NTASK:(r + 1) * LADDER_NTASK]) for r in range(self.nreg)]
+        elif not self.ladder:
+            self.task_count = list(tc)
+        self.tick_no = t_next
+        return t_next
 
     def light(self, t):
         """docs/17 day 1: the light level of tick t (square wave: lmax for the first light_len ticks of each day)."""
@@ -687,6 +796,8 @@ class World:
             out["listeners"] = sum(1 for s in self.live if self.has_op(s, LISTEN))
             out["taskers"] = sum(1 for s in self.live if self.has_op(s, OUT))
             out["tasks"] = list(self.task_count)
+            if self.ladder:
+                out["pools"] = [sum(row[k] for row in self.pools) for k in range(LADDER_NTASK)]
         out["hash"] = None if state_hash is None else "%016x" % state_hash
         return out
 
@@ -715,6 +826,10 @@ class World:
         eat_req = {}                            # docs/17 day 5: eater slot -> prey slot
         d6 = self.d6
         sig_old = list(self.sig) if d6 else None   # docs/17 day 6: signals as they were at the start of the tick
+        ladder = self.ladder
+        if ladder:
+            xin_old = [self.xin[x] if alive[x] else 16 for x in range(S)]  # inputs at the start of the tick (16 = none)
+            pool_used = [[0] * LADDER_NTASK for _ in range(self.nreg)]
         move_req = {}                           # docs/17 day 5: mover slot -> operand codon
         xs_ = self.xs
 
@@ -905,6 +1020,57 @@ class World:
                         break
                     elif op == SIGNAL:
                         self.sig[s] = A         # docs/17 day 6: visible to the neighbours from the next tick
+                    elif op == IN and ladder:
+                        # docs/17 section 18: a 4-bit input x; high half into cell G-2, low half into cell G-1 (both
+                        # strands), the head on the low cell, A = low half; it awaits one answer
+                        xv = rnd(seed, t, s, 4000) & 15
+                        A = xv & 3
+                        H = own_hi - 1
+                        fwd[H - 1] = xv >> 2
+                        rev[H - 1] = (xv >> 2) ^ 3
+                        fwd[H] = A
+                        rev[H] = A ^ 3
+                        if xs == s:
+                            L = gene_len(fwd, is_stop, base, maxc)
+                        self.xin[s] = xv
+                        self.tmask[s] = 1
+                    elif op == OUT and ladder:
+                        # docs/17 section 18: the answer is the two I/O cells; per task a 3-bit streak of correct
+                        # answers in a row; a task pays when its streak reaches streak_len, scaled by its regional pool
+                        if self.tmask[s]:
+                            self.tmask[s] = 0
+                            xi, st = self.xin[s], self.streak[s]
+                            v = 4 * fwd[own_hi - 2] + fwd[own_hi - 1]
+                            ld = self.ldir[s]
+                            nlo = -1
+                            if ld < 8:
+                                dx, dy = NEIGHBOURS[ld]
+                                nb = ((s // self.W + dy) % self.R) * self.W + (s % self.W + dx) % self.W
+                                if xin_old[nb] < 16:
+                                    nlo = xin_old[nb] & 3
+                            reg = ((s // self.W) // self.pool_cell) * (self.W // self.pool_cell) + (s % self.W) // self.pool_cell \
+                                if self.pool_cell else -1
+                            for k in range(LADDER_NTASK):
+                                if k < LADDER_SOCIAL:
+                                    _n, f, mask, rank = LADDER_TASKS[k]
+                                    ok = (v & mask) == (f(xi) & mask)
+                                else:
+                                    rank = LADDER_SOCIAL_RANK
+                                    ok = nlo >= 0 and (v & 3) == ((xi & 3) ^ nlo)
+                                c = (st >> (3 * k)) & 7
+                                c = min(7, c + 1) if ok else 0
+                                st = (st & ~(7 << (3 * k))) | (c << (3 * k))
+                                if c >= self.streak_len:
+                                    g = self.task_bonus << rank
+                                    if reg >= 0:
+                                        g = (g * self.pools[reg][k]) // self.pool_max
+                                        pool_used[reg][k] += 1
+                                    add = min(g, emax - E)
+                                    E += add
+                                    ledger[12] += add
+                                    ledger[8] += g - add
+                                    self.task_count[k] += 1
+                            self.streak[s] = st
                     elif op == IN:
                         # docs/17 day 6: a fresh input x, written into the I/O cell (the last cell of the own slot, both
                         # strands), the head moved there and A = x; it awaits one answer
@@ -945,6 +1111,8 @@ class World:
                                 # docs/17 day 6: A = the neighbour's signal at the start of the tick (0 if no processor)
                                 nb = ((s // self.W + dy) % self.R) * self.W + (s % self.W + dx) % self.W
                                 A = sig_old[nb] if alive[nb] else 0
+                                if ladder:
+                                    self.ldir[s] = c & 7   # docs/17 section 18: the social task's partner
                             elif op == EAT:
                                 # one EAT per tick, aimed at a neighbour that is alive (live flags of the tick start)
                                 nb = ((s // self.W + dy) % self.R) * self.W + (s % self.W + dx) % self.W
@@ -991,6 +1159,14 @@ class World:
                     E_[s] = E
                 if d5:
                     xs_[s] = xs
+
+        # 1b. docs/17 section 18: the pools pay for this tick's rewards and refill
+        if ladder and self.nreg:
+            pm, pin = self.pool_max, self.pool_in
+            for r in range(self.nreg):
+                row, used = self.pools[r], pool_used[r]
+                for k in range(LADDER_NTASK):
+                    row[k] = min(pm, max(0, row[k] - used[k]) + pin)
 
         # 2a. docs/17 day 5: predation, on the stores after step 1; every prey's eaters in increasing key order
         if eat_req:
@@ -1080,6 +1256,7 @@ class World:
                 child_[c] = -1
                 self.A[c] = self.A[s]
                 self.sig[c], self.xin[c], self.tmask[c], self.streak[c] = self.sig[s], self.xin[s], self.tmask[s], self.streak[s]
+                self.ldir[c] = self.ldir[s]
                 self.age[c] = self.age[s]
                 self.depth[c] = self.depth[s]
                 copied_[c] = 0
@@ -1246,6 +1423,15 @@ def main(argv=None):
     g3.add_argument("--eat-eff", type=int, default=8, help="day 5: the eater keeps eat-eff / 16 of what it takes")
     g3.add_argument("--c-walk", type=int, default=4, help="day 6: energy for a one-slot move that touches land")
     g3.add_argument("--task-bonus", type=int, default=8, help="day 6: task bonus unit (x^1, x+1: 1 unit; x^3, x-1: 4 units)")
+    g3.add_argument("--ladder", action="store_true", help="day 6 option (docs/17 section 18): 4-bit inputs, 20 ranked tasks "
+                    "plus the social task, depletable regional task pools")
+    g3.add_argument("--streak-len", type=int, default=7, help="ladder: correct answers in a row before a task pays")
+    g3.add_argument("--pool-cell", type=int, default=32, help="ladder: pool regions of pool-cell x pool-cell slots (0 = no pools)")
+    g3.add_argument("--pool-max", type=int, default=4096, help="ladder: pool capacity per region and task")
+    g3.add_argument("--pool-in", type=int, default=64, help="ladder: pool refill per tick")
+    g3.add_argument("--resume", default=None, help="continue from an engine checkpoint (gpu/dna_world.cu --checkpoint)")
+    g3.add_argument("--fork", action="store_true", help="with --resume: allow a day-6 checkpoint without --ladder to "
+                    "continue with --ladder")
     g3.add_argument("--shade", action="store_true", help="day 3 option (docs/17 section 14): light gains times (9 - live neighbours) / 9")
     g3.add_argument("--land-cell", type=int, default=32, help="day 3: terrain noise lattice spacing in slots")
     g3.add_argument("--land-thr", type=int, default=32768, help="day 3: land where the noise >= land-thr / 65536")
@@ -1276,7 +1462,9 @@ def main(argv=None):
               c_copy=a.c_copy, maint=a.maint, inflow_land=a.inflow_land, land_cell=a.land_cell, land_thr=a.land_thr,
               year_days=a.year_days, moon_days=a.moon_days, season_amp=a.season_amp, lat_amp=a.lat_amp, lmoon=a.lmoon,
               shade=a.shade, c_move=a.c_move, c_fly=a.c_fly, eat_shift=a.eat_shift, eat_eff=a.eat_eff,
-              c_walk=a.c_walk, task_bonus=a.task_bonus)
+              c_walk=a.c_walk, task_bonus=a.task_bonus, ladder=a.ladder, streak_len=a.streak_len,
+              pool_cell=a.pool_cell, pool_max=a.pool_max, pool_in=a.pool_in)
+    t_first = w.load_checkpoint(a.resume, a.fork, a.uniform_code) if a.resume else 0
     t_init = time.perf_counter() - t0
     params = {"N": w.N, "G": w.G, "S": w.S, "ticks": a.ticks, "seed": w.seed, "I": w.I, "T": w.T, "mu": w.mu,
               "D": w.D, "F": w.F, "double": w.double, "code": "uniform" if a.uniform_code else "standard", "dna2": w.dna2,
@@ -1294,6 +1482,9 @@ def main(argv=None):
             params.update(gh=list(w.gh), c_copy=w.c_copy, maint=w.maint, inflow_land=w.inflow_land, shade=w.shade)
         if w.d6:
             params.update(c_walk=w.c_walk, task_bonus=w.task_bonus)
+        if w.ladder:
+            params.update(ladder=True, streak_len=w.streak_len, pool_cell=w.pool_cell, pool_max=w.pool_max,
+                          pool_in=w.pool_in, resume=a.resume, fork=a.fork)
         if w.d5:
             params.update(c_move=w.c_move, c_fly=w.c_fly, eat_shift=w.eat_shift, eat_eff=w.eat_eff)
         if w.d4:
@@ -1303,6 +1494,8 @@ def main(argv=None):
 
     out = sys.stdout
     since = (0, 0, 0, 0)
+    if a.resume:                                # a resumed run's census continues from the checkpoint's counters
+        since = (w.births, w.faithful, w.spontaneous, w.deaths)
     last_census = None
     t_hash = 0.0
     # "tick t" labels the state after tick t, t = 0 .. ticks-1; the initial state is "tick -1", printed only with
@@ -1312,7 +1505,7 @@ def main(argv=None):
         th = time.perf_counter()
         out.write("tick -1 hash %016x\n" % w.state_hash())
         t_hash += time.perf_counter() - th
-    for t in range(a.ticks):
+    for t in range(t_first, a.ticks):
         w.tick()                                # uses t in rnd
         last = t == a.ticks - 1
         h = None

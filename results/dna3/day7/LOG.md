@@ -61,3 +61,12 @@ Picture and emergence checks every 2 hours; entries below give only measured num
   tick 20,479 (9 entries in events.json, all before).
 - Rate about 4.5 ticks per second; D7_big.ops 8.3 MB after 4 op censuses. O5 tick 10,045,439, O6 tick 9,103,359.
   Disk: adler40 108 GB, knecht24 32 GB free.
+
+## 2026-10-11 09:50 UTC: tick 174,079
+
+- 11,551,344 alive (zone 0 5,762,406 / zone 1 5,788,938; 6,046,660 on land); +12,382 since tick 143,359.
+- Task code in 11,549,627. Rewarded answers: x^1 614.1 G, x+1 2,699.7 G, x^3 569.0 G, x-1 9.21 G (+0.585 G per
+  interval, constant).
+- Eaters 433,285 (falling), movers 3,438,034, WAIT 28,706, SIGNAL 3,903,745, LISTEN 1,491,287; 99,101 distinct genes
+  (falling); deepest lineage 797. Top-10 order unchanged; still no new operation sequence since tick 20,479.
+- About 4.4 ticks per second. O5 tick 11,335,679, O6 tick 11,130,879. Disk: adler40 108 GB, knecht24 32 GB free.

@@ -1071,3 +1071,98 @@ python tools/dna3_verify.py --host knecht24 --bin '~/universe2/dna3/dna_world3i 
 MODES=plant,clade,traits,animals sh dna3_open.sh O7_day7 ./dna_world3i 1 10240 102400 "--n-seed 4096 --seed-terrain sea --genome \"ATG AGA GCT CTT TTA GGT\"" --days 1,2,3,4,5,6 --N 104857600 --G 256 --seed 2 --mu 0.001 --W 640 --land-cell 64 --shade --T 0 --op-census O7_day7.ops
 python tools/dna3_activity.py O7_day7.ops --seed-genome "ATG AGA GCT CTT TTA GGT" --max-census 195 --out O7_activity
 ```
+
+## 18. Breaking the plateau: the long ladder, depletable task pools and the social task (D8, a fork of D7)
+
+Section 17 found a plateau in O7 after 1.4 million ticks, and D7 (3 x 10^9 cells) showed the same signs by tick
+200,000: the ten most common genes unchanged since tick 20,479, diversity and eaters slowly falling, the landscape
+static, the hard task x-1 growing at a constant rate. Four reasons were read from the runs: incumbency (with T = 0 a
+slot is held until starvation), nothing left to climb (four 2-bit tasks), a fixed environment, no arms race and no
+use for signals (section 16 signal-flow reading). The user asked (2026-10-11) for depletable task resources, a longer
+ladder with 4-bit inputs and tasks that build on each other, more profitable predation and the social task, built and
+run as a fork of D7 on the free GPU while D7 continues unchanged as the control.
+
+### 18.1 Rules (`--ladder`, a day-6 option; exact)
+
+**Input and answer.** IN draws `x = rnd(t, s, 4000) mod 16`, writes the high half `a = x >> 2` into cell G-2 and the
+low half `b = x & 3` into cell G-1 of the own slot (both strands), puts the head on cell G-1, sets `A = b`, `xin = x`,
+`open = 1`. The answer of OUT is the two I/O cells as the organism left them: `v = 4 * cell(G-2) + cell(G-1)` (read
+live). Programs therefore compute in place with FLIP, INC, LDA, STA, L1, R1 and the conditionals. A processor's `xin`
+is 16 ("no input") from birth until its first IN.
+
+**The ladder** (`LADDER_TASKS` in `sim/dna_ref.py`, `ladder_f` in the engine). A task is correct when
+`(v & mask) == (f(x) & mask)`; mask 15 compares all four bits, mask 3 the low cell only:
+
+| rank | bonus (task_bonus 8) | tasks | shortest program on the I/O cells |
+|---:|---:|---|---|
+| 0 | 8 | x^1, x^4, x+4, x&12 | 1 to 2 (e.g. `FLIP`; `L1 FLIP`; `L1 INC`; `INC JNZB`) |
+| 1 | 16 | x^5, x+8, x&3, 4x, a (low cell = high half) | 3 to 4 (e.g. `INC JNZB L1 STA`, `L1 LDA R1 STA`) |
+| 2 | 32 | x\|3, x/4 | 5 to 6 |
+| 3 | 64 | 15-x; the social task | 7 (`FLIP INC INC L1 FLIP INC INC`) |
+| 4 | 128 | x+1 (with carry), x-1, 2x, x/2, parity, a xor b (low cell) | 8 or more |
+
+The rank is the length of the shortest program that computes the task for all 16 inputs and terminates, found by
+`tools/dna3_ladder_rank.py` (exhaustive over the nine instructions up to length 7; `results/dna3/ladder_rank.json`).
+The candidates came from the named functions of docs/07 and two-input functions of the halves; docs/07 records which
+named functions a machine reaches, not how often, so the difficulty was measured on the organisms' own machine
+instead. A first ranking also counted programs that hang in a JNZB loop (x+1 by `INC LDA JNZB L1 INC`, correct only
+because it never stops when there is no carry); with termination required x+1 moved from rank 2 to rank 4.
+
+**Anti-guessing.** Each input gets one answer; per task a 3-bit streak counts correct answers in a row (reset by a
+wrong one), and a task pays when its streak reaches `streak_len` (default 7). Only tasks that a constant answer
+matches on at most half of the inputs and the plain echo (answer = x) on at most a quarter are used, so guessing
+earns about (1/2)^7 or (1/4)^7 of a reward.
+
+**The social task** (index 18, rank 3). LISTEN also records its direction (`ldir`, 8 = none). The social task is correct
+when the low cell equals `b xor b'`, where b' is the low half of the input of the neighbour in direction ldir at the
+start of the tick; it counts as wrong if there was no listen, or that slot holds no processor or one without an input.
+b' can only be learned from that neighbour's SIGNAL (after its IN, A holds its b), so the task rewards listening to a
+neighbour that signals: cooperation, and free-riding by listeners that never signal.
+
+**Depletable pools.** The grid is divided into regions of `pool_cell` x `pool_cell` slots (default 32; 0 = no pools).
+Each region has one pool per task, `pool_max` (4,096) at the start. A paying task gives
+`floor((task_bonus << rank) * pool / pool_max)` with the pool value of the start of the tick and uses one unit. After
+step 1 (new step 1b) every pool becomes `min(pool_max, max(0, pool - used) + pool_in)` (pool_in 64). A task that many
+organisms of a region compute pays little; a rare one pays fully: frequency-dependent selection.
+
+**Predation.** `--eat-eff 12` (the eater keeps 12/16 of what it takes instead of 8/16); no rule change.
+
+**State, hash, census, checkpoints.** Processors gain `ldir` (17th hashed field); the streak field now holds 19 3-bit
+counters; the pools are hashed after the counters, region by region and task by task. The census `tasks` list has 19
+entries and a `pools` list gives each task's total over the regions. Checkpoint version 4 adds ldir, 19 task counts
+and the pools. `--resume FILE --fork` continues a version-3 day-6 checkpoint with `--ladder`: every processor's xin
+becomes 16, open, streak 0, ldir none, the pools start full and the task counts at 0; everything else continues. The
+reference (`sim/dna_ref.py --resume ... --fork`) reads engine checkpoints too.
+
+### 18.2 Loopholes found in the reference first
+
+1. With streak 6, a plain echo matched x&14 on every even and x|1 on every odd input: 535,404 units of task energy
+   in 400 ticks of a 32 x 32 test world. With streak 7 and x&14, x|1 removed (they agree with the echo on half the
+   inputs) the echo earns 5,096 and holds 208 organisms, fewer than a plain plant.
+2. Newborns had input 0, so an echo next to a newborn solved the social task (b xor 0). Hence "no input" = 16 until
+   the first IN.
+
+### 18.3 Verification
+
+Five fresh ladder worlds were added to `tools/dna3_verify.py` (the x^1 program `IN FLIP OUT` with pools, signallers
+and listeners for the social task with streak 4, a hanging carry loop without pools and eat_eff 12, plants with mu
+0.03, the uniform code at G = 255) and two checkpoint tests: a version-3 day-6 checkpoint written by the old engine
+build, forked into `--ladder`, and a version-4 ladder checkpoint resumed, each continued by the engine and by the
+reference for 300 ticks. **All identical on every tick** (the five worlds, 2,200 tick hashes; the two checkpoint
+tests, 600); the reference reproduces the 31 earlier configurations unchanged.
+
+### 18.4 D8: the fork
+
+`D8_ladder`: D7's checkpoint at tick 204,800 (version 3, 11.56 million organisms), continued with `--ladder` and
+`--eat-eff 12`, everything else as D7 (`--days 1,2,3,4,5,6 --shade --T 0 --mu 0.001 --seed 7`, 3,424 x 3,424 slots),
+`--op-census` for the day-7 measurement, census every 5,120 ticks, checkpoint every 51,200, open-ended, on knecht24's
+RTX 3060 (GPU 0, shared with another of the user's jobs) from 2026-10-11 10:35 UTC; D7 continues on the RTX 4090 as the
+control. Results follow in the run log (`results/dna3/fork8/LOG.md`) and in this section.
+
+**Predictions, written at the fork.** (i) D7's programs (`... LDA ... OUT IN INC`) now add 1 to the low cell
+without a carry: that is the 4-bit x+1 on 12 of 16 inputs, so with streak 7 they earn the rank-4 x+1 reward on about
+(3/4)^7 = 13 % of answers and nothing else; task income first drops, and a carry (the full x+1) is the nearest step up; (ii) rank-0 and rank-1 computations spread within 10^4 ticks;
+(iii) with pools, several tasks are computed side by side in the same region instead of one, measurable as the number
+of tasks with substantial reward counts and as patchiness in the traits map; (iv) the social task is the hardest to
+start (it needs a signalling neighbour and a listening partner at once) and may not appear in the first 10^5 ticks;
+(v) if any of this works, the day-7 statistics of D8 show new adaptive activity after the fork where D7 shows none.

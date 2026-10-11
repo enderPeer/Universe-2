@@ -28,6 +28,9 @@ TASKER1 = "ATG AGA TCA AAT TAT TCG GCT CTT TTA GGT"   # START HARVEST IN FLIP LD
 TASKERM1 = "ATG AGA TCA CAA CAA CAA TAT TCG GCT CTT TTA GGT"   # IN INC INC INC LDA OUT: x-1
 SIGNALER = "ATG AGA TCA CGA CGG AAG TCG GCT CTT TTA GGT"  # START HARVEST IN SIGNAL LISTEN <E> OUT ALLOC COPY TERM DIVIDE
 WALKER = "ATG AGA ACA AGA GCT CTT TTA GGT"       # the swimmer of day 5; on day 6 it walks on land too
+LX1 = "ATG AGA TCA AAT TCG GCT CTT TTA GGT"      # ladder (section 18): IN FLIP OUT computes x^1 on the I/O cells
+LSOC = "ATG AGA TCA CGA CGG AAA TCG GCT CTT TTA GGT"  # ladder: IN SIGNAL LISTEN <N> OUT (social task partner)
+LCARRY = "ATG AGA TCA CAA TAT GTT CGT CAA TCG GCT CTT TTA GGT"  # ladder: IN INC LDA JNZB L1 INC OUT (hangs in LDA JNZB unless the carry is needed; exercises the loop)
 
 CONFIGS = [
     ("dna1_t1", "--N 16384 --G 256 --ticks 200 --seed 1"),
@@ -89,6 +92,18 @@ CONFIGS = [
                           "--seed 89 --mu 0.01 --F 4 --n-seed 16 --genome 'AAA CCG CTG ATT ATA CTT AGA AAG CCC AGC'"),
     ("day6_plant_mu", "--days 1,2,3,4,5,6 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 1000 --seed 97 --mu 0.03 "
                       "--n-seed 16 --seed-terrain sea --genome '%s'" % PLANT),
+    # docs/17 section 18: the long ladder
+    ("ladder_x1_pools", "--days 1,2,3,4,5,6 --ladder --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 400 --seed 7 "
+                        "--pool-cell 8 --pool-max 256 --pool-in 4 --n-seed 16 --seed-terrain sea --genome '%s'" % LX1),
+    ("ladder_social", "--days 1,2,3,4,5,6 --ladder --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 400 --seed 101 "
+                      "--streak-len 4 --n-seed 64 --genome '%s'" % LSOC),
+    ("ladder_carry_nopool", "--days 1,2,3,4,5,6 --ladder --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 400 "
+                            "--seed 103 --pool-cell 0 --streak-len 5 --eat-eff 12 --n-seed 16 --genome '%s'" % LCARRY),
+    ("ladder_plant_mu", "--days 1,2,3,4,5,6 --ladder --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 107 "
+                        "--mu 0.03 --pool-cell 16 --eat-eff 12 --n-seed 16 --seed-terrain sea --genome '%s'" % PLANT),
+    ("ladder_uniform_g255", "--days 1,2,3,4,5,6 --ladder --uniform-code --shade --T 0 --W 16 --land-cell 8 --N 65280 --G 255 "
+                            "--ticks 400 --seed 109 --mu 0.01 --F 4 --pool-cell 8 --pool-max 100 --pool-in 3 --n-seed 16 "
+                            "--genome 'AAA CCG CTG ATT CTT AGA AAG CCC AGC'"),
 ]
 
 

@@ -1,0 +1,296 @@
+[
+ {
+  "task": "x^1",
+  "mask": 15,
+  "balanced": true,
+  "shortest": 1,
+  "program": "FLIP"
+ },
+ {
+  "task": "x^4",
+  "mask": 15,
+  "balanced": true,
+  "shortest": 2,
+  "program": "L1 FLIP"
+ },
+ {
+  "task": "x^5",
+  "mask": 15,
+  "balanced": true,
+  "shortest": 3,
+  "program": "FLIP L1 FLIP"
+ },
+ {
+  "task": "15-x",
+  "mask": 15,
+  "balanced": true,
+  "shortest": 7,
+  "program": "FLIP INC INC L1 FLIP INC INC"
+ },
+ {
+  "task": "x+1",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "x-1",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "x+2",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "x+4",
+  "mask": 15,
+  "balanced": true,
+  "shortest": 2,
+  "program": "L1 INC"
+ },
+ {
+  "task": "x+8",
+  "mask": 15,
+  "balanced": true,
+  "shortest": 3,
+  "program": "L1 INC INC"
+ },
+ {
+  "task": "-x",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "x^8",
+  "mask": 15,
+  "balanced": true,
+  "shortest": 3,
+  "program": "L1 INC INC"
+ },
+ {
+  "task": "2x",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "x/2",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "4x",
+  "mask": 15,
+  "balanced": true,
+  "shortest": 4,
+  "program": "INC JNZB L1 STA"
+ },
+ {
+  "task": "x/4",
+  "mask": 15,
+  "balanced": true,
+  "shortest": 6,
+  "program": "L1 LDA INC JNZB R1 STA"
+ },
+ {
+  "task": "swap",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "x|1",
+  "mask": 15,
+  "balanced": true,
+  "shortest": 6,
+  "program": "FLIP SKZ FLIP INC SKNZ STA"
+ },
+ {
+  "task": "x&14",
+  "mask": 15,
+  "balanced": true,
+  "shortest": 6,
+  "program": "INC SKZ INC INC SKZ INC"
+ },
+ {
+  "task": "x&3",
+  "mask": 15,
+  "balanced": true,
+  "shortest": 3,
+  "program": "L1 INC JNZB"
+ },
+ {
+  "task": "x&12",
+  "mask": 15,
+  "balanced": true,
+  "shortest": 2,
+  "program": "INC JNZB"
+ },
+ {
+  "task": "x|3",
+  "mask": 15,
+  "balanced": true,
+  "shortest": 5,
+  "program": "INC JNZB FLIP INC FLIP"
+ },
+ {
+  "task": "parity",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "x>=8",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "x<8",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "2x+1",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "3x",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "5x",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "rotl",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "rotr",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "bitrev",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "x%3",
+  "mask": 15,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "a xor b",
+  "mask": 3,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "a+b",
+  "mask": 3,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "b-a",
+  "mask": 3,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "a-b",
+  "mask": 3,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "a and b",
+  "mask": 3,
+  "balanced": false,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "a or b",
+  "mask": 3,
+  "balanced": false,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "max",
+  "mask": 3,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "min",
+  "mask": 3,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "a==b",
+  "mask": 3,
+  "balanced": false,
+  "shortest": null,
+  "program": null
+ },
+ {
+  "task": "a",
+  "mask": 3,
+  "balanced": true,
+  "shortest": 4,
+  "program": "L1 LDA R1 STA"
+ },
+ {
+  "task": "b xor 3a",
+  "mask": 3,
+  "balanced": true,
+  "shortest": null,
+  "program": null
+ }
+]
