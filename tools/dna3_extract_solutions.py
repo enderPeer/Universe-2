@@ -324,13 +324,13 @@ def spell_for(ops, table):
     return " ".join(R.codon_text(first[R.OP_INDEX[o]]) for o in ops)
 
 
-def verify(spelling, mode, G, ticks, uniform):
+def verify(spelling, mode, G, ticks, uniform, macro_table=None):
     """Seed the gene alone in a 4 x 4-slot world of the reference and count its answers per task."""
     days = (1, 2, 3, 4, 5, 6)
     w = R.World(16 * G, G, I=16, T=0, mu=0.0, D=0, F=0, double=True, uniform=uniform, blank=True, seed=7,
                 genome=R.parse_genome(spelling), n_seed=1, dna2=True, days=days, seed_slots=[0], W=4, firm=0,
                 land_cell=1, land_thr=65536, emax=1 << 20, e_seed=1 << 20, eshift=0, ladder=mode.name == "ladder",
-                streak_len=1, pool_cell=0)
+                streak_len=1, pool_cell=0, macros=macro_table, in_fresh=True)
     for _ in range(ticks):
         w.tick()
     seen = all(w.inputs_seen[x] > 0 for x in range(mode.n_in))
@@ -404,12 +404,12 @@ def main():
     mode = Mode(a.mode)
     days = [int(x) for x in a.days.split(",")] if a.days else []
     from dna3_ckpt_genes import table_for
-    table = table_for(days, a.uniform_code)
+    macro_table = R.parse_macros(a.macros) if a.macros else None   # the run's macro table (section 19.2 text format)
+    table = table_for(days, a.uniform_code, macro_table)
     macros = {}
-    if a.macros:
-        with open(a.macros) as f:
-            for m in json.load(f)["macros"]:
-                macros[m["name"]] = tuple(m["body"])
+    if macro_table:
+        for i, (_name, _cod, body) in enumerate(macro_table):
+            macros["M%d" % i] = tuple(R.OP_NAMES[o] for o in body)
     known = {}
     if os.path.exists(a.rank_json):
         with open(a.rank_json) as f:
@@ -465,7 +465,7 @@ def main():
             if a.verify and rec["tasks"]:
                 sp = g.get("spelling") or spell_for(ops, table)
                 if sp not in verified_cache:
-                    verified_cache[sp] = verify(sp, mode, a.G, a.verify_ticks, a.uniform_code)
+                    verified_cache[sp] = verify(sp, mode, a.G, a.verify_ticks, a.uniform_code, macro_table)
                 v = verified_cache[sp]
                 g["verify"] = v
                 g["verified_tasks"] = [mode.tasks[k][0] for k in v["tasks"]]
@@ -538,7 +538,13 @@ def main():
             json.dump({"schema": "dna3-macros-v1", "mode": mode.name, "source": label, "tick": tick,
                        "donor_usage": {c: usage[c] for c in (a.codons.split(",") if not a.uniform_code else [])},
                        "macros": chosen}, f, indent=1)
-        print("\npromotion file %s: %d macros" % (a.promote, len(chosen)))
+        # the table the engines read (--macros FILE, section 19.2): "NAME CODON OP OP ...", one macro per line
+        txt = a.promote[:-5] + ".txt" if a.promote.endswith(".json") else a.promote + ".txt"
+        with open(txt, "w") as f:
+            f.write("# macro table of docs/17 section 19.2, promoted from %s (tick %s, mode %s)\n" % (label, tick, mode.name))
+            for m in chosen:
+                f.write("%s %s %s   # %s, rank %d, %d carriers\n" % (m["macro"], m["codon"], " ".join(m["body"]), m["name"], m["rank"], m["carriers"]))
+        print("\npromotion file %s (+ %s): %d macros" % (a.promote, txt, len(chosen)))
         for m in chosen:
             print("  %s %s  %-8s rank %d  body (%d): %s  carriers %d%s" % (m["macro"], m["codon"], m["name"], m["rank"], m["len"], " ".join(m["body"]), m["carriers"],
                                                                       "" if m["verified"] is None else ("  verified" if m["verified"] else "  NOT verified")))

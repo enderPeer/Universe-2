@@ -75,6 +75,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <string>
 #include <vector>
 #include <map>
@@ -90,6 +91,9 @@ typedef uint64_t u64; typedef int64_t i64; typedef uint32_t u32; typedef int32_t
 /* ---------------------------------------------------------------- operations and the codon table (section 3) */
 enum Op : u8 { NOP = 0, START, STOP, COPY, R1, L1, R3, L3, JNZB, SETP, SETQ, ALLOC, DIVIDE, SKNZ, SKZ, LDA, STA,
                INC, FLIP, SEEK, COPYR, REWIND, TERM, HARVEST, SENSE, WAIT, EAT, MOVE, EXEC, SIGNAL, LISTEN, IN, OUT, N_OPS };   /* SENSE, WAIT: day 4; EAT, MOVE, EXEC: day 5 */   /* TERM only under --dna2 (docs/15), HARVEST on day 3 (docs/17) */
+/* docs/17 section 19: macro i (--macros FILE) is the operation code N_OPS + i, named M0 .. M7 */
+#define MACRO_MAX 8
+#define MACRO_BODY_MAX 32
 
 /* letters ACGT, U read as T, case-insensitive (section 13 "Genome argument") */
 static int letter(char c) { switch (c) { case 'A': case 'a': return 0; case 'C': case 'c': return 1; case 'G': case 'g': return 2;
@@ -217,6 +221,8 @@ struct Params {
     int d5; i64 c_move, c_fly, eat_shift, eat_eff;   /* docs/17 day 5 */
     int d6; i64 c_walk, task_bonus;                   /* docs/17 day 6 */
     int ladder; i64 streak_len, pool_cell, pool_max, pool_in, nreg, rx;   /* docs/17 section 18 */
+    int in_fresh;             /* docs/17 section 19: the n-th IN of a processor's tick draws rnd(t, s, 4000 + n) */
+    int nmac; int mlen[MACRO_MAX]; u8 mbody[MACRO_MAX * MACRO_BODY_MAX];   /* docs/17 section 19: the macro table */
     i64 year_days, moon_days, season_amp, lat_amp, lmoon;
     i64 W, R, firm;
     int opc;                  /* --op-census (docs/17 day 7): output only, never read by the world's rules */
@@ -224,7 +230,7 @@ struct Params {
 
 /* the ten 64-bit fields of section 4 in the hash order of section 8, then the docs/17 day-1 energy store E
  * (hashed only on day 1) */
-struct Proc { i64 slot, pc, H, P, Q, child, A, age, depth, copied, E, xs, sig, xin, open, streak, ldir; };   /* ldir: section 18 */   /* sig..streak: day 6 */   /* xs: day 5, the slot whose gene runs */
+struct Proc { i64 slot, pc, H, P, Q, child, A, age, depth, copied, E, xs, sig, xin, open, streak, ldir, mk, mpc; };   /* mk, mpc: section 19 (the macro being executed, -1 none, and the index into its body) */   /* ldir: section 18 */   /* sig..streak: day 6 */   /* xs: day 5, the slot whose gene runs */
 
 /* one birth of this tick; depth = the child's lineage depth, page = the parent's age at the division (before step
  * 4), copied = cells the parent wrote into the child since the claim; a spontaneous birth has parent -1, page -1,
@@ -257,6 +263,7 @@ struct World {
     i32 *eat_target, *move_op, *move_to;   /* day 5: prey of this tick's EAT, MOVE operand, granted move target */
     i64 *e_loss, *e_gain, *move_cost;      /* day 5: predation results, cost of a proposed move */
     u8 *sig_old; u64 *task_count;          /* day 6: signals at the start of the tick; rewarded answers per task */
+    u64 *macro_exec;                       /* section 19: cumulative macro codons fetched, per macro (census) */
     u8 *xin_old; i64 *pools; u64 *pool_used;   /* section 18: inputs at the tick start (16 none); task pools per region */
     u64 *ophash, *opbirth, *op_cnt; u8 *opflag;   /* --op-census, output only: op hash now / at birth, op-faithful births, flags */
 };
@@ -391,11 +398,12 @@ __host__ __device__ inline i64 sky(const Params &P, i64 t, i64 s, u32 ch[4])
     return up ? (P.lmax * fac) / 16 : P.lmoon * ml;
 }
 
-/* docs/17 days 3 and 4: the gene of slot base (codons 1 .. len-1) contains a codon of operation op */
+/* docs/17 days 3 and 4: the gene of slot base (codons 1 .. len-1) contains a codon of operation op (opc = N_OPS: any
+ * macro codon, section 19) */
 __host__ __device__ inline bool has_op(const u8 *f, u64 base, const u8 *table, i64 maxk, u32 opc)
 {
     if (table[codon_at(f, base, 0)] == STOP) return false;
-    for (i64 k = 1; k <= maxk; k++) { u32 op = table[codon_at(f, base, k)]; if (op == STOP) return false; if (op == opc) return true; }
+    for (i64 k = 1; k <= maxk; k++) { u32 op = table[codon_at(f, base, k)]; if (op == STOP) return false; if (op == opc || (opc == N_OPS && op >= N_OPS)) return true; }
     return false;
 }
 
@@ -428,8 +436,9 @@ __global__ void k_init(World w, Params P, u64 nbytes, int blank)
 __global__ void k_execute(World w, Params P, i64 t, i64 lam0)
 {
     i64 s = (i64)blockIdx.x * blockDim.x + threadIdx.x;
-    u64 l_pass = 0, l_harv = 0, l_instr = 0, l_copy = 0, l_waste = 0, l_task = 0, l_tc[LADDER_NT];
+    u64 l_pass = 0, l_harv = 0, l_instr = 0, l_copy = 0, l_waste = 0, l_task = 0, l_tc[LADDER_NT], l_mx[MACRO_MAX];
     for (int k = 0; k < LADDER_NT; k++) l_tc[k] = 0;
+    for (int k = 0; k < MACRO_MAX; k++) l_mx[k] = 0;
     if (s < P.S && w.live[s]) {
     Proc p = w.proc[s];
     const i64 N = (i64)P.N, G = P.G, maxk = P.maxk;
@@ -452,7 +461,7 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam0)
     }
 #define GO_HOME() do { xs = s; csrc = w.fwd; cb0 = base; len = gene_len(w.fwd, base, table, maxk); } while (0)
     i64 budget = P.I;
-    int ter = 0; bool harvested = false;
+    int ter = 0; bool harvested = false; u64 n_in = 0;   /* n_in: INs executed earlier in this tick (section 19 --in-fresh) */
     i64 lam = lam0, shade_k = 9; u32 chan[4] = { 0, 0, 0, 0 };
     if (P.d1) {
         ter = w.terrain[s] == 1 ? 1 : 0;
@@ -469,9 +478,18 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam0)
     }
     for (i64 n = 0; n < budget; n++) {
         if (P.d1) { if (p.E < 1) break; p.E -= 1; l_instr += 1; }
-        u32 op = NOP;
-        if (p.pc >= 0 && p.pc <= maxk) op = table[codon_at(csrc, (u64)cb0, p.pc)];   /* own gene live, a foreign one from the snapshot */
-        p.pc += 1;
+        u32 op = NOP; bool in_body = false;
+        if (P.nmac && p.mk >= 0) {   /* docs/17 section 19: inside a macro the operation comes from its body, pc is untouched */
+            op = P.mbody[p.mk * MACRO_BODY_MAX + p.mpc]; p.mpc += 1; in_body = true;
+        } else {
+            if (p.pc >= 0 && p.pc <= maxk) op = table[codon_at(csrc, (u64)cb0, p.pc)];   /* own gene live, a foreign one from the snapshot */
+            p.pc += 1;
+            if (op >= N_OPS) {   /* a macro codon: its unit is paid, the body starts with the next iteration */
+                int m = (int)(op - N_OPS); l_mx[m] += 1;
+                if (P.mlen[m] > 0) { p.mk = m; p.mpc = 0; }
+                op = NOP;
+            }
+        }
         bool stall = false, wait_end = false;
         switch (op) {
         case SENSE:    /* docs/17 day 4: operand consumed; skip the next codon if the operand's sky channel is nonzero */
@@ -479,14 +497,14 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam0)
             break;
         case SIGNAL: p.sig = p.A; break;               /* docs/17 day 6: visible to the neighbours from the next tick */
         case IN: if (P.ladder) {                       /* docs/17 section 18: 4-bit input, a into cell G-2, b into G-1 */
-            u32 xv = (u32)(rnd(P.seed, t, (u64)s, 4000) & 15u);
+            u32 xv = (u32)(rnd(P.seed, t, (u64)s, 4000 + (P.in_fresh ? n_in : 0)) & 15u); n_in += 1;   /* section 19: --in-fresh */
             WR(base + G - 2, xv >> 2); WR(base + G - 1, xv & 3u);
             p.A = xv & 3u; p.H = base + G - 1;
             if (xs == s) len = gene_len(w.fwd, base, table, maxk);
             p.xin = xv; p.open = 1;
             break;
         } else {                                       /* docs/17 day 6: input into the I/O cell (last cell of the slot), H there, A */
-            u32 xv = (u32)(rnd(P.seed, t, (u64)s, 4000) & 3u);
+            u32 xv = (u32)(rnd(P.seed, t, (u64)s, 4000 + (P.in_fresh ? n_in : 0)) & 3u); n_in += 1;
             p.A = xv; p.H = base + G - 1; WR(p.H, xv);
             if (xs == s) len = gene_len(w.fwd, base, table, maxk);
             p.xin = xv; p.open = 1;
@@ -556,9 +574,9 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam0)
             }
             break;
         case LDA: p.A = RD(p.H); break;
-        case SKZ: if (RD(p.H) == 0) p.pc += 1; break;
-        case SKNZ: if (RD(p.H) != 0) p.pc += 1; break;
-        case JNZB: if (RD(p.H) != 0) { p.pc -= 2; if (p.pc < 1) p.pc = 1; } break;
+        case SKZ: if (RD(p.H) == 0) { if (in_body) p.mpc += 1; else p.pc += 1; } break;     /* section 19: skips and jumps act within a body */
+        case SKNZ: if (RD(p.H) != 0) { if (in_body) p.mpc += 1; else p.pc += 1; } break;
+        case JNZB: if (RD(p.H) != 0) { if (in_body) { p.mpc -= 2; if (p.mpc < 0) p.mpc = 0; } else { p.pc -= 2; if (p.pc < 1) p.pc = 1; } } break;
         case SETP: p.P = p.H; break;
         case SETQ: p.Q = p.H; break;
         case REWIND: p.P = base; if (cbase >= 0) p.Q = cbase; break;
@@ -613,6 +631,7 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam0)
             break;
         }
         if (stall) break;                                 /* the tick ends before the wrap rule, as in the reference */
+        if (in_body && p.mpc >= P.mlen[p.mk]) p.mk = -1;   /* section 19: the body is done */
         if (p.pc >= len) { if (xs != s) GO_HOME(); p.pc = 1; }   /* the gene loops, skipping START; a foreign gene returns home */
         if (wait_end) break;
     }
@@ -629,6 +648,7 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam0)
         warp_add(&w.ledger[4], l_copy); warp_add(&w.ledger[8], l_waste);
     }
     if (P.d6) { warp_add(&w.ledger[12], l_task); for (int k = 0; k < (P.ladder ? LADDER_NT : 4); k++) warp_add(&w.task_count[k], l_tc[k]); }
+    if (P.nmac) for (int k = 0; k < P.nmac; k++) warp_add(&w.macro_exec[k], l_mx[k]);   /* section 19 (P.nmac is uniform across the grid) */
 }
 
 /* docs/17 section 18, step 1b: the pools pay for this tick's rewards and refill (one thread per region and task) */
@@ -789,6 +809,7 @@ __global__ void k_births(World w, Params P, i64 t)
     }
     Proc q; q.slot = c; q.pc = 1; q.H = c * P.G; q.P = c * P.G; q.Q = 0; q.child = -1; q.A = 0; q.age = 0;
     q.depth = w.proc[s].depth + 1; q.copied = 0; q.E = P.d1 ? w.div_energy[s] : 0; q.xs = c; q.sig = q.xin = q.open = q.streak = 0; q.ldir = 8; if (P.ladder) q.xin = 16;
+    q.mk = -1; q.mpc = 0;
     w.proc[c] = q; w.live[c] = 1; w.clade[c] = w.clade[s];
     u64 ph = gene_hash(w.fwd, (u64)s * P.G, w.table, P.maxk), ch = gene_hash(w.fwd, (u64)c * P.G, w.table, P.maxk);
     w.ghash[c] = ch;
@@ -896,6 +917,7 @@ __global__ void k_inflow_births(World w, Params P, i64 t)
     if (!expressible(w.fwd, base, w.table, P.maxk)) return;
     Proc q; q.slot = d; q.pc = 1; q.H = (i64)base; q.P = (i64)base; q.Q = 0; q.child = -1; q.A = 0;
     q.age = 0; q.depth = 0; q.copied = 0; q.E = P.d1 ? P.e_spont : 0; q.xs = d; q.sig = q.xin = q.open = q.streak = 0; q.ldir = 8; if (P.ladder) q.xin = 16;
+    q.mk = -1; q.mpc = 0;
     w.proc[d] = q; w.live[d] = 1; w.clade[d] = (i32)d;
     if (P.d1 && P.e_spont) atomicAdd((unsigned long long *)&w.ledger[2], (unsigned long long)P.e_spont);
     u64 ch = gene_hash(w.fwd, base, w.table, P.maxk);
@@ -910,7 +932,7 @@ __global__ void k_inflow_births(World w, Params P, i64 t)
 __global__ void k_census(World w, Params P)
 {
     i64 s = (i64)blockIdx.x * blockDim.x + threadIdx.x;
-    u64 e = 0, z0 = 0, z1 = 0, ll = 0, hv = 0, sn = 0, sl = 0, ea = 0, mv = 0, ex = 0, fo = 0, sg = 0, li = 0, tk = 0;
+    u64 e = 0, z0 = 0, z1 = 0, ll = 0, hv = 0, sn = 0, sl = 0, ea = 0, mv = 0, ex = 0, fo = 0, sg = 0, li = 0, tk = 0, mu = 0;
     if (s < P.S) {
         if (w.live[s]) {
             w.cens_depth[s] = (i32)w.proc[s].depth; w.ghash[s] = gene_hash(w.fwd, (u64)s * P.G, w.table, P.maxk);
@@ -921,7 +943,7 @@ __global__ void k_census(World w, Params P)
             if (P.d5) { u64 b = (u64)s * P.G; ea = has_op(w.fwd, b, w.table, P.maxk, EAT); mv = has_op(w.fwd, b, w.table, P.maxk, MOVE);
                         ex = has_op(w.fwd, b, w.table, P.maxk, EXEC); fo = w.proc[s].xs != s; }
             if (P.d6) { u64 b = (u64)s * P.G; sg = has_op(w.fwd, b, w.table, P.maxk, SIGNAL); li = has_op(w.fwd, b, w.table, P.maxk, LISTEN);
-                        tk = has_op(w.fwd, b, w.table, P.maxk, OUT); }
+                        tk = has_op(w.fwd, b, w.table, P.maxk, OUT); if (P.nmac) mu = has_op(w.fwd, b, w.table, P.maxk, N_OPS); }
         }
         else w.cens_depth[s] = w.claimed_by[s] >= 0 ? -2 : -1;
     }
@@ -929,7 +951,7 @@ __global__ void k_census(World w, Params P)
         warp_add(&w.cens_acc[0], e); warp_add(&w.cens_acc[1], z0); warp_add(&w.cens_acc[2], z1);
         warp_add(&w.cens_acc[3], ll); warp_add(&w.cens_acc[4], hv); warp_add(&w.cens_acc[5], sn); warp_add(&w.cens_acc[6], sl);
         warp_add(&w.cens_acc[7], ea); warp_add(&w.cens_acc[8], mv); warp_add(&w.cens_acc[9], ex); warp_add(&w.cens_acc[10], fo);
-        warp_add(&w.cens_acc[11], sg); warp_add(&w.cens_acc[12], li); warp_add(&w.cens_acc[13], tk);
+        warp_add(&w.cens_acc[11], sg); warp_add(&w.cens_acc[12], li); warp_add(&w.cens_acc[13], tk); warp_add(&w.cens_acc[14], mu);
     }
 }
 
@@ -1000,9 +1022,54 @@ static void make_terrain(std::vector<u8> &ter, u64 seed, i64 S, i64 W, i64 firm,
     }
 }
 
-static const char *OP_NAMES[N_OPS] = { "NOP", "START", "STOP", "COPY", "R1", "L1", "R3", "L3", "JNZB", "SETP", "SETQ", "ALLOC",
+static const char *OP_NAMES[N_OPS + MACRO_MAX] = { "NOP", "START", "STOP", "COPY", "R1", "L1", "R3", "L3", "JNZB", "SETP", "SETQ", "ALLOC",
                                        "DIVIDE", "SKNZ", "SKZ", "LDA", "STA", "INC", "FLIP", "SEEK", "COPYR", "REWIND", "TERM", "HARVEST", "SENSE", "WAIT", "EAT", "MOVE", "EXEC",
-                                       "SIGNAL", "LISTEN", "IN", "OUT" };
+                                       "SIGNAL", "LISTEN", "IN", "OUT", "M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7" };   /* M0 .. M7: section 19 */
+
+/* docs/17 section 19.2: the macro table from FILE, one macro per line "NAME CODON OP OP ..." (# comments; an empty body
+ * makes the codon a NOP that costs its unit: the control arm C). Fills P.nmac, P.mlen, P.mbody and the codon values
+ * (uniform code: 32 + i whatever the column says) and reassigns the codons in the table: a donor codon of the standard
+ * code (CTA, CTG from COPY; GCA, GCG from ALLOC; GGA, GGG from DIVIDE; ATA from SKNZ; TGC from COPYR) must still carry
+ * its donor's operation, a uniform codon 32 + i must be NOP. */
+static const char *MACRO_BODY_OPS[] = { "NOP", "FLIP", "INC", "LDA", "STA", "L1", "R1", "R3", "L3", "SKZ", "SKNZ", "JNZB", NULL };
+static const char *MACRO_DONORS[][2] = { { "CTA", "COPY" }, { "CTG", "COPY" }, { "GCA", "ALLOC" }, { "GCG", "ALLOC" }, { "GGA", "DIVIDE" }, { "GGG", "DIVIDE" }, { "ATA", "SKNZ" }, { "TGC", "COPYR" }, { NULL, NULL } };
+static void load_macros(Params &P, u8 *table, const std::string &path, bool uniform, std::vector<u64> &codons)
+{
+    FILE *f = fopen(path.c_str(), "r");
+    if (!f) { fprintf(stderr, "cannot read %s\n", path.c_str()); exit(1); }
+    char line[4096]; P.nmac = 0; codons.clear();
+    for (int k = 0; k < MACRO_MAX; k++) P.mlen[k] = 0;
+    memset(P.mbody, 0, sizeof P.mbody);
+    while (fgets(line, sizeof line, f)) {
+        char *hash = strchr(line, '#'); if (hash) *hash = 0;
+        std::vector<std::string> tok;
+        for (char *tp = strtok(line, " \t\r\n"); tp; tp = strtok(NULL, " \t\r\n")) tok.push_back(tp);
+        if (tok.empty()) continue;
+        if (tok.size() < 2) { fprintf(stderr, "macro line needs a name and a codon\n"); exit(1); }
+        if (P.nmac >= MACRO_MAX) { fprintf(stderr, "at most %d macros\n", MACRO_MAX); exit(1); }
+        int i = P.nmac;
+        if ((int)tok.size() - 2 > MACRO_BODY_MAX) { fprintf(stderr, "macro %s: body longer than %d\n", tok[0].c_str(), MACRO_BODY_MAX); exit(1); }
+        for (size_t j = 2; j < tok.size(); j++) {
+            int code = -1;
+            for (int b = 0; MACRO_BODY_OPS[b]; b++) if (tok[j] == MACRO_BODY_OPS[b]) { for (int o = 0; o < N_OPS; o++) if (!strcmp(OP_NAMES[o], MACRO_BODY_OPS[b])) code = o; }
+            if (code < 0) { fprintf(stderr, "macro %s: %s is not a body operation\n", tok[0].c_str(), tok[j].c_str()); exit(1); }
+            P.mbody[i * MACRO_BODY_MAX + P.mlen[i]] = (u8)code; P.mlen[i] += 1;
+        }
+        int v;
+        if (uniform) { v = 32 + i; if (table[v] != NOP) { fprintf(stderr, "uniform codon %d is not free\n", v); exit(1); } }
+        else {
+            std::string cod = tok[1]; for (char &c : cod) c = (char)toupper((unsigned char)c);
+            const char *donor_op = NULL;
+            for (int d = 0; MACRO_DONORS[d][0]; d++) if (cod == MACRO_DONORS[d][0]) donor_op = MACRO_DONORS[d][1];
+            if (!donor_op) { fprintf(stderr, "macro %s: codon %s is not a donor (CTA CTG GCA GCG GGA GGG ATA TGC)\n", tok[0].c_str(), cod.c_str()); exit(1); }
+            v = codon_value(cod.c_str());
+            int want = -1; for (int o = 0; o < N_OPS; o++) if (!strcmp(OP_NAMES[o], donor_op)) want = o;
+            if (table[v] != want) { fprintf(stderr, "macro %s: codon %s is already taken\n", tok[0].c_str(), cod.c_str()); exit(1); }
+        }
+        table[v] = (u8)(N_OPS + i); codons.push_back((u64)v); P.nmac += 1;
+    }
+    fclose(f);
+}
 
 /* ---------------------------------------------------------------- host side */
 static inline u64 fnv_bytes(u64 h, const u8 *p, u64 n) { for (u64 i = 0; i < n; i++) h = (h ^ p[i]) * 1099511628211ULL; return h; }
@@ -1058,6 +1125,7 @@ static u64 state_hash(Host &h)
         const Proc &p = h.proc[s];
         const i64 f[17] = { p.slot, p.pc, p.H, p.P, p.Q, p.child, p.A, p.age, p.depth, p.copied, p.E, p.xs, p.sig, p.xin, p.open, p.streak, p.ldir };
         for (int i = 0; i < (h.P.ladder ? 17 : h.P.d6 ? 16 : h.P.d5 ? 12 : h.P.d1 ? 11 : 10); i++) x = fnv_u64le(x, (u64)f[i]);   /* docs/17: E day 1, xs day 5, sig..streak day 6 */
+        if (h.P.nmac) { x = fnv_u64le(x, (u64)p.mk); x = fnv_u64le(x, (u64)p.mpc); }   /* section 19: after the last day-6 field */
     }
     for (int i = 0; i < (h.P.d3 ? 5 : 4); i++) x = fnv_u64le(x, h.counters[i]);   /* docs/17: starved on day 3 */
     if (h.P.ladder && h.P.nreg) {   /* section 18: the pools, region by region, task by task */
@@ -1079,6 +1147,7 @@ static void dump_state(Host &h, const char *path)
         const Proc &p = h.proc[s];
         const i64 v[17] = { p.slot, p.pc, p.H, p.P, p.Q, p.child, p.A, p.age, p.depth, p.copied, p.E, p.xs, p.sig, p.xin, p.open, p.streak, p.ldir };
         for (int i = 0; i < (h.P.ladder ? 17 : h.P.d6 ? 16 : h.P.d5 ? 12 : h.P.d1 ? 11 : 10); i++) put_u64le(f, (u64)v[i]);
+        if (h.P.nmac) { put_u64le(f, (u64)p.mk); put_u64le(f, (u64)p.mpc); }
     }
     for (int i = 0; i < (h.P.d3 ? 5 : 4); i++) put_u64le(f, h.counters[i]);
     fclose(f);
@@ -1087,7 +1156,7 @@ static void dump_state(Host &h, const char *path)
 /* census (step 8) as one JSON object; since-last counters are relative to prev[] */
 static std::string census_json(Host &h, i64 tick, const u64 prev[5], bool have_hash, u64 hash)
 {
-    if (h.P.d1 || h.P.d2) CUDA_CHECK(cudaMemset(h.w.cens_acc, 0, 14 * sizeof(u64)));
+    if (h.P.d1 || h.P.d2) CUDA_CHECK(cudaMemset(h.w.cens_acc, 0, 15 * sizeof(u64)));
     k_census<<<(unsigned)((h.P.S + 255) / 256), 256>>>(h.w, h.P);
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaMemcpy(h.depth.data(), h.w.cens_depth, h.P.S * sizeof(i32), cudaMemcpyDeviceToHost));
@@ -1149,7 +1218,7 @@ static std::string census_json(Host &h, i64 tick, const u64 prev[5], bool have_h
     js += "]";
     if (h.depth_cap > 0) { snprintf(buf, sizeof buf, ", \"max_depth\": %d", max_depth); js += buf; }
     if (h.P.d1 || h.P.d2) {   /* docs/17 census additions, the reference's key order */
-        u64 acc[14], led[13];
+        u64 acc[15], led[13];
         CUDA_CHECK(cudaMemcpy(acc, h.w.cens_acc, sizeof acc, cudaMemcpyDeviceToHost));
         CUDA_CHECK(cudaMemcpy(led, h.w.ledger, sizeof led, cudaMemcpyDeviceToHost));
         if (h.P.d1) {
@@ -1184,6 +1253,12 @@ static std::string census_json(Host &h, i64 tick, const u64 prev[5], bool have_h
                     i64 sum = 0; for (i64 r = 0; r < h.P.nreg; r++) sum += pl[r * LADDER_NT + k];
                     snprintf(buf, sizeof buf, "%s%lld", k ? ", " : "", (long long)sum); js += buf;
                 }
+                js += "]";
+            }
+            if (h.P.nmac) {   /* section 19: live genes with a macro codon; macro codons fetched, per macro */
+                u64 mx[MACRO_MAX]; CUDA_CHECK(cudaMemcpy(mx, h.w.macro_exec, h.P.nmac * sizeof(u64), cudaMemcpyDeviceToHost));
+                snprintf(buf, sizeof buf, ", \"macro_users\": %llu, \"macro_exec\": [", (unsigned long long)acc[14]); js += buf;
+                for (int k = 0; k < h.P.nmac; k++) { snprintf(buf, sizeof buf, "%s%llu", k ? ", " : "", (unsigned long long)mx[k]); js += buf; }
                 js += "]";
             }
         }
@@ -1250,20 +1325,25 @@ static void write_slot(Host &h, u64 base, const std::vector<u8> &vals, i64 ncell
  * tick to the next: both strands, the live flags, the processors, the claims, the counters, and the output-only
  * ledger, clade map and seeded energy. Header: "DNA3CKPT", version 1, N, G, S, seed, a flag word, the next tick. */
 static const char CKPT_MAGIC[8] = { 'D', 'N', 'A', '3', 'C', 'K', 'P', 'T' };
-static u64 ckpt_flags(const Params &P, bool uniform) { return (u64)P.dna2 | (u64)P.d1 << 1 | (u64)P.d2 << 2 | (u64)P.d3 << 3 | (u64)P.d4 << 4 | (u64)P.shade << 5 | (u64)uniform << 6 | (u64)P.d5 << 7 | (u64)P.d6 << 8 | (u64)P.ladder << 9; }
-static void write_checkpoint(Host &h, const std::string &path, i64 t_next, bool uniform)
+/* flag bits 9 (ladder), 10 (macros) and 11 (in_fresh) may be added by a --fork (docs/17 sections 18 and 19) */
+static u64 ckpt_flags(const Params &P, bool uniform) { return (u64)P.dna2 | (u64)P.d1 << 1 | (u64)P.d2 << 2 | (u64)P.d3 << 3 | (u64)P.d4 << 4 | (u64)P.shade << 5 | (u64)uniform << 6 | (u64)P.d5 << 7 | (u64)P.d6 << 8 | (u64)P.ladder << 9 | (u64)(P.nmac > 0) << 10 | (u64)P.in_fresh << 11; }
+static const u64 CKPT_FORK_BITS = (1ULL << 9) | (1ULL << 10) | (1ULL << 11);
+static void write_checkpoint(Host &h, const std::string &path, i64 t_next, bool uniform, const std::vector<u64> &macro_codons)
 {
     const World &w = h.w; const Params &P = h.P; i64 S = P.S;
     std::vector<u8> buf((size_t)h.nbytes);
     std::string tmp = path + ".tmp";
     FILE *f = fopen(tmp.c_str(), "wb");
     if (!f) { fprintf(stderr, "cannot write %s\n", tmp.c_str()); return; }
-    u64 hd[7] = { 4, P.N, (u64)P.G, (u64)S, P.seed, ckpt_flags(P, uniform), (u64)t_next };
+    bool v5 = P.nmac > 0;   /* version 5 (section 19): 19 fields per processor (mk, mpc) and the macro table; version 4 otherwise */
+    u64 hd[7] = { v5 ? 5ULL : 4ULL, P.N, (u64)P.G, (u64)S, P.seed, ckpt_flags(P, uniform), (u64)t_next };
     fwrite(CKPT_MAGIC, 1, 8, f); fwrite(hd, 8, 7, f);
     CUDA_CHECK(cudaMemcpy(buf.data(), w.fwd, h.nbytes, cudaMemcpyDeviceToHost)); fwrite(buf.data(), 1, h.nbytes, f);
     CUDA_CHECK(cudaMemcpy(buf.data(), w.rev, h.nbytes, cudaMemcpyDeviceToHost)); fwrite(buf.data(), 1, h.nbytes, f);
     std::vector<u8> live((size_t)S); CUDA_CHECK(cudaMemcpy(live.data(), w.live, S, cudaMemcpyDeviceToHost)); fwrite(live.data(), 1, S, f);
-    std::vector<Proc> pr((size_t)S); CUDA_CHECK(cudaMemcpy(pr.data(), w.proc, S * sizeof(Proc), cudaMemcpyDeviceToHost)); fwrite(pr.data(), sizeof(Proc), S, f);
+    std::vector<Proc> pr((size_t)S); CUDA_CHECK(cudaMemcpy(pr.data(), w.proc, S * sizeof(Proc), cudaMemcpyDeviceToHost));
+    if (v5) fwrite(pr.data(), sizeof(Proc), S, f);
+    else for (i64 i = 0; i < S; i++) fwrite(&pr[i], 8, 17, f);   /* the first 17 fields: the version-4 record */
     std::vector<i32> v32((size_t)S);
     CUDA_CHECK(cudaMemcpy(v32.data(), w.claimed_by, S * 4, cudaMemcpyDeviceToHost)); fwrite(v32.data(), 4, S, f);
     CUDA_CHECK(cudaMemcpy(v32.data(), w.clade, S * 4, cudaMemcpyDeviceToHost)); fwrite(v32.data(), 4, S, f);
@@ -1274,46 +1354,66 @@ static void write_checkpoint(Host &h, const std::string &path, i64 t_next, bool 
     /* version 4 (docs/17 section 18): Proc with ldir, 19 task counts, then the pools */
     u64 npool = (u64)(P.nreg * LADDER_NT); fwrite(&npool, 8, 1, f);
     if (npool) { std::vector<i64> pl(npool); CUDA_CHECK(cudaMemcpy(pl.data(), w.pools, npool * sizeof(i64), cudaMemcpyDeviceToHost)); fwrite(pl.data(), 8, npool, f); }
+    if (v5) {   /* the macro table: nmac, then per macro its codon value, body length and body operation codes */
+        u64 nm = (u64)P.nmac; fwrite(&nm, 8, 1, f);
+        for (int i = 0; i < P.nmac; i++) {
+            u64 cv = macro_codons[i], ln = (u64)P.mlen[i]; fwrite(&cv, 8, 1, f); fwrite(&ln, 8, 1, f);
+            for (int j = 0; j < P.mlen[i]; j++) { u64 o = P.mbody[i * MACRO_BODY_MAX + j]; fwrite(&o, 8, 1, f); }
+        }
+    }
     fclose(f);
     if (rename(tmp.c_str(), path.c_str()) != 0) fprintf(stderr, "cannot rename %s\n", tmp.c_str());
 }
-static i64 read_checkpoint(Host &h, const std::string &path, bool uniform, bool fork)
+static i64 read_checkpoint(Host &h, const std::string &path, bool uniform, bool fork, const std::vector<u64> &macro_codons)
 {
     World &w = h.w; const Params &P = h.P; i64 S = P.S;
     FILE *f = fopen(path.c_str(), "rb");
     if (!f) { fprintf(stderr, "cannot read %s\n", path.c_str()); exit(1); }
     char mg[8]; u64 hd[7];
-    if (fread(mg, 1, 8, f) != 8 || memcmp(mg, CKPT_MAGIC, 8) || fread(hd, 8, 7, f) != 7 || (hd[0] != 3 && hd[0] != 4)) {
-        fprintf(stderr, "%s is not a version-3 or version-4 checkpoint\n", path.c_str()); exit(1); }
-    /* --fork (docs/17 section 18): a day-6 checkpoint without --ladder may continue with --ladder */
-    bool forking = fork && P.ladder && hd[5] != ckpt_flags(P, uniform) && (hd[5] | (1ULL << 9)) == ckpt_flags(P, uniform);
-    if (hd[1] != P.N || hd[2] != (u64)P.G || hd[3] != (u64)S || hd[4] != P.seed || (hd[5] != ckpt_flags(P, uniform) && !forking)) {
+    if (fread(mg, 1, 8, f) != 8 || memcmp(mg, CKPT_MAGIC, 8) || fread(hd, 8, 7, f) != 7 || hd[0] < 3 || hd[0] > 5) {
+        fprintf(stderr, "%s is not a version-3, 4 or 5 checkpoint\n", path.c_str()); exit(1); }
+    /* --fork (docs/17 sections 18, 19): a checkpoint may be continued with --ladder, --macros and --in-fresh added */
+    u64 want = ckpt_flags(P, uniform), added = want & ~hd[5];
+    bool forking = fork && hd[5] != want && (hd[5] & ~want) == 0 && (added & ~CKPT_FORK_BITS) == 0;
+    if (hd[1] != P.N || hd[2] != (u64)P.G || hd[3] != (u64)S || hd[4] != P.seed || (hd[5] != want && !forking)) {
         fprintf(stderr, "checkpoint %s was written with other N, G, seed or days\n", path.c_str()); exit(1); }
-    bool v4 = hd[0] == 4;
+    bool fork_ladder = forking && (added & (1ULL << 9));
+    int ver = (int)hd[0];
     auto rd = [&](void *p, size_t sz, size_t n) { if (fread(p, sz, n, f) != n) { fprintf(stderr, "short checkpoint %s\n", path.c_str()); exit(1); } };
     std::vector<u8> buf((size_t)h.nbytes);
     rd(buf.data(), 1, h.nbytes); CUDA_CHECK(cudaMemcpy(w.fwd, buf.data(), h.nbytes, cudaMemcpyHostToDevice));
     rd(buf.data(), 1, h.nbytes); CUDA_CHECK(cudaMemcpy(w.rev, buf.data(), h.nbytes, cudaMemcpyHostToDevice));
     std::vector<u8> live((size_t)S); rd(live.data(), 1, S); CUDA_CHECK(cudaMemcpy(w.live, live.data(), S, cudaMemcpyHostToDevice));
     std::vector<Proc> pr((size_t)S);
-    if (v4) rd(pr.data(), sizeof(Proc), S);
-    else {   /* version 3: 16 fields per processor, no ldir */
-        std::vector<i64> r16((size_t)S * 16); rd(r16.data(), 8, (size_t)S * 16);
-        for (i64 i = 0; i < S; i++) { memcpy(&pr[i], &r16[i * 16], 16 * 8); pr[i].ldir = 8; }
+    if (ver == 5) rd(pr.data(), sizeof(Proc), S);
+    else {   /* version 3: 16 fields per processor (no ldir); version 4: 17 (no mk, mpc) */
+        int nf = ver == 4 ? 17 : 16;
+        std::vector<i64> rr((size_t)S * nf); rd(rr.data(), 8, (size_t)S * nf);
+        for (i64 i = 0; i < S; i++) { memcpy(&pr[i], &rr[i * nf], nf * 8); if (nf == 16) pr[i].ldir = 8; pr[i].mk = -1; pr[i].mpc = 0; }
     }
-    if (forking) for (i64 i = 0; i < S; i++) { pr[i].xin = 16; pr[i].open = 0; pr[i].streak = 0; pr[i].ldir = 8; }
+    if (fork_ladder) for (i64 i = 0; i < S; i++) { pr[i].xin = 16; pr[i].open = 0; pr[i].streak = 0; pr[i].ldir = 8; }
     CUDA_CHECK(cudaMemcpy(w.proc, pr.data(), S * sizeof(Proc), cudaMemcpyHostToDevice));
     std::vector<i32> v32((size_t)S);
     rd(v32.data(), 4, S); CUDA_CHECK(cudaMemcpy(w.claimed_by, v32.data(), S * 4, cudaMemcpyHostToDevice));
     rd(v32.data(), 4, S); CUDA_CHECK(cudaMemcpy(w.clade, v32.data(), S * 4, cudaMemcpyHostToDevice));
     u64 led[13], tcs[LADDER_NT]; for (int k = 0; k < LADDER_NT; k++) tcs[k] = 0;
-    rd(h.counters, 8, 5); rd(led, 8, 13); rd(tcs, 8, v4 ? LADDER_NT : 4);
-    if (forking) for (int k = 0; k < LADDER_NT; k++) tcs[k] = 0;
+    rd(h.counters, 8, 5); rd(led, 8, 13); rd(tcs, 8, ver >= 4 ? LADDER_NT : 4);
+    if (fork_ladder) for (int k = 0; k < LADDER_NT; k++) tcs[k] = 0;
     if (P.d6) CUDA_CHECK(cudaMemcpy(w.task_count, tcs, sizeof tcs, cudaMemcpyHostToDevice)); rd(&h.energy_init, 8, 1);
-    if (v4) {
+    if (ver >= 4) {
         u64 npool; rd(&npool, 8, 1);
-        if (npool != (u64)(P.nreg * LADDER_NT)) { fprintf(stderr, "checkpoint %s has %llu pool values, this world needs %lld\n", path.c_str(), (unsigned long long)npool, (long long)(P.nreg * LADDER_NT)); exit(1); }
+        if (npool && npool != (u64)(P.nreg * LADDER_NT)) { fprintf(stderr, "checkpoint %s has %llu pool values, this world needs %lld\n", path.c_str(), (unsigned long long)npool, (long long)(P.nreg * LADDER_NT)); exit(1); }
         if (npool) { std::vector<i64> pl(npool); rd(pl.data(), 8, npool); CUDA_CHECK(cudaMemcpy(w.pools, pl.data(), npool * sizeof(i64), cudaMemcpyHostToDevice)); }
+    }
+    if (ver >= 5) {   /* the stored macro table must be the one given with --macros */
+        u64 nm; rd(&nm, 8, 1);
+        bool same = nm == (u64)P.nmac;
+        for (u64 i = 0; i < nm; i++) {
+            u64 cv, ln; rd(&cv, 8, 1); rd(&ln, 8, 1);
+            if (i < (u64)P.nmac && (cv != macro_codons[i] || ln != (u64)P.mlen[i])) same = false;
+            for (u64 j = 0; j < ln; j++) { u64 o; rd(&o, 8, 1); if (i < (u64)P.nmac && j < (u64)MACRO_BODY_MAX && o != P.mbody[i * MACRO_BODY_MAX + j]) same = false; }
+        }
+        if (!same) { fprintf(stderr, "the checkpoint's macro table differs from --macros\n"); exit(1); }
     }
     CUDA_CHECK(cudaMemcpy(w.ledger, led, sizeof led, cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(w.counters, h.counters, sizeof h.counters, cudaMemcpyHostToDevice));
@@ -1348,6 +1448,7 @@ int main(int argc, char **argv)
     i64 year_days = 16, moon_days = 8, season_amp = -1, lat_amp = 8, lmoon = 1; bool shade = false;
     i64 c_move = 2, c_fly = 8, eat_shift = 1, eat_eff = 8, c_walk = 4, task_bonus = 8;
     bool ladder = false, fork = false; i64 streak_len = 7, pool_cell = 32, pool_max = 4096, pool_in = 64;
+    std::string macros_path; bool in_fresh = false;   /* docs/17 section 19 */
     std::string ckpt_path, resume_path; i64 ckpt_every = 0;
     std::string op_path;   /* --op-census (docs/17 day 7) */
     for (int i = 1; i < argc; i++) {
@@ -1409,6 +1510,8 @@ int main(int argc, char **argv)
         else if (a == "--pool-cell") pool_cell = atoll(next());
         else if (a == "--pool-max") pool_max = atoll(next());
         else if (a == "--pool-in") pool_in = atoll(next());
+        else if (a == "--macros") macros_path = next();
+        else if (a == "--in-fresh") in_fresh = true;
         else if (a == "--checkpoint") ckpt_path = next();
         else if (a == "--checkpoint-every") ckpt_every = atoll(next());
         else if (a == "--resume") resume_path = next();
@@ -1456,6 +1559,7 @@ int main(int argc, char **argv)
     if (d6 && !d5) { fprintf(stderr, "day 6 needs days 1 to 5\n"); return 1; }
     if (c_walk < 0 || task_bonus < 0) { fprintf(stderr, "bad day-6 parameters\n"); return 1; }
     if (ladder && !d6) { fprintf(stderr, "--ladder needs day 6\n"); return 1; }
+    if ((!macros_path.empty() || in_fresh) && !d6) { fprintf(stderr, "--macros and --in-fresh need day 6\n"); return 1; }
     if (shade && !d3) { fprintf(stderr, "--shade is a day-3 option\n"); return 1; }
     if (d1 || d2 || d3) dna2 = true;
     if (light_len < 0) light_len = day_len / 2;
@@ -1492,6 +1596,9 @@ int main(int argc, char **argv)
     P.d4 = d4; P.shade = shade; P.year_days = year_days; P.moon_days = moon_days; P.season_amp = season_amp; P.lat_amp = lat_amp; P.lmoon = lmoon;
     if (d2) make_terrain(h.terrain, seed, S, Wg, firm, d3, land_cell, land_thr); else h.terrain.assign((size_t)S, 0);
     u8 *table = h.table; build_table(table, uniform, dna2, d3, d4, d5, d6);
+    P.in_fresh = in_fresh ? 1 : 0; P.nmac = 0; for (int k = 0; k < MACRO_MAX; k++) P.mlen[k] = 0; memset(P.mbody, 0, sizeof P.mbody);
+    std::vector<u64> macro_codons;   /* docs/17 section 19: the macros' codon values (for the checkpoint) */
+    if (!macros_path.empty()) load_macros(P, table, macros_path, uniform, macro_codons);
     h.depth_cap = depth_cap;
     P.opc = op_path.empty() ? 0 : 1;
 
@@ -1511,7 +1618,7 @@ int main(int argc, char **argv)
     dalloc((void **)&w.ghash, S * sizeof(u64)); dalloc((void **)&w.cens_depth, S * sizeof(i32));
     dalloc((void **)&w.counters, 5 * sizeof(u64)); dalloc((void **)&w.table, 64);
     dalloc((void **)&w.terrain, S); dalloc((void **)&w.div_energy, S * sizeof(i64)); dalloc((void **)&w.ledger, 13 * sizeof(u64));
-    if (d6) { dalloc((void **)&w.sig_old, S); dalloc((void **)&w.task_count, LADDER_NT * sizeof(u64)); }
+    if (d6) { dalloc((void **)&w.sig_old, S); dalloc((void **)&w.task_count, LADDER_NT * sizeof(u64)); dalloc((void **)&w.macro_exec, MACRO_MAX * sizeof(u64)); }
     if (ladder) {
         dalloc((void **)&w.xin_old, S);
         if (P.nreg) {
@@ -1585,7 +1692,12 @@ int main(int argc, char **argv)
                 (long long)lmax, (long long)emax, (long long)eshift, (long long)e_seed, (long long)e_spont, (long long)P.gp[0], (long long)P.gp[1], (long long)gh_sea, (long long)gh_land,
                 (long long)c_copy, (long long)maint, inflow_land ? 1 : 0, (long long)Wg, (long long)Rg, (long long)firm, (long long)nland, (long long)nfirm);
     }
-    if (d6) fprintf(stderr, "day6=1 c_walk=%lld task_bonus=%lld\n", (long long)c_walk, (long long)task_bonus);
+    if (d6) fprintf(stderr, "day6=1 c_walk=%lld task_bonus=%lld in_fresh=%d macros=%d\n", (long long)c_walk, (long long)task_bonus, P.in_fresh, P.nmac);
+    for (int i = 0; i < P.nmac; i++) {   /* section 19: the macro table as loaded */
+        fprintf(stderr, "macro M%d codon %llu body", i, (unsigned long long)macro_codons[i]);
+        for (int j = 0; j < P.mlen[i]; j++) fprintf(stderr, " %s", OP_NAMES[P.mbody[i * MACRO_BODY_MAX + j]]);
+        fputc('\n', stderr);
+    }
     if (d5) fprintf(stderr, "day5=1 c_move=%lld c_fly=%lld eat_shift=%lld eat_eff=%lld\n", (long long)c_move, (long long)c_fly, (long long)eat_shift, (long long)eat_eff);
     if (d4 || shade)
         fprintf(stderr, "day4=%d year_days=%lld moon_days=%lld season_amp=%lld lat_amp=%lld lmoon=%lld shade=%d\n", d4 ? 1 : 0, (long long)year_days,
@@ -1661,7 +1773,7 @@ int main(int argc, char **argv)
             i64 s = chosen[k]; u64 base = (u64)s * G;
             write_slot(h, base, vals, 3 * (P.maxk + 1));   /* the G mod 3 trailing cells keep their soup content */
             Proc q; q.slot = s; q.pc = 1; q.H = (i64)base; q.P = (i64)base; q.Q = 0; q.child = -1; q.A = 0; q.age = 0; q.depth = 0; q.copied = 0;
-            q.E = d1 ? e_seed : 0; q.xs = s; q.sig = q.xin = q.open = q.streak = 0; q.ldir = 8; if (ladder) q.xin = 16; if (d1) h.energy_init += (u64)e_seed;
+            q.E = d1 ? e_seed : 0; q.xs = s; q.sig = q.xin = q.open = q.streak = 0; q.ldir = 8; q.mk = -1; q.mpc = 0; if (ladder) q.xin = 16; if (d1) h.energy_init += (u64)e_seed;
             i32 cl = (i32)s; CUDA_CHECK(cudaMemcpy(w.clade + s, &cl, sizeof cl, cudaMemcpyHostToDevice));
             u8 one = 1;
             CUDA_CHECK(cudaMemcpy(w.proc + s, &q, sizeof q, cudaMemcpyHostToDevice));
@@ -1674,7 +1786,7 @@ int main(int argc, char **argv)
     i64 t_first = 0;
     if (!resume_path.empty()) {   /* docs/17 section 14: continue a run from its checkpoint */
         if (n_seed > 0) { fprintf(stderr, "--resume replaces the initial state; drop --n-seed\n"); return 1; }
-        t_first = read_checkpoint(h, resume_path, uniform, fork);
+        t_first = read_checkpoint(h, resume_path, uniform, fork, macro_codons);
         if (t_first >= ticks) { fprintf(stderr, "checkpoint is at tick %lld, nothing to do for --ticks %lld\n", (long long)t_first, (long long)ticks); return 1; }
         fprintf(stderr, "resumed from %s at tick %lld\n", resume_path.c_str(), (long long)t_first);
     }
@@ -1769,7 +1881,7 @@ int main(int argc, char **argv)
             ticks = t + 1;                                    /* this tick becomes the last one */
         }
         report(t);
-        if (!ckpt_path.empty() && ((ckpt_every > 0 && (t + 1) % ckpt_every == 0) || t == ticks - 1)) write_checkpoint(h, ckpt_path, t + 1, uniform);
+        if (!ckpt_path.empty() && ((ckpt_every > 0 && (t + 1) % ckpt_every == 0) || t == ticks - 1)) write_checkpoint(h, ckpt_path, t + 1, uniform, macro_codons);
     }
     CUDA_CHECK(cudaDeviceSynchronize());
     double secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t_loop).count();

@@ -2,11 +2,15 @@
 compare every stdout line (the state hash after every tick and the census lines) and the birth files byte for byte.
 
   python tools/dna3_verify.py --host knecht24 --bin '~/universe2/dna3/dna_world3b' --gpu 0 --out results/dna3/verify
+  python tools/dna3_verify.py --local --bin ./dna_world3m --out results/dna3/verify      (the engine on this machine)
 
 The configurations are listed in CONFIGS below: DNA-1 and DNA-2 regressions (the new engine must still reproduce
 them) and DNA-3 worlds that switch on days 1, 2 and 3 alone and together, with edge cases (G not a multiple of 4,
-single strand, T = 0, eshift 0, uniform code, unseeded soup). Writes one JSON summary per configuration and
-verify.json with all of them.
+single strand, T = 0, eshift 0, uniform code, unseeded soup), the ladder of section 18 and the macros of section 19.
+CKPT_TESTS continue an engine checkpoint in both programs (a resume, and forks that add --ladder, --macros,
+--in-fresh). Writes one JSON summary per configuration and verify.json with all of them. The macro tables the
+configurations use are written into --out (and copied to the host); the placeholder {MACROS:name} in an argument
+string names one of MACRO_TABLES.
 """
 import argparse
 import json
@@ -107,67 +111,182 @@ CONFIGS = [
 ]
 
 
+
+# docs/17 section 19: macro tables for the verification (hand-written bodies: they test the mechanism, not the loop)
+MACRO_TABLES = {
+    "mtab_a": "M0 CTA FLIP INC INC L1 FLIP INC INC   # 15-x\nM1 GCA INC JNZB   # x&12\nM2 ATA L1 LDA R1 STA   # a\n"
+              "M3 TGC NOP\nM4 GGA   # empty body: a NOP that costs its unit (arm C)\n",
+    "mtab_c": "M0 CTA\nM1 GCA\nM2 ATA\nM3 TGC\nM4 GGA\n",
+    "mtab_u": "M0 x FLIP\nM1 x INC JNZB L1 STA   # uniform code: codon values 32, 33 whatever the column says\n",
+}
+M15 = "ATG AGA GCT CTT TTA GGT TCA CTA TCG"              # START HARVEST ALLOC COPY TERM DIVIDE IN M0 OUT (15-x by macro)
+M4X = "ATG AGA GCT CTT TTA GGT TCA GCA CGT CAT TCG"      # IN M1 L1 STA OUT: 4x with a looping body
+CONFIGS += [
+    # docs/17 section 19: macros and --in-fresh
+    ("macro_15mx", "--days 1,2,3,4,5,6 --ladder --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 400 --seed 113 "
+                   "--mu 0.005 --pool-cell 8 --macros {MACROS:mtab_a} --n-seed 16 --seed-terrain sea --genome '%s'" % M15),
+    ("macro_loop_I2_infresh", "--days 1,2,3,4,5,6 --ladder --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 400 "
+                              "--seed 127 --I 2 --eshift 0 --emax 300 --e-seed 300 --pool-cell 0 --in-fresh --macros {MACROS:mtab_a} "
+                              "--n-seed 16 --genome '%s'" % M4X),
+    ("macro_plant_mu", "--days 1,2,3,4,5,6 --ladder --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 131 "
+                       "--mu 0.03 --pool-cell 16 --eat-eff 12 --in-fresh --macros {MACROS:mtab_a} --n-seed 16 --seed-terrain sea "
+                       "--genome '%s'" % PLANT),
+    ("macro_empty_day6", "--days 1,2,3,4,5,6 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 400 --seed 137 --mu 0.01 "
+                         "--in-fresh --macros {MACROS:mtab_c} --n-seed 16 --seed-terrain sea --genome '%s'" % TASKER1),
+    ("macro_uniform_g255", "--days 1,2,3,4,5,6 --ladder --uniform-code --shade --T 0 --W 16 --land-cell 8 --N 65280 --G 255 "
+                           "--ticks 400 --seed 139 --mu 0.01 --F 4 --pool-cell 8 --pool-max 100 --pool-in 3 --in-fresh "
+                           "--macros {MACROS:mtab_u} --n-seed 16 --genome 'AAA CCG CTG GAA CTT AGA AAG CCC AGC'"),
+]
+# (name, arguments of the first run, its ticks, arguments of the continuation, its further ticks). The engine writes
+# the checkpoint at the end of the first run; both programs then continue it with the second arguments.
+CKPT_TESTS = [
+    ("ckpt_fork_macros", "--days 1,2,3,4,5,6 --ladder --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --seed 149 --mu 0.01 "
+                         "--pool-cell 8 --n-seed 16 --seed-terrain sea --genome '%s'" % LX1, 300,
+                         "--days 1,2,3,4,5,6 --ladder --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --seed 149 --mu 0.01 "
+                         "--pool-cell 8 --fork --in-fresh --macros {MACROS:mtab_a}", 300),
+    ("ckpt_fork_day6_all", "--days 1,2,3,4,5,6 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --seed 151 --mu 0.01 "
+                           "--n-seed 16 --seed-terrain sea --genome '%s'" % TASKER1, 300,
+                           "--days 1,2,3,4,5,6 --ladder --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --seed 151 --mu 0.01 "
+                           "--pool-cell 8 --fork --in-fresh --macros {MACROS:mtab_a}", 300),
+    ("ckpt_resume_v5", "--days 1,2,3,4,5,6 --ladder --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --seed 157 --mu 0.01 "
+                       "--pool-cell 8 --in-fresh --macros {MACROS:mtab_a} --n-seed 16 --seed-terrain sea --genome '%s'" % M15, 300,
+                       "--days 1,2,3,4,5,6 --ladder --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --seed 157 --mu 0.01 "
+                       "--pool-cell 8 --in-fresh --macros {MACROS:mtab_a}", 300),
+]
+
+
+class Runner:
+    """Runs the reference locally and the engine locally (--local) or on a host over ssh."""
+
+    def __init__(self, a):
+        self.a = a
+        self.remote_dir = "/tmp"
+        self.local_tables = {}
+        for name, text in MACRO_TABLES.items():
+            path = os.path.abspath(os.path.join(a.out, name + ".txt"))
+            with open(path, "w") as f:
+                f.write(text)
+            self.local_tables[name] = path
+        if not a.local:
+            for name, path in self.local_tables.items():
+                subprocess.run(["scp", "-q", "-o", "BatchMode=yes", path, "%s:%s/dna3v_%s.txt" % (a.host, self.remote_dir, name)], check=True)
+
+    def args_for(self, args, remote):
+        for name, path in self.local_tables.items():
+            args = args.replace("{MACROS:%s}" % name, path if (self.a.local or not remote) else "%s/dna3v_%s.txt" % (self.remote_dir, name))
+        return args
+
+    def ref(self, args, extra):
+        return subprocess.run([sys.executable, REF] + shlex.split(self.args_for(args, False)) + extra, capture_output=True, text=True)
+
+    def engine(self, args, extra, cat=None):
+        """Runs the engine; `cat` names a remote file whose content is appended to stderr (the births file)."""
+        if self.a.local:
+            r = subprocess.run([self.a.bin] + shlex.split(self.args_for(args, True)) + extra, capture_output=True, text=True)
+            if cat and r.returncode == 0:
+                with open(cat) as f:
+                    r = subprocess.CompletedProcess(r.args, r.returncode, r.stdout, r.stderr + f.read())
+            return r
+        cmd = "%s %s %s" % (self.a.bin, self.args_for(args, True), " ".join(shlex.quote(x) for x in extra))
+        if cat:
+            cmd += " && cat %s 1>&2" % cat
+        return subprocess.run(["ssh", "-n", "-o", "BatchMode=yes", self.a.host, cmd], capture_output=True, text=True)
+
+    def fetch(self, remote_path, local_path):
+        if self.a.local:
+            if os.path.abspath(remote_path) != os.path.abspath(local_path):
+                subprocess.run(["cp", remote_path, local_path], check=True)
+            return
+        subprocess.run(["scp", "-q", "-o", "BatchMode=yes", "%s:%s" % (self.a.host, remote_path), local_path], check=True)
+
+    def scratch(self, name):
+        return os.path.join(self.remote_dir, "dna3v_" + name)
+
+
+def compare(runner, a, name, args, ref_extra=(), eng_extra=()):
+    """Both programs on the same arguments; every stdout line and the births files must agree."""
+    common = args + " --hash-every 1 --census-every 10"
+    t0 = time.time()
+    ref = runner.ref(common, list(ref_extra) + ["--births", os.path.join(a.out, name + ".ref.births")])
+    t_ref = time.time() - t0
+    if ref.returncode:
+        print(name, "reference failed:", ref.stderr[-500:])
+        return {"name": name, "ok": False, "error": "reference"}
+    rb = runner.scratch(name + ".births")
+    t0 = time.time()
+    eng = runner.engine(common, list(eng_extra) + ["--births", rb], cat=rb)
+    t_eng = time.time() - t0
+    if eng.returncode:
+        print(name, "engine failed:", eng.stderr[-500:])
+        return {"name": name, "ok": False, "error": "engine"}
+    # the engine's stderr holds its header lines, then the births file (cat), then nothing else
+    err = eng.stderr.splitlines(True)
+    bstart = next(i for i, l in enumerate(err) if l.startswith("#tick"))
+    bend = next((i for i in range(bstart + 1, len(err)) if not err[i][:1].isdigit()), len(err))
+    eng_births = "".join(err[bstart:bend])
+    with open(os.path.join(a.out, name + ".ref.births")) as f:
+        ref_births = f.read()
+    rl, el = ref.stdout.splitlines(), eng.stdout.splitlines()
+    hashes = sum(1 for l in rl if l.startswith("tick "))
+    census = sum(1 for l in rl if l.startswith("census "))
+    first_diff = next((i for i in range(max(len(rl), len(el))) if i >= len(rl) or i >= len(el) or rl[i] != el[i]), None)
+    ok = first_diff is None and ref_births == eng_births
+    last = json.loads(rl[-1][7:]) if rl and rl[-1].startswith("census ") else {}
+    rec = {"name": name, "args": args, "ok": ok, "tick_hashes": hashes, "census_lines": census,
+           "births_rows": ref_births.count("\n") - 1, "births_identical": ref_births == eng_births,
+           "first_diff_line": first_diff, "ref_secs": round(t_ref, 1), "engine_secs": round(t_eng, 1),
+           "final": {k: last.get(k) for k in ("tick", "live", "births_total", "faithful_total", "energy_total",
+                                               "zone_live", "live_land", "harvesters", "starved_total", "tasks",
+                                               "macro_users", "macro_exec", "hash")}}
+    if first_diff is not None:
+        rec["ref_line"] = rl[first_diff] if first_diff < len(rl) else None
+        rec["eng_line"] = el[first_diff] if first_diff < len(el) else None
+    with open(os.path.join(a.out, name + ".ref.txt"), "w") as f:
+        f.write(ref.stdout)
+    with open(os.path.join(a.out, name + ".eng.txt"), "w") as f:
+        f.write(eng.stdout)
+    print("%-22s %s  %d tick hashes, %d census lines, %d births rows%s" % (
+        name, "IDENTICAL" if ok else "DIFFERENT", hashes, census, rec["births_rows"],
+        "" if ok else "  first diff at line %s" % first_diff), flush=True)
+    return rec
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--host", default="knecht24")
     ap.add_argument("--bin", default="~/universe2/dna3/dna_world3")
     ap.add_argument("--gpu", type=int, default=0)
+    ap.add_argument("--local", action="store_true", help="run the engine binary on this machine (no ssh)")
     ap.add_argument("--out", default="results/dna3/verify")
     ap.add_argument("--only", default=None, help="comma-separated configuration names")
+    ap.add_argument("--no-ckpt", action="store_true", help="skip the checkpoint tests")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     only = set(a.only.split(",")) if a.only else None
+    runner = Runner(a)
+    gpu = ["--gpu", str(a.gpu)]
     summary = []
     for name, args in CONFIGS:
         if only and name not in only:
             continue
-        common = args + " --hash-every 1 --census-every 10"
-        t0 = time.time()
-        ref = subprocess.run([sys.executable, REF] + shlex.split(common) + ["--births", os.path.join(a.out, name + ".ref.births")],
-                             capture_output=True, text=True)
-        t_ref = time.time() - t0
-        if ref.returncode:
-            print(name, "reference failed:", ref.stderr[-500:])
-            summary.append({"name": name, "ok": False, "error": "reference"})
-            continue
-        rb = "/tmp/dna3v_%s.births" % name
-        cmd = "%s %s --gpu %d --births %s && cat %s 1>&2" % (a.bin, common, a.gpu, rb, rb)
-        t0 = time.time()
-        eng = subprocess.run(["ssh", "-n", "-o", "BatchMode=yes", a.host, cmd], capture_output=True, text=True)
-        t_eng = time.time() - t0
-        if eng.returncode:
-            print(name, "engine failed:", eng.stderr[-500:])
-            summary.append({"name": name, "ok": False, "error": "engine"})
-            continue
-        # the engine's stderr holds its header lines, then the births file (cat), then nothing else
-        err = eng.stderr.splitlines(True)
-        bstart = next(i for i, l in enumerate(err) if l.startswith("#tick"))
-        bend = next((i for i in range(bstart + 1, len(err)) if not err[i][:1].isdigit()), len(err))
-        eng_births = "".join(err[bstart:bend])
-        with open(os.path.join(a.out, name + ".ref.births")) as f:
-            ref_births = f.read()
-        rl, el = ref.stdout.splitlines(), eng.stdout.splitlines()
-        hashes = sum(1 for l in rl if l.startswith("tick "))
-        census = sum(1 for l in rl if l.startswith("census "))
-        first_diff = next((i for i in range(max(len(rl), len(el))) if i >= len(rl) or i >= len(el) or rl[i] != el[i]), None)
-        ok = first_diff is None and ref_births == eng_births
-        last = json.loads(rl[-1][7:]) if rl and rl[-1].startswith("census ") else {}
-        rec = {"name": name, "args": args, "ok": ok, "tick_hashes": hashes, "census_lines": census,
-               "births_rows": ref_births.count("\n") - 1, "births_identical": ref_births == eng_births,
-               "first_diff_line": first_diff, "ref_secs": round(t_ref, 1), "engine_secs": round(t_eng, 1),
-               "final": {k: last.get(k) for k in ("tick", "live", "births_total", "faithful_total", "energy_total",
-                                                   "zone_live", "live_land", "harvesters", "starved_total", "hash")}}
-        if first_diff is not None:
-            rec["ref_line"] = rl[first_diff] if first_diff < len(rl) else None
-            rec["eng_line"] = el[first_diff] if first_diff < len(el) else None
-        with open(os.path.join(a.out, name + ".ref.txt"), "w") as f:
-            f.write(ref.stdout)
-        with open(os.path.join(a.out, name + ".eng.txt"), "w") as f:
-            f.write(eng.stdout)
-        summary.append(rec)
-        print("%-18s %s  %d tick hashes, %d census lines, %d births rows%s" % (
-            name, "IDENTICAL" if ok else "DIFFERENT", hashes, census, rec["births_rows"],
-            "" if ok else "  first diff at line %s" % first_diff), flush=True)
+        summary.append(compare(runner, a, name, args, eng_extra=gpu))
+    if not a.no_ckpt:
+        for name, args1, t1, args2, t2 in CKPT_TESTS:
+            if only and name not in only:
+                continue
+            ck = runner.scratch(name + ".ckpt")
+            r = runner.engine(args1 + " --ticks %d --no-hash --census-every 0 --checkpoint %s" % (t1, ck), gpu)
+            if r.returncode:
+                print(name, "engine (checkpoint run) failed:", r.stderr[-500:])
+                summary.append({"name": name, "ok": False, "error": "engine checkpoint run"})
+                continue
+            local_ck = os.path.abspath(os.path.join(a.out, name + ".ckpt"))
+            runner.fetch(ck, local_ck)
+            rec = compare(runner, a, name, args2 + " --ticks %d" % (t1 + t2), ref_extra=["--resume", local_ck],
+                          eng_extra=gpu + ["--resume", ck if not a.local else local_ck])
+            rec["checkpoint_tick"] = t1
+            summary.append(rec)
+            os.remove(local_ck)
     with open(os.path.join(a.out, "verify.json"), "w") as f:
         json.dump(summary, f, indent=1)
     n_ok = sum(1 for r in summary if r.get("ok"))

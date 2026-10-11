@@ -3,8 +3,9 @@ sequence (synonymous codons collapsed) and by spelling.
 
   python tools/dna3_ckpt_genes.py RUN.ckpt --days 1,2,3,4,5,6 [--uniform-code] [--with OUT] [--top 30] [--json out.json]
 
-The checkpoint (version 3 or 4; the strands and live flags are laid out the same) holds the packed forward strand and the live flags; the gene of a live slot is read from
-codon 0 up to its first STOP with the codon table of the given days (the same tables as sim/dna_ref.py). --with OP
+The checkpoint (version 3, 4 or 5; the strands and live flags are laid out the same) holds the packed forward strand and the live flags; the gene of a live slot is read from
+codon 0 up to its first STOP with the codon table of the given days (the same tables as sim/dna_ref.py; --macros FILE
+adds the macro codons M0 .. of docs/17 section 19). --with OP
 keeps only genes containing that operation (e.g. OUT for the taskers of day 6, EAT for eaters). Prints the most common
 operation sequences with their counts and their most common spelling. Needs numpy; reads the whole strand (25 MB at
 10^8 cells, 750 MB at 3 x 10^9).
@@ -22,7 +23,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 import dna_ref as R  # noqa: E402
 
 
-def table_for(days, uniform):
+def table_for(days, uniform, macros=None):
     t = R.uniform_table() if uniform else R.standard_table()
     t = R.dna2_table(t, uniform)
     if 3 in days:
@@ -33,6 +34,8 @@ def table_for(days, uniform):
         t = R.dna3_day5_table(t, uniform)
     if 6 in days:
         t = R.dna3_day6_table(t, uniform)
+    if macros:
+        t = R.dna3_macro_table(t, macros, uniform)
     return t
 
 
@@ -43,8 +46,8 @@ def read_genes(path, table, with_op=None):
     with open(path, "rb") as f:
         magic = f.read(8)
         ver, N, G, S, seed, flags, t_next = struct.unpack("<7Q", f.read(56))
-        if magic != b"DNA3CKPT" or ver not in (3, 4):
-            raise SystemExit("not a version-3 or version-4 DNA-3 checkpoint")
+        if magic != b"DNA3CKPT" or ver not in (3, 4, 5):
+            raise SystemExit("not a version-3, 4 or 5 DNA-3 checkpoint")
         nbytes = (N + 3) // 4
         fwd_packed = np.frombuffer(f.read(nbytes), dtype=np.uint8)
         f.seek(nbytes, 1)                                   # rev
@@ -77,11 +80,12 @@ def main():
     ap.add_argument("--days", default="1,2,3,4,5,6")
     ap.add_argument("--uniform-code", action="store_true")
     ap.add_argument("--with", dest="with_op", default=None)
+    ap.add_argument("--macros", default=None, help="the run's macro table (docs/17 section 19)")
     ap.add_argument("--top", type=int, default=30)
     ap.add_argument("--json", default=None)
     a = ap.parse_args()
     days = [int(x) for x in a.days.split(",")]
-    table = table_for(days, a.uniform_code)
+    table = table_for(days, a.uniform_code, R.parse_macros(a.macros) if a.macros else None)
     t_next, n_live, by_ops, spell = read_genes(a.ckpt, table, a.with_op)
     total = sum(by_ops.values())
     print("checkpoint at tick %d: %d live, %d selected genes, %d operation sequences" % (t_next, n_live, total, len(by_ops)))

@@ -1167,7 +1167,7 @@ of tasks with substantial reward counts and as patchiness in the traits map; (iv
 start (it needs a signalling neighbour and a listening partner at once) and may not appear in the first 10^5 ticks;
 (v) if any of this works, the day-7 statistics of D8 show new adaptive activity after the fork where D7 shows none.
 
-## 19. Promoting discoveries to instructions: the harvest-promote loop (extractor built; `--macros` specified, not implemented)
+## 19. Promoting discoveries to instructions: the harvest-promote loop (extractor built; `--macros` and `--in-fresh` implemented in both engines, verified against a CPU emulation of the engine; the GPU verification and the runs are the runbook's)
 
 Section 17 found the plateau (new adaptive sequences per census 118.6 in Q2, 2.9 in Q4; no established sequence ever
 paid for more than 3 tasks) and section 18 is the first attempt to break it by giving the organisms more to climb.
@@ -1239,35 +1239,47 @@ solution is already an instruction), each body promoted once under its hardest t
 most carried, at most `--max-macros` (8); donor codons (19.2) assigned by rising use among the living spellings, so a
 fork takes the codon the population needs least.
 
-### 19.2 Rules (`--macros FILE`, a day-6 option; exact; not implemented)
+### 19.2 Rules (`--macros FILE` and `--in-fresh`, day-6 options; exact; implemented in `sim/dna_ref.py` and `gpu/dna_world.cu`)
 
-**The file.** JSON with `macros`: a list of at most 8 entries `{name, codon, body}`, in order M0, M1, ...; `body` is 1
-to 32 operations from the body set **B = {NOP, FLIP, INC, LDA, STA, L1, R1, R3, L3, SKZ, SKNZ, JNZB}** (the operations
-that act on H, A and the tape and nothing else; no copying, no energy, no neighbours, no operands, no macro codons:
-bodies are flat).
+**The file.** A text table, one macro per line `NAME CODON OP OP ...` (`#` starts a comment), at most 8 lines, in
+order M0, M1, ...; the body is 0 to 32 operations from the body set **B = {NOP, FLIP, INC, LDA, STA, L1, R1, R3, L3,
+SKZ, SKNZ, JNZB}** (the operations that act on H, A and the tape and nothing else; no copying, no energy, no
+neighbours, no operands, no macro codons: bodies are flat). An **empty body** makes the codon a NOP that costs its
+unit: that is the control arm C of 19.3, which takes the donor codons away without giving anything. The extractor's
+`--promote X.json` writes this table as `X.txt` next to the JSON record.
 
 **Codon table.** Under the standard code a macro's codon must be one of the **donors** CTA, CTG (from COPY, which
 keeps CTT, CTC), GCA, GCG (ALLOC keeps GCT, GCC), GGA, GGG (DIVIDE keeps GGT, GGC), ATA (SKNZ keeps ATT, ATC), TGC
 (COPYR keeps TGT): every operation keeps at least two synonyms. Under `--uniform-code` macro i is codon value 32 + i.
 In operation sequences, the op census and the census the macro is its own operation named `M0` .. `M7`.
 
-**State.** Every processor gains `mk` (the macro being executed, -1 none) and `mpc` (index into its body), hashed as the
-18th and 19th little-endian u64 after `ldir` (-1 as 0xFFFF...). Both are -1 / 0 at birth, move with the processor
-(MOVE) and are untouched by EXEC: a body runs on the processor's own H, A, slot and claimed child whatever gene it was
-fetched from.
+**State.** Every processor gains `mk` (the macro being executed, -1 none) and `mpc` (index into its body), hashed as
+two little-endian u64 after the last day-6 field (`ldir` with `--ladder`, `streak` without; -1 as 0xFFFF...), only
+when `--macros` is on. Both are -1 / 0 at birth, move with the processor (MOVE) and are untouched by EXEC: a body
+runs on the processor's own H, A, slot and claimed child whatever gene it was fetched from.
 
 **Execution** (step 1, inside the instruction loop of day 1): each iteration pays its unit (E -= 1, one of the budget
 b) exactly as for a codon. If `mk >= 0` the operation is `body[mpc]` and `mpc += 1`; no codon is fetched and `pc` is
 untouched. Otherwise the codon is fetched and `pc += 1` as before, and if its operation is a macro M, `mk = M`,
-`mpc = 0`: the macro codon's unit is paid and it executes nothing itself. Body operations act exactly as the same
-operations of docs/09 (write rule, snapshot rule, H, A, own gene length recomputed after a write into the own slot),
-except control: SKZ / SKNZ skip within the body (`mpc += 1`), JNZB does `mpc -= 2` and a result below 0 becomes 0
-(there is no START in a body). After the operation, if `mpc >= len(body)`: `mk = -1`. The gene's wrap rule applies only
-to codon fetches. A body that spans several ticks (budget or energy exhausted) resumes where it stopped: a macro is
-exactly its body inlined, with one difference of substance, that the gene is one codon longer instead of
+`mpc = 0` (a macro with an empty body sets nothing): the macro codon's unit is paid and it executes nothing itself.
+Body operations act exactly as the same operations of docs/09 (write rule, snapshot rule, H, A, own gene length
+recomputed after a write into the own slot), except control: SKZ / SKNZ skip within the body (`mpc += 1`), JNZB does
+`mpc -= 2` and a result below 0 becomes 0 (there is no START in a body). After the operation, if `mpc >= len(body)`:
+`mk = -1`. The wrap rule (`pc >= len`: home and `pc = 1`) is evaluated after every iteration as before, body
+iterations included; since a body never moves `pc`, it fires during a body only when a body write has shortened the
+own gene below `pc`. A body that spans several ticks (budget or energy exhausted) resumes where it stopped: a macro
+is exactly its body inlined, with one difference of substance, that the gene is one codon longer instead of
 `len(body)`. A body that never terminates (JNZB on a cell that never becomes 0) holds the processor until it starves,
-as a gene-level loop does. A length change of the own gene during a body has no effect until the next codon fetch.
-WAIT and MOVE cannot occur in bodies, so a body never ends the tick by itself.
+as a gene-level loop does. WAIT and MOVE cannot occur in bodies, so a body never ends the tick by itself. A macro
+codon in a foreign gene (EXEC) starts the same body on the executing processor.
+
+**`--in-fresh` (found while testing, 19.4).** `rnd(t, s, 4000)` depends on the tick and the slot only, so every IN a
+processor executes within one tick draws the same input, and a gene of `IN OUT IN OUT ...` pairs collects one streak
+credit per pair for a single lucky draw: a 9-codon echo with 7 pairs reaches streak 7 whenever the draw happens to
+satisfy a task (1 in 4 ticks for `a`), which section 18's anti-guessing rule did not foresee. With `--in-fresh` the
+n-th IN of a processor's tick (n = 0, 1, ...) draws `rnd(t, s, 4000 + n)` (both the 2-bit IN of day 6 and the 4-bit
+IN of the ladder); n is not state, it is counted within the tick. The streams 4000 .. 4015 collide with nothing (the
+budget bounds n by I). D7 and D8 run without it; the A/B worlds run with it.
 
 **Why these rules** (*choice*). (a) The macro costs exactly what its body costs: no free computation; what it buys is
 that a rank-4 program is one mutation away instead of eight. (b) Resuming across ticks (rather than all-or-nothing)
@@ -1276,29 +1288,44 @@ extractor verified, flat; composition is the genes' job, and a composed solution
 and promotes as one flat body. (d) Donors from the 4-codon families keep every operation; the cost of a thinner COPY
 family on replicator density (docs/16) is measured by the control arm C of 19.3, not assumed.
 
-**Checkpoint, census, resume.** Checkpoint version 5 adds `mk`, `mpc` per processor and the macro table (names,
-codons, bodies) after the pools. `--resume` of a version-4 (or version-3 with `--fork --ladder`) checkpoint with
-`--macros` is a fork: `mk = -1`, `mpc = 0` for every processor. Census keys after `pools`: `"macro_users"` (live genes
-containing a macro codon in codons 1 .. len-1) and `"macro_exec"` (cumulative macro codons fetched, per macro).
+**Checkpoint, census, resume.** The engine writes checkpoint version 5 when `--macros` is on (19 fields per
+processor, `mk` and `mpc` after `ldir`; after the pools the macro table: the number of macros, then per macro its
+codon value, body length and body operation codes) and version 4 otherwise, so earlier tools keep reading. The header
+flag word gains bit 10 (macros) and bit 11 (`--in-fresh`). `--resume` of a checkpoint whose flags lack bits 9, 10
+or 11 with `--fork` adds them: the ladder reset of section 18 when bit 9 is added, `mk = -1`, `mpc = 0` when bit 10
+is added (the record has no such fields before version 5), nothing for bit 11; task counts and pools are kept unless
+the ladder is the thing being added. A version-5 checkpoint's macro table must equal the `--macros` file, or the
+resume is refused. The reference reads versions 3, 4 and 5 and applies the same fork rules. Census keys after
+`pools`: `"macro_users"` (live genes containing a macro codon in codons 1 .. len-1) and `"macro_exec"` (cumulative
+macro codons fetched, per macro). The run header prints the table as loaded; `tools/dna3_ckpt_genes.py --macros FILE`
+and the extractor's `--macros FILE` read genes of such a run with the macro codons named M0 .. M7.
 
-**Acceptance tests.** (i) Reference and engine identical on every tick on: a world seeded with `START HARVEST ALLOC
-COPY TERM DIVIDE IN M0 OUT` and a promoted 15-x body; a day-6 ladder checkpoint forked with `--macros`; the uniform
-code; a body with a JNZB loop and `--I 2` so that bodies cross tick boundaries; `--resume` of a version-5 checkpoint.
-(ii) The extractor with `--macros FILE` accepts and verifies `IN M0 OUT` with the same truth table as the body.
-(iii) A world of `IN M0 OUT` with the 15-x body pays the rank-3 task at streak 7.
+**Verification** (`tools/dna3_verify.py`, which now also runs the engine on the same machine with `--local`, and
+runs checkpoint tests). Five macro worlds: `IN M0 OUT` with a 15-x body and pools (`macro_15mx`); `IN M1 L1 STA OUT`
+with the looping body `INC JNZB`, `--I 2 --eshift 0 --emax 300` so that bodies cross tick boundaries and starve, with
+`--in-fresh` (`macro_loop_I2_infresh`); plants at mu 0.03 with a table that holds a 7-, a 2-, a 4-, a 1-operation (NOP)
+and an empty body (`macro_plant_mu`); day 6 without the ladder with empty bodies only (`macro_empty_day6`); the
+uniform code at G = 255 (`macro_uniform_g255`). Three checkpoint tests: a ladder checkpoint forked with `--macros
+--in-fresh`; a plain day-6 checkpoint forked with the ladder, the macros and `--in-fresh` at once; a version-5
+checkpoint resumed. The whole suite (44 configurations, the 36 earlier ones included) was run here against the
+reference with the engine compiled as plain C++ through a shim that runs each kernel launch as a loop over its
+threads and each warp sum as plain additions (exact, since every kernel is race-free by construction): see 19.4.
+The GPU run of the same suite is step 1 of `results/dna3/ab/RUNBOOK.md`.
 
 ### 19.3 The A/B experiment (predeclared)
 
 **Epoch 1.** Three fresh ladder worlds of O7's size (10^8 cells, 640 x 640 slots of 256 cells, `--days 1,2,3,4,5,6
---ladder --shade --T 0`, mu 0.001, 4,096 plant seeds in the sea, land-cell 64, census every 10,240 ticks, checkpoint
-every 102,400, op census on), seeds 11, 12, 13, for 2 x 10^6 ticks each (about 1.5 h per world at O7's 400 ticks/s).
-At the end: harvest with the extractor (`--ckpt`, `--verify`), promote at most 8 verified bodies of length >= 2.
-Expected from O7 and D8: solutions of rank 0 and 1 (and the pseudo-x+1 rejected as hanging), so the promoted macros
-are rank-0/1 programs and nothing hands the organisms a rank-3 or rank-4 answer.
+--ladder --in-fresh --shade --T 0`, mu 0.001, 4,096 plant seeds in the sea, land-cell 64, census every 10,240 ticks,
+checkpoint every 102,400, op census on), seeds 11, 12, 13, for 2 x 10^6 ticks each (about 1.5 h per world at O7's
+400 ticks/s). At the end: harvest with the extractor (`--ckpt`, `--verify`), promote at most 8 verified bodies of
+length >= 2. Expected from O7 and D8: solutions of rank 0 and 1 (and the pseudo-x+1 rejected as hanging), so the
+promoted macros are rank-0/1 programs and nothing hands the organisms a rank-3 or rank-4 answer.
 
 **Epoch 2.** Each epoch-1 world is forked three times from its last checkpoint for 2 x 10^6 ticks: **arm A** with
-`--macros` (its own harvest), **arm B** unchanged, **arm C** with the same donor codons mapped to NOP and no macros (the
-cost of the thinner families without the macros). Nine runs, about 13 h on one GPU.
+`--macros` (its own harvest), **arm B** unchanged, **arm C** with the same table stripped to empty bodies (the donor
+codons taken, nothing given: the cost of the thinner families without the macros). Nine runs, about 13 h on one
+GPU. `tools/dna3_ab.sh` runs the four phases (`epoch1`, `harvest`, `epoch2 A|B|C`, `report`) and
+`results/dna3/ab/RUNBOOK.md` gives the order, the binaries and what to record.
 
 **Measurements** per census: rewarded answers per task, carriers at streak 7 per task, `macro_users`, `macro_exec`,
 distinct sequences; at the end the day-7 activity (`tools/dna3_activity.py`) and a harvest of every arm.
@@ -1340,8 +1367,10 @@ D8_solutions.json --promote D8_macros.json` is the first real harvest; its resul
 
 ### 19.5 Open
 
-- `--macros` in the engine and the reference, verified tick by tick (19.2 acceptance tests), then the nine runs of
-  19.3.
+- The GPU build and verification of `--macros` / `--in-fresh` (runbook step 1), then the nine runs of 19.3. The CPU
+  emulation exercises every rule of the engine but not the CUDA compiler or the device.
+- The echo loophole of 19.2 is open in D7 and D8 (they run without `--in-fresh`); whether anything exploits it there
+  can be read from their top genes (several IN/OUT pairs in one short gene).
 - When every ladder task is a macro, nothing is left to climb: the ladder must grow with the epochs (composed tasks,
   two-operand tasks, a task library ranked on the organisms' machine, as section 18 ranked its 18); that is the next
   section, not this one.

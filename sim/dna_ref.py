@@ -54,7 +54,15 @@ NOP, START, STOP, COPY, R1, L1, JNZB, SETP, SETQ, ALLOC, DIVIDE, SKNZ, SKZ, LDA,
 OP_NAMES = ["NOP", "START", "STOP", "COPY", "R1", "L1", "JNZB", "SETP", "SETQ", "ALLOC", "DIVIDE", "SKNZ", "SKZ",
             "LDA", "STA", "INC", "FLIP", "R3", "L3", "SEEK", "COPYR", "REWIND", "TERM", "HARVEST", "SENSE", "WAIT", "EAT", "MOVE",
             "EXEC", "SIGNAL", "LISTEN", "IN", "OUT"]
+# docs/17 section 19: macros (--macros FILE), operation codes MACRO0 + i named M0 .. M7
+MACRO0 = len(OP_NAMES)
+MACRO_MAX, MACRO_BODY_MAX = 8, 32
+OP_NAMES += ["M%d" % i for i in range(MACRO_MAX)]
 OP_INDEX = {n: i for i, n in enumerate(OP_NAMES)}
+MACRO_BODY_OPS = ("NOP", "FLIP", "INC", "LDA", "STA", "L1", "R1", "R3", "L3", "SKZ", "SKNZ", "JNZB")   # the body set B
+# donor codons under the standard code and the operation each one is taken from (which keeps >= 2 synonyms)
+MACRO_DONORS = {"CTA": "COPY", "CTG": "COPY", "GCA": "ALLOC", "GCG": "ALLOC", "GGA": "DIVIDE", "GGG": "DIVIDE",
+                "ATA": "SKNZ", "TGC": "COPYR"}
 
 # docs/09 section 3, row by row (codons, amino acid, operation). The row order is the "table order" of the
 # uniform code: codon c < 21 means row c.
@@ -225,6 +233,48 @@ def dna3_day6_table(table, uniform):
     return t
 
 
+def parse_macros(path):
+    """docs/17 section 19.2: the macro table, one macro per line "NAME CODON OP OP ..." (# comments; an empty body is
+    allowed and makes the codon a NOP that costs its unit: the control arm C). Returns [(name, codon_text, [op codes])]."""
+    out = []
+    with open(path) as f:
+        for line in f:
+            tok = line.split("#", 1)[0].split()
+            if not tok:
+                continue
+            if len(tok) < 2:
+                raise ValueError("macro line needs a name and a codon: %r" % line)
+            name, cod, body = tok[0], tok[1].upper(), tok[2:]
+            if len(body) > MACRO_BODY_MAX:
+                raise ValueError("macro %s: body longer than %d" % (name, MACRO_BODY_MAX))
+            for o in body:
+                if o not in MACRO_BODY_OPS:
+                    raise ValueError("macro %s: %s is not a body operation (%s)" % (name, o, " ".join(MACRO_BODY_OPS)))
+            out.append((name, cod, [OP_INDEX[o] for o in body]))
+    if len(out) > MACRO_MAX:
+        raise ValueError("at most %d macros" % MACRO_MAX)
+    return out
+
+
+def dna3_macro_table(table, macros, uniform):
+    """docs/17 section 19.2: macro i on its donor codon (standard code: CTA, CTG, GCA, GCG, GGA, GGG, ATA, TGC, which
+    must still carry the donor's operation) or on codon value 32 + i (uniform code, a NOP)."""
+    t = list(table)
+    for i, (name, cod, _body) in enumerate(macros):
+        if uniform:
+            v = 32 + i
+            if t[v] != NOP:
+                raise ValueError("uniform codon %d is not free" % v)
+        else:
+            if cod not in MACRO_DONORS:
+                raise ValueError("macro %s: codon %s is not a donor (%s)" % (name, cod, " ".join(sorted(MACRO_DONORS))))
+            v = codon_value(cod)
+            if t[v] != OP_INDEX[MACRO_DONORS[cod]]:
+                raise ValueError("macro %s: codon %s is already taken" % (name, cod))
+        t[v] = MACRO0 + i
+    return t
+
+
 def tri(u, P):
     """docs/17 day 4: integer triangle wave on [0, P): P - |4u - 2P|, in [-P, P]."""
     return P - abs(4 * u - 2 * P)
@@ -383,7 +433,7 @@ class World:
                  g_pass=16, gp_sea=8, gp_land=0, gh_sea=16, gh_land=32, c_copy=1, maint=1, inflow_land=False,
                  land_cell=32, land_thr=32768, year_days=16, moon_days=8, season_amp=None, lat_amp=8, lmoon=1,
                  shade=False, c_move=2, c_fly=8, eat_shift=1, eat_eff=8, c_walk=4, task_bonus=8,
-                 ladder=False, streak_len=7, pool_cell=32, pool_max=4096, pool_in=64):
+                 ladder=False, streak_len=7, pool_cell=32, pool_max=4096, pool_in=64, macros=None, in_fresh=False):
         if G < 6:
             raise ValueError("G must be at least 6 (two codons)")                      # [13: Limits]
         if N % G:
@@ -426,6 +476,16 @@ class World:
             self.table = dna3_day5_table(self.table, uniform)
         if self.d6:
             self.table = dna3_day6_table(self.table, uniform)
+        # docs/17 section 19: macros, a day-6 option
+        self.macros = list(macros) if macros else []
+        if self.macros and not self.d6:
+            raise ValueError("--macros needs day 6")
+        if self.macros:
+            self.table = dna3_macro_table(self.table, self.macros, uniform)
+        self.macro_bodies = [tuple(body) for _n, _c, body in self.macros]
+        if in_fresh and not self.d6:
+            raise ValueError("--in-fresh needs day 6")
+        self.in_fresh = in_fresh                # docs/17 section 19: the n-th IN of a tick draws rnd(t, s, 4000 + n)
         if c_walk < 0 or task_bonus < 0:
             raise ValueError("bad day-6 parameters")
         self.c_walk, self.task_bonus = c_walk, task_bonus
@@ -528,6 +588,9 @@ class World:
         self.inputs_seen = [0] * 16             # section 19): answers given at OUT, inputs drawn at IN, correct
         self.correct = [0] * len(self.task_count)   # answers per task whatever the streak; not hashed, not printed
         self.ldir = [8] * S                     # docs/17 section 18: direction of the last LISTEN, 8 = none
+        self.mk = [-1] * S                      # docs/17 section 19: the macro being executed (-1 none) and the
+        self.mpc = [0] * S                      # index into its body
+        self.macro_exec = [0] * len(self.macros)   # cumulative macro codons fetched, per macro (census)
         self.xs = [0] * S                       # docs/17 day 5: the slot whose gene the processor executes
         self.energy_init = 0
         self.starved = 0
@@ -589,6 +652,7 @@ class World:
         self.xs[s] = s
         self.sig[s] = self.xin[s] = self.tmask[s] = self.streak[s] = 0
         self.ldir[s] = 8
+        self.mk[s], self.mpc[s] = -1, 0
         if self.ladder:
             self.xin[s] = 16                    # docs/17 section 18: no input yet
         self.alive[s] = 1
@@ -627,6 +691,8 @@ class World:
                 out += pe(self.sig[s]) + pe(self.xin[s]) + pe(self.tmask[s]) + pe(self.streak[s])
                 if self.ladder:
                     out += pe(self.ldir[s])
+                if self.macros:                 # docs/17 section 19: the macro state, after the last day-6 field
+                    out += pe(self.mk[s] & MASK64) + pe(self.mpc[s])
         out += struct.pack("<4Q", self.births, self.faithful, self.spontaneous, self.deaths)
         if self.d3:
             out += pe(self.starved)
@@ -637,21 +703,23 @@ class World:
         return bytes(out)
 
     def load_checkpoint(self, path, fork=False, uniform=False):
-        """docs/17 section 18: continue from an engine checkpoint (gpu/dna_world.cu --checkpoint, version 3 or 4).
-        With fork=True a version-3 checkpoint (day 6 without --ladder) may be continued with --ladder: every
-        processor's task fields are reset (xin, open, streak 0, ldir none), the pools start full and the task counts
-        at 0. Returns the next tick."""
+        """docs/17 sections 18 and 19: continue from an engine checkpoint (gpu/dna_world.cu --checkpoint, version 3,
+        4 or 5). With fork=True a checkpoint without --ladder may be continued with --ladder (every processor's task
+        fields are reset: xin, open, streak 0, ldir none; the pools start full and the task counts at 0) and one
+        without --macros with --macros (mk = -1, mpc = 0). Returns the next tick."""
         with open(path, "rb") as f:
             if f.read(8) != b"DNA3CKPT":
                 raise ValueError("not a checkpoint")
             ver, N, G, S, seed, flags, t_next = struct.unpack("<7Q", f.read(56))
-            if ver not in (3, 4) or (N, G, S, seed) != (self.N, self.G, self.S, self.seed):
+            if ver not in (3, 4, 5) or (N, G, S, seed) != (self.N, self.G, self.S, self.seed):
                 raise ValueError("checkpoint version %d or N, G, S, seed differ" % ver)
             want = (int(self.dna2) | int(self.d1) << 1 | int(self.d2) << 2 | int(self.d3) << 3 | int(self.d4) << 4
                     | int(self.shade) << 5 | int(uniform) << 6 | int(self.d5) << 7 | int(self.d6) << 8
-                    | int(self.ladder) << 9)
-            if flags != want and not (fork and flags | (1 << 9) == want):
+                    | int(self.ladder) << 9 | int(bool(self.macros)) << 10 | int(self.in_fresh) << 11)
+            added = want & ~flags               # a fork may add the ladder (bit 9), the macros (10) and --in-fresh (11)
+            if flags != want and not (fork and flags & ~want == 0 and added & ~((1 << 9) | (1 << 10) | (1 << 11)) == 0):
                 raise ValueError("checkpoint flags %x differ from this world's %x" % (flags, want))
+            fork_ladder = bool(added & (1 << 9))
             nb = (N + 3) // 4
 
             def unpack(b):
@@ -662,19 +730,28 @@ class World:
             self.fwd[:] = unpack(f.read(nb))
             self.rev[:] = unpack(f.read(nb))
             live = f.read(S)
-            nf = 17 if ver == 4 else 16
+            nf = {3: 16, 4: 17, 5: 19}[ver]     # version 5 (section 19): mk and mpc after ldir
             recs = f.read(8 * nf * S)
             cb = struct.unpack("<%di" % S, f.read(4 * S))
             f.read(4 * S)                       # clade (engine output only)
             cnt = struct.unpack("<5Q", f.read(40))
             led = struct.unpack("<13Q", f.read(104))
-            ntc = 19 if ver == 4 else 4
+            ntc = 19 if ver >= 4 else 4
             tc = struct.unpack("<%dQ" % ntc, f.read(8 * ntc))
             (einit,) = struct.unpack("<Q", f.read(8))
-            pools = None
-            if ver == 4:
+            pools = ()
+            if ver >= 4:
                 (npool,) = struct.unpack("<Q", f.read(8))
                 pools = struct.unpack("<%dq" % npool, f.read(8 * npool)) if npool else ()
+            if ver >= 5:                        # the macro table: nmac, then per macro codon, length, body op codes
+                (nmac,) = struct.unpack("<Q", f.read(8))
+                stored = []
+                for _ in range(nmac):
+                    cod, ln = struct.unpack("<2Q", f.read(16))
+                    stored.append((cod, list(struct.unpack("<%dQ" % ln, f.read(8 * ln))) if ln else []))
+                mine = [(32 + i if uniform else codon_value(c), list(b)) for i, (_n, c, b) in enumerate(self.macros)]
+                if stored != mine:
+                    raise ValueError("the checkpoint's macro table differs from --macros")
         self.live.clear()
         for x in range(S):
             self.alive[x] = live[x]
@@ -684,8 +761,9 @@ class World:
                 (_slot, self.pc[x], self.H[x], self.P[x], self.Q[x], self.child[x], self.A[x], self.age[x],
                  self.depth[x], self.copied[x], self.E[x], self.xs[x], self.sig[x], self.xin[x], self.tmask[x],
                  self.streak[x]) = r[:16]
-                self.ldir[x] = r[16] if nf == 17 else 8
-                if fork and ver == 3 and self.ladder:
+                self.ldir[x] = r[16] if nf >= 17 else 8
+                self.mk[x], self.mpc[x] = (r[17], r[18]) if nf >= 19 else (-1, 0)
+                if fork_ladder:
                     self.tmask[x] = self.streak[x] = 0
                     self.xin[x] = 16
                     self.ldir[x] = 8
@@ -693,13 +771,10 @@ class World:
         self.births, self.faithful, self.spontaneous, self.deaths, self.starved = cnt
         self.ledger = list(led)
         self.energy_init = einit
-        if ver == 4:
-            if not (fork and flags != want):
-                self.task_count = list(tc[:len(self.task_count)])
-            if self.nreg:
-                self.pools = [list(pools[r * LADDER_NTASK:(r + 1) * LADDER_NTASK]) for r in range(self.nreg)]
-        elif not self.ladder:
-            self.task_count = list(tc)
+        if not fork_ladder:
+            self.task_count = list(tc[:len(self.task_count)])
+        if self.nreg and pools:
+            self.pools = [list(pools[r * LADDER_NTASK:(r + 1) * LADDER_NTASK]) for r in range(self.nreg)]
         self.tick_no = t_next
         return t_next
 
@@ -731,13 +806,15 @@ class World:
         return self.has_op(s, HARVEST)
 
     def has_op(self, s, opcode):
-        """docs/17 days 3 and 4: the gene of slot s (codons 1 .. len-1) contains a codon of this operation."""
+        """docs/17 days 3 and 4: the gene of slot s (codons 1 .. len-1) contains a codon of this operation
+        (opcode MACRO0: any macro codon, docs/17 section 19)."""
         base = s * self.G
         n = gene_len(self.fwd, self.is_stop, base, self.maxc)
         f, tb = self.fwd, self.table
         for k in range(1, n):
             i = base + 3 * k
-            if tb[f[i] * 16 + f[i + 1] * 4 + f[i + 2]] == opcode:
+            op = tb[f[i] * 16 + f[i + 1] * 4 + f[i + 2]]
+            if op == opcode or (opcode == MACRO0 and op >= MACRO0):
                 return True
         return False
 
@@ -801,6 +878,9 @@ class World:
             out["tasks"] = list(self.task_count)
             if self.ladder:
                 out["pools"] = [sum(row[k] for row in self.pools) for k in range(LADDER_NTASK)]
+            if self.macros:                             # docs/17 section 19
+                out["macro_users"] = sum(1 for s in self.live if self.has_op(s, MACRO0))
+                out["macro_exec"] = list(self.macro_exec)
         out["hash"] = None if state_hash is None else "%016x" % state_hash
         return out
 
@@ -835,6 +915,9 @@ class World:
             pool_used = [[0] * LADDER_NTASK for _ in range(self.nreg)]
         move_req = {}                           # docs/17 day 5: mover slot -> operand codon
         xs_ = self.xs
+        macros_on = bool(self.macros)           # docs/17 section 19
+        bodies, mk_, mpc_, macro_exec = self.macro_bodies, self.mk, self.mpc, self.macro_exec
+        in_fresh = self.in_fresh
 
         # 1. execute
         if live:
@@ -864,6 +947,9 @@ class World:
                 ate = False
                 requested = False
                 budget = I
+                mk = mk_[s] if macros_on else -1
+                mpc = mpc_[s]
+                n_in = 0                        # INs executed earlier in this tick (--in-fresh)
                 if d1:
                     # docs/17 day 1: passive light first, then the budget min(I, E >> eshift); one unit per instruction
                     E = E_[s]
@@ -893,9 +979,22 @@ class World:
                             break
                         E -= 1
                         ledger[3] += 1
-                    cb = cb0 + 3 * pc
-                    op = xtable[csrc[cb] * 16 + csrc[cb + 1] * 4 + csrc[cb + 2]]
-                    pc += 1
+                    in_body = False
+                    if mk >= 0:
+                        # docs/17 section 19: inside a macro the operation comes from its body, pc is untouched
+                        op = bodies[mk][mpc]
+                        mpc += 1
+                        in_body = True
+                    else:
+                        cb = cb0 + 3 * pc
+                        op = xtable[csrc[cb] * 16 + csrc[cb + 1] * 4 + csrc[cb + 2]]
+                        pc += 1
+                        if op >= MACRO0:        # a macro codon: its unit is paid, the body starts next iteration
+                            m = op - MACRO0
+                            macro_exec[m] += 1
+                            if bodies[m]:
+                                mk, mpc = m, 0
+                            op = NOP
                     if op == COPY or op == COPYR:
                         if dna2 and child < 0:
                             pass                # docs/15 fix 3: no claimed child, nothing happens (P and Q stay)
@@ -927,9 +1026,12 @@ class World:
                     elif op == JNZB:
                         v = fwd[H] if (base <= H < own_hi or ch_lo <= H < ch_hi) else fwd_old[H]
                         if v:
-                            pc -= 2
-                            if pc < 1:
-                                pc = 1
+                            if in_body:         # docs/17 section 19: within the body, a result below 0 becomes 0
+                                mpc = max(0, mpc - 2)
+                            else:
+                                pc -= 2
+                                if pc < 1:
+                                    pc = 1
                     elif op == SETP:
                         P = H
                     elif op == SETQ:
@@ -954,11 +1056,17 @@ class World:
                     elif op == SKNZ:
                         v = fwd[H] if (base <= H < own_hi or ch_lo <= H < ch_hi) else fwd_old[H]
                         if v:
-                            pc += 1
+                            if in_body:
+                                mpc += 1
+                            else:
+                                pc += 1
                     elif op == SKZ:
                         v = fwd[H] if (base <= H < own_hi or ch_lo <= H < ch_hi) else fwd_old[H]
                         if not v:
-                            pc += 1
+                            if in_body:
+                                mpc += 1
+                            else:
+                                pc += 1
                     elif op == LDA:
                         A = fwd[H] if (base <= H < own_hi or ch_lo <= H < ch_hi) else fwd_old[H]
                     elif op == STA or op == INC or op == FLIP:
@@ -1026,7 +1134,8 @@ class World:
                     elif op == IN and ladder:
                         # docs/17 section 18: a 4-bit input x; high half into cell G-2, low half into cell G-1 (both
                         # strands), the head on the low cell, A = low half; it awaits one answer
-                        xv = rnd(seed, t, s, 4000) & 15
+                        xv = rnd(seed, t, s, 4000 + (n_in if in_fresh else 0)) & 15
+                        n_in += 1
                         A = xv & 3
                         H = own_hi - 1
                         fwd[H - 1] = xv >> 2
@@ -1080,7 +1189,8 @@ class World:
                     elif op == IN:
                         # docs/17 day 6: a fresh input x, written into the I/O cell (the last cell of the own slot, both
                         # strands), the head moved there and A = x; it awaits one answer
-                        A = rnd(seed, t, s, 4000) & 3
+                        A = rnd(seed, t, s, 4000 + (n_in if in_fresh else 0)) & 3
+                        n_in += 1
                         H = own_hi - 1
                         fwd[H] = A
                         rev[H] = A ^ 3
@@ -1158,6 +1268,8 @@ class World:
                             ledger[1] += add
                             ledger[8] += g - add
                     # NOP: nothing
+                    if in_body and mpc >= len(bodies[mk]):   # docs/17 section 19: the body is done
+                        mk = -1
                     if pc >= L:
                         if xs != s:             # docs/17 day 5: the foreign gene wrapped: home, own codon 1
                             xs, csrc, cb0 = s, fwd, base
@@ -1168,6 +1280,8 @@ class World:
                     E_[s] = E
                 if d5:
                     xs_[s] = xs
+                if macros_on:
+                    mk_[s] = mk; mpc_[s] = mpc
 
         # 1b. docs/17 section 18: the pools pay for this tick's rewards and refill
         if ladder and self.nreg:
@@ -1266,6 +1380,7 @@ class World:
                 self.A[c] = self.A[s]
                 self.sig[c], self.xin[c], self.tmask[c], self.streak[c] = self.sig[s], self.xin[s], self.tmask[s], self.streak[s]
                 self.ldir[c] = self.ldir[s]
+                self.mk[c], self.mpc[c] = self.mk[s], self.mpc[s]   # docs/17 section 19: the macro state moves too
                 self.age[c] = self.age[s]
                 self.depth[c] = self.depth[s]
                 copied_[c] = 0
@@ -1440,7 +1555,11 @@ def main(argv=None):
     g3.add_argument("--pool-in", type=int, default=64, help="ladder: pool refill per tick")
     g3.add_argument("--resume", default=None, help="continue from an engine checkpoint (gpu/dna_world.cu --checkpoint)")
     g3.add_argument("--fork", action="store_true", help="with --resume: allow a day-6 checkpoint without --ladder to "
-                    "continue with --ladder")
+                    "continue with --ladder, or one without --macros to continue with --macros")
+    g3.add_argument("--macros", default=None, help="day 6 option (docs/17 section 19): macro table, one macro per line "
+                    "'NAME CODON OP OP ...' (standard code: donor codons CTA CTG GCA GCG GGA GGG ATA TGC; uniform: value 32 + i)")
+    g3.add_argument("--in-fresh", action="store_true", help="day 6 option (docs/17 section 19): the n-th IN of a processor's "
+                    "tick draws rnd(t, s, 4000 + n) instead of the same value for every IN of the tick")
     g3.add_argument("--shade", action="store_true", help="day 3 option (docs/17 section 14): light gains times (9 - live neighbours) / 9")
     g3.add_argument("--land-cell", type=int, default=32, help="day 3: terrain noise lattice spacing in slots")
     g3.add_argument("--land-thr", type=int, default=32768, help="day 3: land where the noise >= land-thr / 65536")
@@ -1472,7 +1591,8 @@ def main(argv=None):
               year_days=a.year_days, moon_days=a.moon_days, season_amp=a.season_amp, lat_amp=a.lat_amp, lmoon=a.lmoon,
               shade=a.shade, c_move=a.c_move, c_fly=a.c_fly, eat_shift=a.eat_shift, eat_eff=a.eat_eff,
               c_walk=a.c_walk, task_bonus=a.task_bonus, ladder=a.ladder, streak_len=a.streak_len,
-              pool_cell=a.pool_cell, pool_max=a.pool_max, pool_in=a.pool_in)
+              pool_cell=a.pool_cell, pool_max=a.pool_max, pool_in=a.pool_in,
+              macros=parse_macros(a.macros) if a.macros else None, in_fresh=a.in_fresh)
     t_first = w.load_checkpoint(a.resume, a.fork, a.uniform_code) if a.resume else 0
     t_init = time.perf_counter() - t0
     params = {"N": w.N, "G": w.G, "S": w.S, "ticks": a.ticks, "seed": w.seed, "I": w.I, "T": w.T, "mu": w.mu,
@@ -1494,6 +1614,10 @@ def main(argv=None):
         if w.ladder:
             params.update(ladder=True, streak_len=w.streak_len, pool_cell=w.pool_cell, pool_max=w.pool_max,
                           pool_in=w.pool_in, resume=a.resume, fork=a.fork)
+        if w.macros:
+            params["macros"] = [{"name": n, "codon": c, "body": [OP_NAMES[o] for o in b]} for n, c, b in w.macros]
+        if w.in_fresh:
+            params["in_fresh"] = True
         if w.d5:
             params.update(c_move=w.c_move, c_fly=w.c_fly, eat_shift=w.eat_shift, eat_eff=w.eat_eff)
         if w.d4:
