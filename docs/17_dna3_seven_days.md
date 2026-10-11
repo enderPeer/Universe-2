@@ -1290,7 +1290,9 @@ family on replicator density (docs/16) is measured by the control arm C of 19.3,
 
 **Checkpoint, census, resume.** The engine writes checkpoint version 5 when `--macros` is on (19 fields per
 processor, `mk` and `mpc` after `ldir`; after the pools the macro table: the number of macros, then per macro its
-codon value, body length and body operation codes) and version 4 otherwise, so earlier tools keep reading. The header
+codon value, body length and body operations as indices into B in the order given above, since the two programs
+number operations differently, which the first run of the checkpoint test caught) and version 4 otherwise, so
+earlier tools keep reading. The header
 flag word gains bit 10 (macros) and bit 11 (`--in-fresh`). `--resume` of a checkpoint whose flags lack bits 9, 10
 or 11 with `--fork` adds them: the ladder reset of section 18 when bit 9 is added, `mk = -1`, `mpc = 0` when bit 10
 is added (the record has no such fields before version 5), nothing for bit 11; task counts and pools are kept unless
@@ -1352,6 +1354,16 @@ rank-0/1 tasks only in part (15-x = x^3 on both cells; x+1 with carry needs a lo
 | O6 at tick 102,400 (`taskers_t102400.json`, the 15 most common taskers) | day6 | 15 / 175,635 | 14 of 14 (one sequence has no IN) | x+1, truth [1, 2, 3, 0] | `INC LDA` (2) | 14 of 14 genes, 116,325 answers all correct |
 | O7 at tick 2,027,519 (`O7_day7.top.gz`, the 7 most common sequences of the last census) | day6 | 7 / 33,734 | 7 of 7 | x^1, truth [1, 0, 3, 2] | `FLIP LDA` (2) | 7 of 7, 35,336 answers |
 | 7 hand-written ladder genes (a test of the machinery, `test_ladder_genes.json`) | ladder | 7 / 7 | 6 of 7 | x^1, 4x, a, x/4 (one body for both), 15-x | 1, 4, 4, 6, 7 | 6 of 6 |
+
+**Verification of 19.2 (CPU emulation; `results/dna3/verify_cpu/verify.json`).** All 44 configurations of
+`tools/dna3_verify.py` identical on every tick between the reference and the engine compiled as plain C++ (the 36
+earlier worlds, the 5 macro worlds, the 3 checkpoint tests): 20,800 tick hashes and every census line and births
+file. The first pass found one bug, in the test built to find it: the engine stored macro bodies in the checkpoint
+under its own operation numbering, which differs from the reference's, so the version-5 resume was refused; bodies
+are now stored as indices into B. In the macro worlds the macros do what the bodies say: `IN M0 OUT` pays 15-x
+142,744 times in 400 ticks (705 macro users), the looping body under `--I 2` pays 4x 1,019 times, and the empty-body
+table pays nothing beyond the gene's own `IN FLIP LDA OUT`. The GPU build and the same suite on a GPU are step 1 of
+the runbook; the emulation is exact for the rules but is not the CUDA compiler.
 
 Files: `results/dna3/solutions/`. Reading: (a) O6's second most common gene, `... LDA SENSE WAIT MOVE OUT IN INC`
 (33,444), answers only when SENSE skips MOVE, because otherwise OUT is MOVE's operand: its operand AGC is codon 41,

@@ -749,7 +749,9 @@ class World:
                 for _ in range(nmac):
                     cod, ln = struct.unpack("<2Q", f.read(16))
                     stored.append((cod, list(struct.unpack("<%dQ" % ln, f.read(8 * ln))) if ln else []))
-                mine = [(32 + i if uniform else codon_value(c), list(b)) for i, (_n, c, b) in enumerate(self.macros)]
+                # bodies are stored as indices into the body set B (MACRO_BODY_OPS), the engine numbers operations differently
+                mine = [(32 + i if uniform else codon_value(c), [MACRO_BODY_OPS.index(OP_NAMES[o]) for o in b])
+                        for i, (_n, c, b) in enumerate(self.macros)]
                 if stored != mine:
                     raise ValueError("the checkpoint's macro table differs from --macros")
         self.live.clear()

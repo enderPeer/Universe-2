@@ -1032,6 +1032,9 @@ static const char *OP_NAMES[N_OPS + MACRO_MAX] = { "NOP", "START", "STOP", "COPY
  * code (CTA, CTG from COPY; GCA, GCG from ALLOC; GGA, GGG from DIVIDE; ATA from SKNZ; TGC from COPYR) must still carry
  * its donor's operation, a uniform codon 32 + i must be NOP. */
 static const char *MACRO_BODY_OPS[] = { "NOP", "FLIP", "INC", "LDA", "STA", "L1", "R1", "R3", "L3", "SKZ", "SKNZ", "JNZB", NULL };
+/* a body operation as its index into MACRO_BODY_OPS (the order of the body set B in docs/17 section 19.2, the same in
+ * sim/dna_ref.py): that is how the checkpoint stores bodies, since the two programs number operations differently */
+static int body_index(u8 code) { for (int b = 0; MACRO_BODY_OPS[b]; b++) if (!strcmp(OP_NAMES[code], MACRO_BODY_OPS[b])) return b; return -1; }
 static const char *MACRO_DONORS[][2] = { { "CTA", "COPY" }, { "CTG", "COPY" }, { "GCA", "ALLOC" }, { "GCG", "ALLOC" }, { "GGA", "DIVIDE" }, { "GGG", "DIVIDE" }, { "ATA", "SKNZ" }, { "TGC", "COPYR" }, { NULL, NULL } };
 static void load_macros(Params &P, u8 *table, const std::string &path, bool uniform, std::vector<u64> &codons)
 {
@@ -1358,7 +1361,7 @@ static void write_checkpoint(Host &h, const std::string &path, i64 t_next, bool 
         u64 nm = (u64)P.nmac; fwrite(&nm, 8, 1, f);
         for (int i = 0; i < P.nmac; i++) {
             u64 cv = macro_codons[i], ln = (u64)P.mlen[i]; fwrite(&cv, 8, 1, f); fwrite(&ln, 8, 1, f);
-            for (int j = 0; j < P.mlen[i]; j++) { u64 o = P.mbody[i * MACRO_BODY_MAX + j]; fwrite(&o, 8, 1, f); }
+            for (int j = 0; j < P.mlen[i]; j++) { u64 o = (u64)body_index(P.mbody[i * MACRO_BODY_MAX + j]); fwrite(&o, 8, 1, f); }
         }
     }
     fclose(f);
@@ -1411,7 +1414,7 @@ static i64 read_checkpoint(Host &h, const std::string &path, bool uniform, bool 
         for (u64 i = 0; i < nm; i++) {
             u64 cv, ln; rd(&cv, 8, 1); rd(&ln, 8, 1);
             if (i < (u64)P.nmac && (cv != macro_codons[i] || ln != (u64)P.mlen[i])) same = false;
-            for (u64 j = 0; j < ln; j++) { u64 o; rd(&o, 8, 1); if (i < (u64)P.nmac && j < (u64)MACRO_BODY_MAX && o != P.mbody[i * MACRO_BODY_MAX + j]) same = false; }
+            for (u64 j = 0; j < ln; j++) { u64 o; rd(&o, 8, 1); if (i < (u64)P.nmac && j < (u64)MACRO_BODY_MAX && o != (u64)body_index(P.mbody[i * MACRO_BODY_MAX + j])) same = false; }
         }
         if (!same) { fprintf(stderr, "the checkpoint's macro table differs from --macros\n"); exit(1); }
     }
