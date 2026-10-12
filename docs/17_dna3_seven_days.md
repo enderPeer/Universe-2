@@ -1166,3 +1166,75 @@ without a carry: that is the 4-bit x+1 on 12 of 16 inputs, so with streak 7 they
 of tasks with substantial reward counts and as patchiness in the traits map; (iv) the social task is the hardest to
 start (it needs a signalling neighbour and a listening partner at once) and may not appear in the first 10^5 ticks;
 (v) if any of this works, the day-7 statistics of D8 show new adaptive activity after the fork where D7 shows none.
+
+### 18.5 D8 against D7 so far (2026-10-12, D8 at tick 312,319, D7 at tick 522,239)
+
+Sources: `results/dna3/fork8/LOG.md` and `results/dna3/day7/LOG.md` (a census every 2 hours, measured numbers only),
+the census series and pictures in `results/dna3/fork8/D8_ladder/` and `results/dna3/day7/D7_big/`, all living genes
+of the latest checkpoints (D8 tick 307,200, D7 tick 512,000; `genes_latest.json`, `tools/dna3_ckpt_genes.py`), the
+signal-flow reading of the same checkpoints (`signal_flow_latest.json`) and the day-7 statistics
+(`activity/activity.json` and `.png` in both directories, `tools/dna3_activity.py`, two shadow replicates).
+
+**Population and energy.** The fork halved the population (11.56 M to 5.62 M in 5,120 ticks: D7's genes, which add 1 to
+the low cell without a carry, now earn the rank-4 x+1 reward only on streaks of seven correct answers, about 13 % of
+answers); it then recovered slowly to 6.34 M. Over the same 102,400 ticks (204,800 to 307,199) the ledgers give:
+
+| energy per 102,400 ticks | D7 (control) | D8 (ladder fork) |
+|---|---:|---:|
+| task income | 18,651 G | 4,686 G (pools limit it) |
+| HARVEST income | 1,104 G | 2,302 G |
+| moved by predation (eaten) | 99 G | 4,752 G (48 times more) |
+| instructions executed | 18,513 G | 5,124 G |
+
+In D8 task income per 10,240 ticks rises at every census since the first (107, 133, 170, ... 704 G), while D7's stays at
+about 1,865 G.
+
+**Which ladder tasks pay.** Rewarded answers since the fork at tick 312,319 (rank): x^1 (0) 73.5 G, x+1 (4) 84.6 G,
+x-1 (4) 64.2 G, x&12 (0) 62.0 G, x&3 (1) 14.8 G, a xor b (4) 14.2 G, x+8 (1) 1.98 G, x^5 (1) 0.45 G, parity (4)
+0.42 G, x+4 (0) 0.31 G, x|3 (2) 0.28 G, x^4 (0) 0.27 G, a (1) 0.23 G, 4x (1) 0.11 G, x/4 (2) 0.11 G, x/2 (4) 0.11 G,
+2x (4) 18 M, 15-x (3) 2,159, social (3) 68.6 M. The leading genes of the checkpoint contain dedicated programs for
+three of them: x^1 (`... OUT IN FLIP`: FLIP on the low cell), x+1 (`IN INC SKZ OUT`: adds 1 and skips the answer when a
+carry would be needed, so its streak is never broken) and x-1 on the low cell (`IN INC INC INC`). The others rise
+too (a xor b and x&3 by more than 3 G per 10,240 ticks at the last censuses), but which programs earn them was not
+identified: per-gene reward counts are not recorded, and several tasks agree with simpler ones on part of the
+inputs, so some of these counts are by-products. Pools (full 46.9 M each, summed over 11,449 regions): x^1 at 16 %,
+x+1 16 %, x&12 44 %, x-1 51 %, a xor b 81 %, x&3 87 %, all others nearly full.
+
+**The social task: no evidence of communication yet.** 68.6 M rewarded answers is about what chance streaks give
+((1/4)^7 per answer over tens of billions of answers). The signal-flow reading of D8's checkpoint: 342,418 organisms
+run LISTEN, but under the ladder OUT answers with the two I/O cells, not with A, so a listened value enters an answer
+only through STA (5,128 organisms) and was not shown to be combined with the own input. What changed is what is
+sent: in D8, 23,112 of the 25,999 organisms that run SIGNAL broadcast their raw input (the value IN put into A),
+which is what a social partner would need; in D7, 3,553,830 of 3,752,200 broadcast the computed answer (LDA).
+Signallers became rare in D8 (911,778 at the first census, 60,818 now) while listeners stayed near a million.
+
+**Predation and space.** Eaters went from 1.05 M (first census) to 5.27 M (83 % of the living); all of them still
+harvest (mixotrophs); movers fell from 2.03 M to 0.66 M. In the pictures D8's animals map turned from a mosaic of
+hunters, eaters and movers (tick 215,039) to red eaters almost everywhere with hunter bands (magenta) and many empty
+slots in zone 1 (`animals_t312319.png`); D7's map has barely changed since tick 51,199.
+
+**Diversity and the day-7 statistics.** Distinct genes: D7 98,247 at the fork tick, 94,317 at tick 522,239 (falling);
+D8 167,940 at its first census, 349,823 at tick 312,319 (rising every census). Distinct operation sequences ever seen
+in the op census: D7 56,858 in 410,000 ticks, D8 830,423 in 102,400. Day-7 criteria (section 9), both variants:
+
+| | D7 (ticks 112,639 to 522,239) | D8 (ticks 209,919 to 312,319) |
+|---|---|---|
+| new adaptive components per census, Q2 -> Q4 (all) | 15.9 -> 5.0: fails | 1,470.6 -> 1,408.4: holds |
+| same, established components | 4.6 -> 1.2 | 994.4 -> 1,121.6 |
+| new complexity maximum in Q4 | none (established) | mean trophic level |
+| adaptive diversity (all) | about 1,300 | about 8,500, never below half its mean |
+| verdict | **plateau** | **open-ended** |
+
+**Reading.** The four changes did what they were meant to: the frozen world D7 sits on its plateau (one new adaptive
+sequence in its last census against the shadow's 75), while its fork keeps producing new adaptive operation sequences
+at a constant rate of about 1,400 per census, climbs the ladder on several tasks at once, and has turned into a world of
+predators. Whether this is lasting open-endedness or a long transient after a large perturbation cannot be told after
+102,400 ticks (section 17.5: the same criteria passed for O7 during a burst); D8 has to keep this up for several times
+its present age.
+
+**Caveats.** One fork, one horizon, 21 op censuses. The op census's task columns (and so the "max tasks" complexity
+measure) still use the day-6 rules and are wrong under the ladder; the only new complexity maximum that counts is the
+trophic level, which reflects the spread of predation, not of computation. The shadow is driven from census-level
+counts (section 17.2). Depletable pools reward rarity, so part of the turnover may be cycling between tasks; the
+activity measure counts only components that stay active beyond the shadow's threshold. D8 runs on a GPU shared with
+another job, at 1 to 2 ticks per second.

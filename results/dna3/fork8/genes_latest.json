@@ -1,0 +1,56 @@
+{
+ "tick": 307200,
+ "live": 6307733,
+ "selected": 6307733,
+ "sequences": 106840,
+ "top": [
+  {
+   "count": 197056,
+   "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT OUT IN FLIP EAT REWIND",
+   "spelling": "ATG AGA GCT CTT TTA GGT ATA GAA CCG TCG TCA AAT CCA TGG",
+   "spelling_count": 5194
+  },
+  {
+   "count": 189916,
+   "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT OUT IN FLIP EAT INC",
+   "spelling": "ATG AGA GCT CTT TTA GGA ATA GAG CCG TCG TCA AAC CCG CAG",
+   "spelling_count": 4224
+  },
+  {
+   "count": 163922,
+   "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKZ SEEK OUT EAT REWIND IN FLIP",
+   "spelling": "ATG AGA GCT CTA TTA GGT TTC GAA TCG CCG TGG TCA AAT",
+   "spelling_count": 5445
+  },
+  {
+   "count": 143494,
+   "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT OUT IN FLIP EAT SEEK",
+   "spelling": "ATG AGA GCT CTT TTA GGT ATA GAA CCG TCG TCA AAT CCA GAG",
+   "spelling_count": 2926
+  },
+  {
+   "count": 135117,
+   "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT OUT IN FLIP EAT R3",
+   "spelling": "ATG AGA GCT CTT TTG GGT ATA GAG CCG TCG TCA AAC CCA AAG",
+   "spelling_count": 3416
+  },
+  {
+   "count": 112672,
+   "ops": "START HARVEST ALLOC COPY TERM DIVIDE TERM SEEK HARVEST SKNZ OUT IN FLIP",
+   "spelling": "ATG AGA GCG CTT TTG GGG TTA GAG AGG ATT TCG TCA AAT",
+   "spelling_count": 3958
+  },
+  {
+   "count": 85028,
+   "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT OUT IN L1 EAT R3",
+   "spelling": "ATG AGA GCT CTT TTA GGT ATA GAG CCA TCG TCA CGC CCA AAG",
+   "spelling_count": 2859
+  },
+  {
+   "count": 83330,
+   "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT EAT OUT IN INC",
+   "spelling": "ATG AGA GCT CTT TTA GGT ATC GAA CCG CCG TCG TCA CAG",
+   "spelling_count": 3960
+  }
+ ]
+}

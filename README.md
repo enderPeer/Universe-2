@@ -138,7 +138,13 @@ ladder on a 2-bit input with an I/O cell and a three-in-a-row rule against guess
 identical on both GPU types), and in its open world **computation evolved from plants that had none within 30,000
 ticks**: a program wrapped around the copy loop (`... LDA ... OUT IN INC`) computes x+1, task income became five
 times the light income, and the innovation filled its hemisphere (99.4 % of zone 1) but not the other one (2.4 %),
-held back by the firmament.
+held back by the firmament. **The day-7 run** (3 x 10^9 cells, days 1 to 6 frozen) reaches a plateau by the
+criteria fixed beforehand (docs/17 sections 9 and 17). **Its fork with a long task ladder** (4-bit inputs, 18 tasks
+ranked by their shortest program on the organisms' own machine), depletable regional task pools, a social task and
+more profitable predation (section 18) is, after 102,400 ticks, open-ended by the same criteria: about 1,400 new
+adaptive operation sequences per census against D7's 5, task income rising at every census, x+1 with carry, x-1 and
+a xor b climbing, and 83 % of the organisms predators that still harvest; no evidence yet that the social task is
+solved by communication.
 
 **Real ISAs.** AArch64 exhaustive over all 2^32 words: **1,526,900,218 valid instructions (35.5509 %)**, 1,298
 mnemonics, 15 minutes on the workstation. Encoding density of other ISAs (16.7 M-word samples, Capstone): ARM32

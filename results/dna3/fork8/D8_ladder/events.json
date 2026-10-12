@@ -292,5 +292,12 @@
   "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT OUT IN L1 EAT REWIND",
   "codons": "ATG AGA GCT CTT TTA GGT ATC GAG CCG TCG TCA CGC CCA TGG",
   "count": 3995
+ },
+ {
+  "tick": 312319,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT OUT IN L1 EAT INC",
+  "codons": "ATG AGA GCT CTT TTA GGA ATC GAG CCG TCG TCA CGC CCG CAG",
+  "count": 3977
  }
 ]
