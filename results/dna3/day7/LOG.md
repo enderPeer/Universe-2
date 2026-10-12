@@ -139,3 +139,11 @@ Picture and emergence checks every 2 hours; entries below give only measured num
   movers, red eater patches, one yellow patch in the north) looks the same as at tick 522,239. Running; adler40 101 GB
   free (new CUDA processes on adler40 fail with a driver/library mismatch since the 2026-10-10 package update; the
   running D7 and O7 are not affected).
+
+## 2026-10-12 11:00 UTC: D7 stopped at tick 583,679 (the user's decision)
+
+- Last census tick 583,679; checkpoint at tick 512,000 (`~/universe2/dna3/day7/D7_big.ckpt`, adler40). Reason: the
+  plateau is established (section 18.5) and D7's recorded series already covers the ticks D8 and D9 will reach for the
+  next ~250,000 ticks; the RTX 4090 goes to D9. D7 can be resumed with its `dna3_open.sh` command (deterministic: it
+  recomputes the same states from tick 512,000). adler40 rebooted at 11:00 UTC to clear the NVIDIA driver/library
+  mismatch.

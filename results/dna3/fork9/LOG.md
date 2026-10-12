@@ -15,3 +15,13 @@ tick 307,200, kept when D8 writes its next one).
 
 - Verified first: 10 of 10 configurations identical engine vs reference (`results/dna3/verify_aa/`).
 - Resumed from tick 307,200 (6,307,733 alive); 5.4 GB on GPU 2. knecht24 17 GB free before D9's first checkpoint.
+
+## 2026-10-12 11:15 UTC: moved to adler40's RTX 4090
+
+- On knecht24 GPU 2 (RTX 3060, alone after O5 stopped): 5,120 ticks from 10:40:31 to 11:08:46 UTC, **3.0 ticks/s**.
+- adler40 rebooted (driver/library mismatch cleared); D9 restarted there from the same checkpoint (tick 307,200,
+  `dna_world3l` built for sm_89 from the same source, md5 6234fdb5...), started 10:58:43 UTC, reached tick 322,559 at
+  11:11:38: **about 20 ticks/s** including the load (6.6 times the 3060).
+- Census lines of ticks 312,319, 317,439 and 322,559 on the 4090 and on the 3060: **3 of 3 identical**. The knecht24
+  copy was stopped at tick 327,679+ (its files in `knecht24:~/universe2/dna3/fork9/knecht24_partial/`); D9 continues
+  on adler40 GPU 0, `~/universe2/dna3/fork9`.
