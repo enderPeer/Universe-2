@@ -25,3 +25,10 @@ tick 307,200, kept when D8 writes its next one).
 - Census lines of ticks 312,319, 317,439 and 322,559 on the 4090 and on the 3060: **3 of 3 identical**. The knecht24
   copy was stopped at tick 327,679+ (its files in `knecht24:~/universe2/dna3/fork9/knecht24_partial/`); D9 continues
   on adler40 GPU 0, `~/universe2/dna3/fork9`.
+
+## 2026-10-12 ~12:20 UTC: first checkpoint, tick 358,400 (docs/17 section 18.8)
+
+- 5,764,450 alive. Real x+1 with carry: `SKZ SEEK L1 INC OUT IN INC`, 99.6 % correct, 25,581 of 25,864 carry inputs;
+  39,314 carriers (126 in D8 at tick 307,200). Carry skipper `IN INC SKZ OUT` 168,883; x-1 without borrow
+  `IN FLIP INC FLIP` 195,046 (75 % correct, 0 of the borrow inputs).
+- No signal channel: social target matched 25.20 % (listened neighbour) against 25.18 % (control); signallers 132,199.

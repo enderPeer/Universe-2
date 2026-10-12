@@ -1309,3 +1309,33 @@ needs only to lose its SKNZ); (iii) the abstaining families shrink within 10^4 t
 every input, first rank-0 and rank-1 computations (x^1, x&12, x+8, x^4); (iv) a real x+1 with carry, x-1 or a xor b
 needs 8 or more instructions and will be rare in the first 10^5 ticks; (v) predation (83 % eaters) continues and may
 rise further, since task energy becomes scarcer.
+
+### 18.8 D9's first checkpoint (tick 358,400): a real carry program, no signal channel
+
+Sources: `results/dna3/fork9/task_profile_t358400.json` (section 18.6 method, 1,500 spellings with OUT, 917,186 of
+5,764,450 organisms), `results/dna3/fork9/language_t358400.json` (`tools/dna3_language.py`), and a reference run of
+the leading programs that records every (input, answer) pair (800 ticks, no mutation, `--answer-all`).
+
+**x+1 is computed with the carry.** The most common x+1 program, `START HARVEST ALLOC COPY TERM DIVIDE SKZ SEEK L1 INC
+OUT IN INC`, answers x+1 correctly on 99.6 % of 104,755 answers, and on 25,581 of 25,864 inputs with b = 3, where a
+carry into the high cell is needed. How: IN puts the head on the low cell, INC adds 1; after the copy loop SKZ tests
+that cell; without a carry it is not 0, SEEK runs and takes the next codon (the one that reads as L1) as its operand
+and moves the head off the I/O cells, so the second INC changes nothing that is answered; with a carry the cell
+wrapped to 0, SKZ skips SEEK, the operand codon is executed as L1, the head moves to the high cell and INC adds the
+carry. One codon is an operand on one path and an instruction on the other. Carriers: 126 in D8 at tick 307,200,
+**39,314** in D9 at tick 358,400. The old carry skipper (`IN INC SKZ OUT`) still holds 168,883 (56,237 at the fork):
+under `--answer-all` it is paid only for seven non-carry inputs in a row, (3/4)^7 of its streaks, still worth it at
+rank 4.
+
+**x-1 is not.** The leading x-1 programs (`IN FLIP INC FLIP`, 195,046 organisms, 20 at the fork) compute b - 1 on the
+low cell: correct on every input with b != 0 and on none of the inputs with b = 0 (borrow); 75 % of their answers
+are correct and (3/4)^7 of their streaks pay. a xor b and parity have no computing program among the profiled ones.
+
+**No signal channel.** 132,199 organisms carry SIGNAL (61,502 in D8), 599,383 listeners have a direction. The signal
+carries 0.14 bits about the sender's b (0.17 in D8); adjacent signallers agree in 65.7 % against 46.3 % expected
+(kinship). Only 1.4 % of listened neighbours signal. Answers of 44,689 answered listeners match the social target
+b xor b' in 25.20 % with b' of the listened neighbour and 25.18 % with b' of the opposite one (chance 25 %); with a
+signalling partner 25.9 % against 23.8 % (804 cases, a difference of 1.4 standard errors). The 7-fold rise of social
+rewards (+35.3 M per 10,240 ticks) is therefore not explained by a channel; a likely source, not tested, is coincidence
+streaks: an organism that answers b xor c with a fixed c (x^1: c = 1) next to a neighbour whose input stays the same
+over seven of its answers.
