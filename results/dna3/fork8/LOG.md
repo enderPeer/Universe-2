@@ -179,3 +179,15 @@ Entries below give only measured numbers.
 - Eaters 5,216,798 (83 %), movers 690,922 (falling), WAIT 72,306, SIGNAL 61,502, LISTEN 971,672; 344,564 distinct
   genes. Top 5 stable since the last check.
 - Running; knecht24 18 GB free.
+
+## 2026-10-12 ~08:30 UTC: day-7 statistics (tools/dna3_activity.py, 2 shadow replicates)
+
+- D8, 21 op censuses (ticks 209,919 to 312,319), 830,423 distinct operation sequences ever: **open-ended by the three
+  criteria of section 9 in both variants.** All components: new adaptive per census Q2 1,470.6, Q4 1,408.4 (criterion
+  1 holds), new maximum in Q4 of mean trophic level (2 holds), adaptive diversity in the second half >= 8,560
+  against a mean of 8,371 (3 holds). Established components: Q2 994.4, Q4 1,121.6; new maxima in Q4: max tasks and
+  mean trophic level; adaptive diversity >= 4,853 (mean 4,964). Caveats: only 102,400 ticks after the fork (the
+  verdict can turn with the horizon, section 17.5); the op census's task columns follow the day-6 rules and are
+  wrong under the ladder, so "max tasks" does not count; the mean trophic level rises because predation spreads.
+- D7, 41 op censuses (ticks 112,639 to 522,239), 56,858 sequences: plateau in both variants (new adaptive per census
+  Q2 15.9 -> Q4 5.0; established 4.6 -> 1.2; last census 1 new against the shadow's 75.5).
