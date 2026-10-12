@@ -215,3 +215,10 @@ Entries below give only measured numbers.
   north shrank since tick 312,319, and a small white patch appeared near the centre. Traits map: green with yellow
   and cyan patches.
 - Running; knecht24 18 GB free (93 %).
+
+## 2026-10-12 11:55 UTC: D8 stopped at tick 343,039 (the user's decision; the card is needed for another project)
+
+- D9 (the same state at tick 307,200 with `--answer-all`) had passed it (tick 353,279 at 11:42 UTC on the RTX 4090).
+- Last census tick 343,039; last checkpoint tick 307,200 (`knecht24:~/universe2/dna3/fork8/D8_ladder.ckpt`, also
+  adler40 `fork9/D8_t307200.ckpt`); D8 can be resumed from there with its `dna3_open.sh` command and recomputes the
+  same states (deterministic). Census series and pictures up to tick 343,039 in `D8_ladder/`.
