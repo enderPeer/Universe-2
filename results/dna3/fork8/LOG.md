@@ -85,3 +85,97 @@ Entries below give only measured numbers.
   too); 248,690 distinct genes (rising). The top 5 are now x^1 computers (`... OUT IN FLIP`), most with EAT and MOVE;
   the x-1 genes left the top 5.
 - Running; knecht24 26 GB free. About 0.7 ticks per second.
+
+## 2026-10-11 21:40 UTC: tick 250,879 (46,080 ticks after the fork)
+
+- 6,046,376 alive (zone 0 3,325,065 / zone 1 2,721,311). D7 at tick 245,759 (interpolated) about 11.57 M.
+- Rewarded answers since the fork (rank): x^1 (0) 24,955 M, x^4 (0) 48.4 M, x+4 (0) 33.3 M, x&12 (0) 18,147 M,
+  x^5 (1) 38.5 M, x+8 (1) 205.7 M, x&3 (1) 1,025 M, 4x (1) 27.4 M, a (1) 90.6 M, x+1 (4) 39,168 M, x|3 (2) 120.6 M,
+  x/4 (2) 27.3 M, 15-x (3) 591, x-1 (4) 20,376 M, 2x (4) 1.33 M, x/2 (4) 27.3 M, parity (4) 25.3 M, a xor b (4)
+  1,027 M, social (3) 37.6 M.
+- Last 10,240 ticks: x-1 +7,412 M, a xor b +610 M (was +278 M), x&3 +645 M, parity +16.0 M, x+8 +124 M, social
+  +7.3 M (slowing: +10.5 M before).
+- Pools (full 46,895,104): x^1 5.54 M (12 %), x+1 5.71 M (12 %), x-1 17.6 M (38 %), x&12 18.4 M (39 %), x&3 45.3 M,
+  a xor b 44.9 M. Task income over 10,240 ticks: 35,809.5 G - 35,377.5 G = 431.9 G.
+- Eaters 4,276,746 (71 %), movers 2,048,471 (falling), WAIT 51,569, SIGNAL 109,050 (falling), LISTEN 819,219
+  (falling); 271,785 distinct genes (rising). Top 5: x^1 computers (`... OUT IN FLIP`), four of them with EAT.
+- Running; knecht24 25 GB free.
+
+## 2026-10-11 23:40 UTC: tick 261,119 (56,320 ticks after the fork)
+
+- 6,057,579 alive (zone 0 3,339,470 / zone 1 2,718,109). D7 at tick 255,999 (interpolated) about 11.57 M.
+- Rewarded answers since the fork (rank): x^1 (0) 33,134 M, x^4 (0) 67.6 M, x+4 (0) 55.9 M, x&12 (0) 25,539 M,
+  x^5 (1) 85.5 M, x+8 (1) 397.8 M, x&3 (1) 2,093 M, 4x (1) 39.1 M, a (1) 110.8 M, x+1 (4) 46,996 M, x|3 (2) 143.7 M,
+  x/4 (2) 38.8 M, 15-x (3) 743, x-1 (4) 27,794 M, 2x (4) 2.52 M, x/2 (4) 38.7 M, parity (4) 52.3 M, a xor b (4)
+  2,030 M, social (3) 43.5 M.
+- Last 10,240 ticks: x-1 +7,418 M, a xor b +1,003 M (+610 M before), x&3 +1,068 M, x+8 +192 M, x^5 +47 M, parity
+  +27 M, social +5.9 M (slowing further).
+- Pools (full 46,895,104): x^1 5.25 M (11 %), x+1 6.80 M (14 %), x&12 17.7 M (38 %), x-1 18.2 M (39 %), x&3 44.6 M,
+  a xor b 43.9 M. Task income over 10,240 ticks: 36,278.6 G - 35,809.5 G = 469.1 G.
+- Eaters 4,491,091 (74 %), movers 1,566,863 (falling), WAIT 47,284, SIGNAL 79,787, LISTEN 804,831; 291,198 distinct
+  genes. New in the top 5: `START HARVEST ALLOC COPY TERM DIVIDE IN INC SKZ OUT HARVEST EAT HARVEST EAT EAT` (9,943):
+  after IN INC the low cell is 0 exactly when the 4-bit x+1 needs a carry, and SKZ then skips OUT, so the gene answers
+  only when its carry-less x+1 is right and its streak is never reset (reading of the gene, not traced).
+- Running; knecht24 21 GB free (falling about 1 GB per 2 h with O5, O6 and D8 maps).
+
+## 2026-10-12 01:40 UTC: tick 271,359 (66,560 ticks after the fork)
+
+- 6,089,851 alive (zone 0 3,354,454 / zone 1 2,735,397). D7 at tick 266,239: 11,573,153.
+- Rewarded answers since the fork (rank): x^1 (0) 41,291 M, x^4 (0) 93.5 M, x+4 (0) 90.9 M, x&12 (0) 32,917 M,
+  x^5 (1) 142.8 M, x+8 (1) 634.7 M, x&3 (1) 3,621 M, 4x (1) 51.4 M, a (1) 132.7 M, x+1 (4) 54,686 M, x|3 (2) 167.7 M,
+  x/4 (2) 50.7 M, 15-x (3) 934, x-1 (4) 35,177 M, 2x (4) 4.24 M, x/2 (4) 50.6 M, parity (4) 91.9 M, a xor b (4)
+  3,457 M, social (3) 48.6 M.
+- Last 10,240 ticks: x-1 +7,383 M, a xor b +1,427 M (+1,003 M before), x&3 +1,528 M, x+8 +237 M, x^5 +57 M,
+  parity +40 M, social +5.1 M.
+- Pools (full 46,895,104): x^1 5.49 M, x+1 7.43 M, x&12 17.8 M, x-1 19.1 M, x&3 43.9 M, a xor b 42.8 M.
+  Task income over 10,240 ticks: 36,793.9 G - 36,278.6 G = 515.3 G.
+- Eaters 4,683,774 (77 %), movers 1,216,001 (falling), WAIT 45,332, SIGNAL 69,528, LISTEN 818,281; 304,881 distinct
+  genes. Top 5: x^1 computers (`... OUT IN FLIP`), the answer-only-when-right x+1 gene (`IN INC SKZ OUT ...`, 10,325),
+  and new `... TERM SEEK HARVEST SKNZ OUT IN FLIP` (8,991 and 8,177).
+- Running; knecht24 21 GB free.
+
+## 2026-10-12 03:40 UTC: tick 286,719 (81,920 ticks after the fork)
+
+- 6,176,964 alive (zone 0 3,393,200 / zone 1 2,783,764). D7 at tick 286,719 (interpolated) about 11.58 M.
+- Rewarded answers since the fork (rank): x^1 (0) 53,458 M, x^4 (0) 147.0 M, x+4 (0) 173.6 M, x&12 (0) 43,913 M,
+  x^5 (1) 242.5 M, x+8 (1) 1,076 M, x&3 (1) 6,851 M, 4x (1) 71.3 M, a (1) 167.7 M, x+1 (4) 66,018 M, x|3 (2)
+  205.8 M, x/4 (2) 69.8 M, 15-x (3) 1,768, x-1 (4) 46,171 M, 2x (4) 8.07 M, x/2 (4) 69.5 M, parity (4) 180.0 M,
+  a xor b (4) 6,518 M, social (3) 55.8 M.
+- Per 10,240 ticks over the last 15,360: x-1 +7.3 G, a xor b +2.0 G (1.4 G before), x&3 +2.2 G, x+8 +0.29 G,
+  parity +0.06 G, social +4.8 M.
+- Pools (full 46,895,104): x^1 6.02 M, x+1 7.76 M, x&12 18.2 M, x-1 20.6 M, x&3 42.8 M, a xor b 40.9 M. Task income:
+  37,664.4 G - 36,793.9 G = 870.5 G over 15,360 ticks (580 G per 10,240).
+- Eaters 4,934,973 (80 %), movers 907,902 (falling), WAIT 55,769, SIGNAL 70,101, LISTEN 903,251; 325,179 distinct
+  genes. Top 5: the answer-only-when-right x+1 gene leads (8,692); x^1 computers with EAT; `... SKZ SEEK MOVE LISTEN
+  OUT IN L1` (a gene ending in L1 after IN: the head moves to the high cell).
+- Faster: three censuses in 2 h (about 2 ticks per second). knecht24 20 GB free.
+
+## 2026-10-12 05:40 UTC: tick 296,959 (92,160 ticks after the fork)
+
+- 6,234,751 alive (zone 0 3,415,813 / zone 1 2,818,938). D7 at tick 296,959: 11,577,962.
+- Rewarded answers since the fork (rank): x^1 (0) 61,518 M, x^4 (0) 192.7 M, x+4 (0) 235.9 M, x&12 (0) 51,184 M,
+  x^5 (1) 318.1 M, x+8 (1) 1,414 M, x&3 (1) 9,644 M, 4x (1) 85.9 M, a (1) 193.0 M, x+1 (4) 73,488 M, x|3 (2)
+  233.1 M, x/4 (2) 83.6 M, 15-x (3) 2,037, x-1 (4) 53,435 M, 2x (4) 11.6 M, x/2 (4) 83.3 M, parity (4) 260.5 M,
+  a xor b (4) 9,212 M, social (3) 60.9 M.
+- Last 10,240 ticks: x-1 +7.26 G, a xor b +2.69 G (2.0 G before), x&3 +2.79 G, x+8 +0.34 G, parity +0.08 G,
+  x^4 +0.046 G, x+4 +0.062 G, social +5.0 M.
+- Pools (full 46,895,104): x^1 6.50 M, x+1 7.85 M, x&12 18.8 M, x-1 21.8 M, a xor b 39.7 M, x&3 42.1 M. Task income
+  over 10,240 ticks: 38,313.5 G - 37,664.4 G = 649.1 G (580 G before).
+- Eaters 5,080,966 (81 %), movers 784,666 (falling), WAIT 63,680, SIGNAL 64,003, LISTEN 947,409; 336,055 distinct
+  genes. Top 5 now led by `... SKZ SEEK MOVE LISTEN OUT IN L1` (7,595); new `... LDA L1 HARVEST SKNZ OUT IN SKNZ`.
+- Running; knecht24 19 GB free.
+
+## 2026-10-12 07:40 UTC: tick 307,199 (102,400 ticks after the fork)
+
+- 6,307,733 alive (zone 0 3,448,194 / zone 1 2,859,539). D7 at tick 307,199 (interpolated) about 11.58 M.
+- Rewarded answers since the fork (rank): x^1 (0) 69,535 M, x^4 (0) 244.7 M, x+4 (0) 289.1 M, x&12 (0) 58,401 M,
+  x^5 (1) 401.2 M, x+8 (1) 1,784 M, x&3 (1) 12,929 M, 4x (1) 101.6 M, a (1) 220.0 M, x+1 (4) 80,914 M, x|3 (2)
+  262.3 M, x/4 (2) 98.3 M, 15-x (3) 2,112, x-1 (4) 60,646 M, 2x (4) 15.9 M, x/2 (4) 98.0 M, parity (4) 359.1 M,
+  a xor b (4) 12,426 M, social (3) 66.0 M.
+- Last 10,240 ticks: x-1 +7.21 G, a xor b +3.21 G (2.69 G before), x&3 +3.29 G, x+8 +0.37 G, parity +0.10 G,
+  social +5.1 M.
+- Pools (full 46,895,104): x^1 7.01 M, x+1 7.64 M, x&12 19.9 M, x-1 23.2 M, a xor b 38.4 M, x&3 41.3 M. Task income
+  over 10,240 ticks: 39,017.7 G - 38,313.5 G = 704.2 G (649 G before).
+- Eaters 5,216,798 (83 %), movers 690,922 (falling), WAIT 72,306, SIGNAL 61,502, LISTEN 971,672; 344,564 distinct
+  genes. Top 5 stable since the last check.
+- Running; knecht24 18 GB free.

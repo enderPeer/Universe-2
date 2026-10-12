@@ -94,3 +94,39 @@ Picture and emergence checks every 2 hours; entries below give only measured num
 - 11,581,595 alive (zone 0 5,782,453 / zone 1 5,799,142). x-1 answers 17.99 G (+0.585 G per 10,240 ticks). Eaters
   396,592, movers 3,425,067, WAIT 28,364, SIGNAL 3,924,866, LISTEN 1,484,195; 95,857 distinct genes (falling). Top 10
   unchanged. Running; 105 GB free.
+
+## 2026-10-11 21:40 UTC: tick 358,399
+
+- 11,584,400 alive (zone 0 5,784,054 / zone 1 5,800,346). x-1 answers 19.75 G (+0.585 G per 10,240 ticks). Eaters
+  392,807, movers 3,423,832, WAIT 28,317, SIGNAL 3,926,761, LISTEN 1,483,749; 95,554 distinct genes. Top 10
+  unchanged. Running; 105 GB free.
+
+## 2026-10-11 23:40 UTC: tick 389,119
+
+- 11,587,076 alive (zone 0 5,785,613 / zone 1 5,801,463). x-1 answers 21.51 G (+0.585 G per 10,240 ticks). Eaters
+  389,999, movers 3,422,513, WAIT 28,272, SIGNAL 3,928,755, LISTEN 1,483,409; 95,284 distinct genes. Top 10
+  unchanged. Running; 104 GB free.
+
+## 2026-10-12 01:40 UTC: tick 419,839
+
+- 11,588,805 alive (zone 0 5,786,803 / zone 1 5,802,002). x-1 answers 23.28 G (+0.585 G per 10,240 ticks). Eaters
+  387,541, movers 3,421,455, WAIT 28,229, SIGNAL 3,929,841, LISTEN 1,483,104; 94,954 distinct genes. Top 10
+  unchanged. Running; 104 GB free.
+
+## 2026-10-12 03:40 UTC: tick 450,559
+
+- 11,590,810 alive (zone 0 5,787,874 / zone 1 5,802,936). x-1 answers 25.04 G (+0.585 G per 10,240 ticks). Eaters
+  385,356, movers 3,420,339, WAIT 28,186, SIGNAL 3,931,127, LISTEN 1,482,815; 94,823 distinct genes. Top 10
+  unchanged. Running; 103 GB free.
+
+## 2026-10-12 05:40 UTC: tick 481,279
+
+- 11,592,306 alive (zone 0 5,788,690 / zone 1 5,803,616). x-1 answers 26.80 G (+0.585 G per 10,240 ticks). Eaters
+  383,451, movers 3,419,703, WAIT 28,164, SIGNAL 3,932,315, LISTEN 1,482,703; 94,601 distinct genes. Top 10
+  unchanged. Running; 103 GB free.
+
+## 2026-10-12 07:40 UTC: tick 511,999
+
+- 11,593,697 alive (zone 0 5,789,522 / zone 1 5,804,175). x-1 answers 28.57 G (+0.585 G per 10,240 ticks). Eaters
+  381,838, movers 3,418,858, WAIT 28,178, SIGNAL 3,933,137, LISTEN 1,482,521; 94,382 distinct genes. Top 10
+  unchanged. Running; 102 GB free.

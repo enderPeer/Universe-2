@@ -173,5 +173,124 @@
   "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA SKZ EAT EAT OUT IN INC",
   "codons": "ATG AGA GCT CTT TTA GGT TAC TTT CCG CCG TCG TCA CAG",
   "count": 17595
+ },
+ {
+  "tick": 245759,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT OUT IN FLIP",
+  "codons": "ATG AGA GCT CTT TTA GGT ATA GAG CCA TCG TCA AAC",
+  "count": 12254
+ },
+ {
+  "tick": 250879,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKZ SEEK OUT EAT REWIND IN FLIP",
+  "codons": "ATG AGA GCT CTT TTA GGT TTT GAA TCG CCG TGG TCA AAT",
+  "count": 11980
+ },
+ {
+  "tick": 255999,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE TERM SEEK HARVEST SKNZ OUT IN FLIP",
+  "codons": "ATG AGA GCG CTA TTA GGG TTA GAG AGG ATT TCG TCA AAT",
+  "count": 9608
+ },
+ {
+  "tick": 255999,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKZ SEEK OUT LISTEN OUT IN INC INC INC",
+  "codons": "ATG AGA GCT CTT TTA GGC TTC GAG TCG CGG TCG TCA CAG CAG CAG",
+  "count": 9072
+ },
+ {
+  "tick": 255999,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE IN INC SKZ OUT HARVEST EAT HARVEST EAT EAT",
+  "codons": "ATG AGG GCT CTT TTA GGA TCA CAG TTT TCG AGG CCA AGG CCA CCG",
+  "count": 8764
+ },
+ {
+  "tick": 261119,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT OUT IN FLIP EAT INC",
+  "codons": "ATG AGA GCT CTT TTA GGT ATA GAA CCG TCG TCA AAT CCA CAG",
+  "count": 8298
+ },
+ {
+  "tick": 266239,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT OUT IN FLIP EAT SEEK",
+  "codons": "ATG AGA GCT CTT TTA GGT ATA GAA CCG TCG TCA AAT CCA GAG",
+  "count": 7438
+ },
+ {
+  "tick": 266239,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT OUT IN FLIP EAT R3",
+  "codons": "ATG AGA GCT CTT TTA GGT ATA GAA CCG TCG TCA AAT CCA AAG",
+  "count": 7306
+ },
+ {
+  "tick": 271359,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT OUT IN FLIP EAT REWIND",
+  "codons": "ATG AGA GCT CTT TTA GGT ATA GAA CCG TCG TCA AAT CCA TGG",
+  "count": 7064
+ },
+ {
+  "tick": 281599,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT EAT OUT IN INC",
+  "codons": "ATG AGA GCT CTT TTA GGT ATC GAA CCG CCG TCG TCA CAG",
+  "count": 5420
+ },
+ {
+  "tick": 286719,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKZ SEEK MOVE LISTEN OUT IN L1",
+  "codons": "ATG AGA GCT CTT TTA GGA TTC GAA ACA CGG TCG TCA CGT",
+  "count": 6139
+ },
+ {
+  "tick": 286719,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE LDA L1 HARVEST SKNZ OUT IN SKNZ",
+  "codons": "ATG AGA GCT CTA TTA GGT TAT CGT AGG ATA TCG TCA ATT",
+  "count": 5173
+ },
+ {
+  "tick": 291839,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE HARVEST SKZ OUT EAT REWIND IN INC",
+  "codons": "ATG AGA GCT CTT TTA GGT AGA TTT TCG CCG TGG TCA CAG",
+  "count": 4725
+ },
+ {
+  "tick": 302079,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ OUT EAT OUT IN FLIP EAT LISTEN",
+  "codons": "ATG AGA GCG CTT TTA GGT ATA TCG CCA TCG TCA AAC CCA CGG",
+  "count": 4436
+ },
+ {
+  "tick": 302079,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT OUT EAT R3 IN L1",
+  "codons": "ATG AGA GCG CTT TTA GGT ATT GAG CCA TCG CCA AAG TCA CGC",
+  "count": 4116
+ },
+ {
+  "tick": 307199,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE EAT FLIP EAT SKZ IN FLIP HARVEST SKNZ OUT",
+  "codons": "ATG AGA GCG CTT TTG GGT CCA AAC CCA TTC TCA AAC AGA ATT TCG",
+  "count": 4348
+ },
+ {
+  "tick": 307199,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT OUT IN L1 EAT REWIND",
+  "codons": "ATG AGA GCT CTT TTA GGT ATC GAG CCG TCG TCA CGC CCA TGG",
+  "count": 3995
  }
 ]
