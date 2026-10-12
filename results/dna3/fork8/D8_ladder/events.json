@@ -299,5 +299,18 @@
   "ops": "START HARVEST ALLOC COPY TERM DIVIDE SKNZ SEEK EAT OUT IN L1 EAT INC",
   "codons": "ATG AGA GCT CTT TTA GGA ATC GAG CCG TCG TCA CGC CCG CAG",
   "count": 3977
+ },
+ {
+  "tick": 322559,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST EAT EXEC TERM DIVIDE SKZ SEEK EAT MOVE OUT IN EAT INC COPY ALLOC L1",
+  "codons": "ATG AGG CCG GTG TTG GGT TTC GAG CCG ACG TCG TCA CCG CAG CTC GCG CGT",
+  "count": 3365
+ },
+ {
+  "tick": 322559,
+  "event": "longest top-10 gene so far",
+  "length": 17,
+  "ops": "START HARVEST EAT EXEC TERM DIVIDE SKZ SEEK EAT MOVE OUT IN EAT INC COPY ALLOC L1"
  }
 ]

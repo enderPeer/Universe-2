@@ -146,7 +146,9 @@ adaptive operation sequences per census against D7's 5, task income rising at ev
 organisms predators that still harvest; no evidence yet that the social task is solved by communication. The rising
 rank-4 rewards (x+1, x-1, a xor b) are not computed: the common programs answer only the inputs on which a
 3-instruction trick is right (OUT is optional) and collect two or three bounties per answer, e.g. answering only when
-a = 0 earns x&3 and a xor b at once (section 18.6, an abstention loophole to close in the next fork).
+a = 0 earns x&3 and a xor b at once (section 18.6). `--answer-all` closes this abstention loophole (an
+unanswered input resets every streak; engine and reference identical on 10 configurations), and **D9** continues
+D8's state of tick 307,200 with it as a controlled pair (section 18.7).
 
 **Real ISAs.** AArch64 exhaustive over all 2^32 words: **1,526,900,218 valid instructions (35.5509 %)**, 1,298
 mnemonics, 15 minutes on the workstation. Encoding density of other ISAs (16.7 M-word samples, Capstone): ARM32

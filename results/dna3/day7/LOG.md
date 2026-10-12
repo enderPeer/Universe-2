@@ -130,3 +130,12 @@ Picture and emergence checks every 2 hours; entries below give only measured num
 - 11,593,697 alive (zone 0 5,789,522 / zone 1 5,804,175). x-1 answers 28.57 G (+0.585 G per 10,240 ticks). Eaters
   381,838, movers 3,418,858, WAIT 28,178, SIGNAL 3,933,137, LISTEN 1,482,521; 94,382 distinct genes. Top 10
   unchanged. Running; 102 GB free.
+
+## 2026-10-12 09:40 UTC: tick 552,959
+
+- 11,594,941 alive (zone 0 5,790,098 / zone 1 5,804,843). x-1 answers 30.92 G (+0.589 G per 10,240 ticks). Task
+  income 1,869.0 G per 10,240 ticks. Eaters 380,068, movers 3,417,709, WAIT 28,174, SIGNAL 3,934,396, LISTEN
+  1,482,155; 94,264 distinct genes (94,382 at tick 511,999). Top 10 unchanged; the animals map (green plants, blue
+  movers, red eater patches, one yellow patch in the north) looks the same as at tick 522,239. Running; adler40 101 GB
+  free (new CUDA processes on adler40 fail with a driver/library mismatch since the 2026-10-10 package update; the
+  running D7 and O7 are not affected).

@@ -191,3 +191,27 @@ Entries below give only measured numbers.
   wrong under the ladder, so "max tasks" does not count; the mean trophic level rises because predation spreads.
 - D7, 41 op censuses (ticks 112,639 to 522,239), 56,858 sequences: plateau in both variants (new adaptive per census
   Q2 15.9 -> Q4 5.0; established 4.6 -> 1.2; last census 1 new against the shadow's 75.5).
+
+## 2026-10-12 09:40 UTC: tick 322,559 (117,760 ticks after the fork)
+
+- 6,409,505 alive (zone 0 3,487,021 / zone 1 2,922,484), +101,772 since tick 307,199. D7 at tick 322,559
+  (interpolated) about 11.58 M.
+- Rewarded answers since the fork (rank): x^1 (0) 81,470 M, x^4 (0) 332.5 M, x+4 (0) 351.8 M, x&12 (0) 69,116 M,
+  x^5 (1) 537.3 M, x+8 (1) 2,386 M, x&3 (1) 18,775 M, 4x (1) 127.4 M, a (1) 260.5 M, x+1 (4) 91,989 M, x|3 (2)
+  309.6 M, x/4 (2) 122.5 M, 15-x (3) 2,191, x-1 (4) 71,350 M, 2x (4) 23.9 M, x/2 (4) 122.1 M, parity (4) 541.2 M,
+  a xor b (4) 18,205 M, social (3) 73.6 M.
+- Last 10,240 ticks (312,319 to 322,559): x^1 +7.95 G, x+1 +7.38 G, x&12 +7.13 G, x-1 +7.12 G, x&3 +4.01 G, a xor b
+  +3.97 G (3.21 G in the previous window), x+8 +0.41 G, parity +0.13 G, social +5.0 M. x&3 and a xor b rise by the
+  same amount, and x^1, x&12 and x-1 nearly so: the signatures of the abstaining families of docs/17 section 18.6
+  (answer only when a = 0; answer only when b = 1).
+- Pools (full 46,895,104): x^1 7.88 M, x+1 7.34 M, x&12 21.4 M, x-1 25.0 M, a xor b 36.8 M, x&3 40.5 M, x+8 46.4 M,
+  x^5 46.7 M, the rest full or nearly. Task income over 10,240 ticks: 40,177.0 G - 39,391.0 G = 786.0 G (704.2 G
+  before); D7 over the same ticks 1,866.8 G.
+- Eaters 5,375,849 (83.9 %), movers 616,186 (still falling), WAIT 82,608, SIGNAL 59,193, LISTEN 956,583; 358,035
+  distinct genes (344,564 at tick 307,199). D7 at tick 322,559: about 397,000 eaters, about 95,900 distinct genes.
+- New in the top 10 at tick 322,559: `START HARVEST EAT EXEC TERM DIVIDE SKZ SEEK EAT MOVE OUT IN EAT INC COPY ALLOC
+  L1` (3,365; 17 codons, the longest top-10 gene so far). The largest top gene holds only 5,290 organisms.
+- Animals map: still red eaters almost everywhere with magenta hunter areas in the centre; the green patches in the
+  north shrank since tick 312,319, and a small white patch appeared near the centre. Traits map: green with yellow
+  and cyan patches.
+- Running; knecht24 18 GB free (93 %).

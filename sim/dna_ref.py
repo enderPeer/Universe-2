@@ -383,7 +383,7 @@ class World:
                  g_pass=16, gp_sea=8, gp_land=0, gh_sea=16, gh_land=32, c_copy=1, maint=1, inflow_land=False,
                  land_cell=32, land_thr=32768, year_days=16, moon_days=8, season_amp=None, lat_amp=8, lmoon=1,
                  shade=False, c_move=2, c_fly=8, eat_shift=1, eat_eff=8, c_walk=4, task_bonus=8,
-                 ladder=False, streak_len=7, pool_cell=32, pool_max=4096, pool_in=64):
+                 ladder=False, streak_len=7, pool_cell=32, pool_max=4096, pool_in=64, answer_all=False):
         if G < 6:
             raise ValueError("G must be at least 6 (two codons)")                      # [13: Limits]
         if N % G:
@@ -477,6 +477,7 @@ class World:
                        or (pool_cell and (self.W % pool_cell or self.R % pool_cell))):
             raise ValueError("bad ladder parameters (1 <= streak_len <= 7, pool_cell divides W and R)")
         self.ladder, self.streak_len = ladder, streak_len
+        self.answer_all = bool(answer_all and ladder)   # docs/17 section 18.7
         self.pool_cell, self.pool_max, self.pool_in = pool_cell, pool_max, pool_in
         self.nreg = (self.W // pool_cell) * (self.R // pool_cell) if (ladder and pool_cell) else 0
         self.pools = [[pool_max] * LADDER_NTASK for _ in range(self.nreg)]
@@ -1024,6 +1025,8 @@ class World:
                         # docs/17 section 18: a 4-bit input x; high half into cell G-2, low half into cell G-1 (both
                         # strands), the head on the low cell, A = low half; it awaits one answer
                         xv = rnd(seed, t, s, 4000) & 15
+                        if self.answer_all and self.tmask[s]:
+                            self.streak[s] = 0      # section 18.7: an input left unanswered resets every streak
                         A = xv & 3
                         H = own_hi - 1
                         fwd[H - 1] = xv >> 2
@@ -1425,6 +1428,8 @@ def main(argv=None):
     g3.add_argument("--task-bonus", type=int, default=8, help="day 6: task bonus unit (x^1, x+1: 1 unit; x^3, x-1: 4 units)")
     g3.add_argument("--ladder", action="store_true", help="day 6 option (docs/17 section 18): 4-bit inputs, 20 ranked tasks "
                     "plus the social task, depletable regional task pools")
+    g3.add_argument("--answer-all", action="store_true", help="ladder (docs/17 section 18.7): an IN while the last "
+                    "input is still unanswered resets every streak (closes abstaining and re-drawing)")
     g3.add_argument("--streak-len", type=int, default=7, help="ladder: correct answers in a row before a task pays")
     g3.add_argument("--pool-cell", type=int, default=32, help="ladder: pool regions of pool-cell x pool-cell slots (0 = no pools)")
     g3.add_argument("--pool-max", type=int, default=4096, help="ladder: pool capacity per region and task")
@@ -1462,7 +1467,7 @@ def main(argv=None):
               c_copy=a.c_copy, maint=a.maint, inflow_land=a.inflow_land, land_cell=a.land_cell, land_thr=a.land_thr,
               year_days=a.year_days, moon_days=a.moon_days, season_amp=a.season_amp, lat_amp=a.lat_amp, lmoon=a.lmoon,
               shade=a.shade, c_move=a.c_move, c_fly=a.c_fly, eat_shift=a.eat_shift, eat_eff=a.eat_eff,
-              c_walk=a.c_walk, task_bonus=a.task_bonus, ladder=a.ladder, streak_len=a.streak_len,
+              c_walk=a.c_walk, task_bonus=a.task_bonus, ladder=a.ladder, answer_all=a.answer_all, streak_len=a.streak_len,
               pool_cell=a.pool_cell, pool_max=a.pool_max, pool_in=a.pool_in)
     t_first = w.load_checkpoint(a.resume, a.fork, a.uniform_code) if a.resume else 0
     t_init = time.perf_counter() - t0
@@ -1483,7 +1488,7 @@ def main(argv=None):
         if w.d6:
             params.update(c_walk=w.c_walk, task_bonus=w.task_bonus)
         if w.ladder:
-            params.update(ladder=True, streak_len=w.streak_len, pool_cell=w.pool_cell, pool_max=w.pool_max,
+            params.update(ladder=True, answer_all=w.answer_all, streak_len=w.streak_len, pool_cell=w.pool_cell, pool_max=w.pool_max,
                           pool_in=w.pool_in, resume=a.resume, fork=a.fork)
         if w.d5:
             params.update(c_move=w.c_move, c_fly=w.c_fly, eat_shift=w.eat_shift, eat_eff=w.eat_eff)

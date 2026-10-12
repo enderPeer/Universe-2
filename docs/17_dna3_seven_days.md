@@ -1275,3 +1275,37 @@ fixes (a rule change, so a new fork, not D8): count an input that is replaced by
 wrong answer for every task (abstaining resets all streaks), or pay in proportion to the inputs answered. D8 keeps
 running unchanged; its open-endedness by the day-7 criteria (section 18.5) stands, but the ladder it climbs is mostly
 this abstention trick, not computation.
+
+### 18.7 Closing the abstention loophole (`--answer-all`) and D9, a fork of D8
+
+**Rule** (`--answer-all`, a ladder option, `sim/dna_ref.py` and `gpu/dna_world.cu`): when IN draws a new input while
+the previous one is still unanswered (`open` / `tmask` set), all 19 streaks of the processor are reset to 0 before
+the new input is written. Answering only easy inputs (section 18.6) and re-drawing with IN until an easy input comes
+both reset the streaks. No new state: the flag is a run parameter like `--streak-len` and is not stored in the
+checkpoint (a version-4 checkpoint resumes with or without it).
+
+**Effect in the reference** (one seed alone, 16 x 16 slots, 1,500 ticks, no pools, no mutation; the spellings of
+section 18.6; rewarded answers without -> with `--answer-all`): the honest x^1 program `IN FLIP OUT` 354,602 x^1 ->
+354,602 (unchanged); the a = 0 abstainer 50,478 x&3 + 50,478 a xor b -> 2 + 2 (its lineage shrank from 112 to 7
+slots); the b = 1 abstainer 57,323 each of x^1, x&12, x-1 -> 0 (9 slots); the carry skipper 106,149 x+1 -> 7,637
+(answering x+1 without the carry is right on 3 of 4 inputs, so (3/4)^7 of its streaks still pay).
+
+**Verification.** Four new configurations in `tools/dna3_verify.py` (`ladder_aa_abstain`: the D8 a = 0 abstainer with
+mu 0.01 and pools; `ladder_aa_skip`: the carry skipper with eat_eff 12, no pools; `ladder_aa_social`: signallers and
+listeners, streak 4; `ladder_aa_x1_mu`: x^1 with mu 0.03 and pools) plus the six earlier ladder and day-6
+configurations, engine `dna_world3l` on knecht24 against the reference: **10 of 10 identical on every tick** (4,600
+tick hashes; `results/dna3/verify_aa/`). The abstainer world earns 1 x&3 and 1 a xor b reward in 400 ticks in both.
+
+**D9_answer.** D8's checkpoint at tick 307,200 (version 4: D8's streaks, pools and task counts carry over; the task
+counts in D9's census are therefore cumulative since D8's fork, and D9's own rewards are the increase after tick
+307,200), continued with D8's arguments plus `--answer-all`, on knecht24's RTX 3060 GPU 2 (shared with O5) from
+2026-10-12 08:59 UTC, census every 5,120 ticks, checkpoint every 51,200, `--op-census`, open-ended. D8 continues
+unchanged on GPU 0, so D8 and D9 are a controlled pair from the same state. Run log: `results/dna3/fork9/LOG.md`.
+
+**Predictions, written at the fork.** (i) Task income falls at once to a fraction of D8's (the three families of
+section 18.6 earn about (1/4)^7 to (3/4)^7 of what they earned) and the population falls with it; (ii) the a xor b,
+x&3 and x-1 counts nearly stop rising, x^1 keeps rising (FLIP on the low cell is x^1 on every input; the b = 1 family
+needs only to lose its SKNZ); (iii) the abstaining families shrink within 10^4 ticks and are replaced by programs that answer
+every input, first rank-0 and rank-1 computations (x^1, x&12, x+8, x^4); (iv) a real x+1 with carry, x-1 or a xor b
+needs 8 or more instructions and will be rare in the first 10^5 ticks; (v) predation (83 % eaters) continues and may
+rise further, since task energy becomes scarcer.

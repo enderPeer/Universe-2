@@ -1,0 +1,272 @@
+[
+ {
+  "name": "day6_plant_mu",
+  "args": "--days 1,2,3,4,5,6 --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 1000 --seed 97 --mu 0.03 --n-seed 16 --seed-terrain sea --genome 'ATG AGA GCT CTT TTA GGT'",
+  "ok": true,
+  "tick_hashes": 1000,
+  "census_lines": 100,
+  "births_rows": 935,
+  "births_identical": true,
+  "first_diff_line": null,
+  "ref_secs": 9.9,
+  "engine_secs": 4.1,
+  "final": {
+   "tick": 999,
+   "live": 106,
+   "births_total": 935,
+   "faithful_total": 500,
+   "energy_total": 12358,
+   "zone_live": [
+    47,
+    59
+   ],
+   "live_land": 36,
+   "harvesters": 103,
+   "starved_total": 809,
+   "hash": "0c5a70cc6e26d2bf"
+  }
+ },
+ {
+  "name": "ladder_x1_pools",
+  "args": "--days 1,2,3,4,5,6 --ladder --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 400 --seed 7 --pool-cell 8 --pool-max 256 --pool-in 4 --n-seed 16 --seed-terrain sea --genome 'ATG AGA TCA AAT TCG GCT CTT TTA GGT'",
+  "ok": true,
+  "tick_hashes": 400,
+  "census_lines": 40,
+  "births_rows": 1947,
+  "births_identical": true,
+  "first_diff_line": null,
+  "ref_secs": 10.4,
+  "engine_secs": 2.3,
+  "final": {
+   "tick": 399,
+   "live": 727,
+   "births_total": 1947,
+   "faithful_total": 1889,
+   "energy_total": 272379,
+   "zone_live": [
+    365,
+    362
+   ],
+   "live_land": 395,
+   "harvesters": 725,
+   "starved_total": 1234,
+   "hash": "f005fa21c73ec326"
+  }
+ },
+ {
+  "name": "ladder_social",
+  "args": "--days 1,2,3,4,5,6 --ladder --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 400 --seed 101 --streak-len 4 --n-seed 64 --genome 'ATG AGA TCA CGA CGG AAA TCG GCT CTT TTA GGT'",
+  "ok": true,
+  "tick_hashes": 400,
+  "census_lines": 40,
+  "births_rows": 1529,
+  "births_identical": true,
+  "first_diff_line": null,
+  "ref_secs": 7.9,
+  "engine_secs": 2.9,
+  "final": {
+   "tick": 399,
+   "live": 690,
+   "births_total": 1529,
+   "faithful_total": 1475,
+   "energy_total": 242350,
+   "zone_live": [
+    339,
+    351
+   ],
+   "live_land": 237,
+   "harvesters": 690,
+   "starved_total": 900,
+   "hash": "3a5245efd5300e24"
+  }
+ },
+ {
+  "name": "ladder_carry_nopool",
+  "args": "--days 1,2,3,4,5,6 --ladder --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 400 --seed 103 --pool-cell 0 --streak-len 5 --eat-eff 12 --n-seed 16 --genome 'ATG AGA TCA CAA TAT GTT CGT CAA TCG GCT CTT TTA GGT'",
+  "ok": true,
+  "tick_hashes": 400,
+  "census_lines": 40,
+  "births_rows": 4,
+  "births_identical": true,
+  "first_diff_line": null,
+  "ref_secs": 3.2,
+  "engine_secs": 1.6,
+  "final": {
+   "tick": 399,
+   "live": 5,
+   "births_total": 4,
+   "faithful_total": 0,
+   "energy_total": 275,
+   "zone_live": [
+    0,
+    5
+   ],
+   "live_land": 0,
+   "harvesters": 5,
+   "starved_total": 12,
+   "hash": "f9b3fcc4d0607bf2"
+  }
+ },
+ {
+  "name": "ladder_plant_mu",
+  "args": "--days 1,2,3,4,5,6 --ladder --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 107 --mu 0.03 --pool-cell 16 --eat-eff 12 --n-seed 16 --seed-terrain sea --genome 'ATG AGA GCT CTT TTA GGT'",
+  "ok": true,
+  "tick_hashes": 600,
+  "census_lines": 60,
+  "births_rows": 1036,
+  "births_identical": true,
+  "first_diff_line": null,
+  "ref_secs": 6.4,
+  "engine_secs": 3.0,
+  "final": {
+   "tick": 599,
+   "live": 207,
+   "births_total": 1036,
+   "faithful_total": 601,
+   "energy_total": 15809,
+   "zone_live": [
+    162,
+    45
+   ],
+   "live_land": 106,
+   "harvesters": 192,
+   "starved_total": 822,
+   "hash": "3b7da2d11ccc0e34"
+  }
+ },
+ {
+  "name": "ladder_uniform_g255",
+  "args": "--days 1,2,3,4,5,6 --ladder --uniform-code --shade --T 0 --W 16 --land-cell 8 --N 65280 --G 255 --ticks 400 --seed 109 --mu 0.01 --F 4 --pool-cell 8 --pool-max 100 --pool-in 3 --n-seed 16 --genome 'AAA CCG CTG ATT CTT AGA AAG CCC AGC'",
+  "ok": true,
+  "tick_hashes": 400,
+  "census_lines": 40,
+  "births_rows": 358,
+  "births_identical": true,
+  "first_diff_line": null,
+  "ref_secs": 2.2,
+  "engine_secs": 2.1,
+  "final": {
+   "tick": 399,
+   "live": 140,
+   "births_total": 358,
+   "faithful_total": 271,
+   "energy_total": 52662,
+   "zone_live": [
+    70,
+    70
+   ],
+   "live_land": 57,
+   "harvesters": 137,
+   "starved_total": 224,
+   "hash": "bba2c67872267340"
+  }
+ },
+ {
+  "name": "ladder_aa_abstain",
+  "args": "--days 1,2,3,4,5,6 --ladder --answer-all --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 400 --seed 113 --mu 0.01 --pool-cell 8 --pool-max 256 --pool-in 4 --n-seed 16 --seed-terrain sea --genome 'ATG AGA GCT CTA TTA GGT TAT CGT AGG ATA TCG TCA ATT'",
+  "ok": true,
+  "tick_hashes": 400,
+  "census_lines": 40,
+  "births_rows": 124,
+  "births_identical": true,
+  "first_diff_line": null,
+  "ref_secs": 3.6,
+  "engine_secs": 1.9,
+  "final": {
+   "tick": 399,
+   "live": 84,
+   "births_total": 124,
+   "faithful_total": 73,
+   "energy_total": 7763,
+   "zone_live": [
+    13,
+    71
+   ],
+   "live_land": 16,
+   "harvesters": 84,
+   "starved_total": 52,
+   "hash": "93316a1cd36633f0"
+  }
+ },
+ {
+  "name": "ladder_aa_skip",
+  "args": "--days 1,2,3,4,5,6 --ladder --answer-all --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 400 --seed 127 --pool-cell 0 --eat-eff 12 --n-seed 32 --genome 'ATG AGG GCT CTT TTA GGA TCA CAG TTT TCG AGG CCA AGG CCA CCG'",
+  "ok": true,
+  "tick_hashes": 400,
+  "census_lines": 40,
+  "births_rows": 467,
+  "births_identical": true,
+  "first_diff_line": null,
+  "ref_secs": 4.2,
+  "engine_secs": 2.2,
+  "final": {
+   "tick": 399,
+   "live": 150,
+   "births_total": 467,
+   "faithful_total": 434,
+   "energy_total": 46519,
+   "zone_live": [
+    55,
+    95
+   ],
+   "live_land": 90,
+   "harvesters": 150,
+   "starved_total": 348,
+   "hash": "a8e44200cb180df1"
+  }
+ },
+ {
+  "name": "ladder_aa_social",
+  "args": "--days 1,2,3,4,5,6 --ladder --answer-all --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 400 --seed 131 --streak-len 4 --n-seed 64 --genome 'ATG AGA TCA CGA CGG AAA TCG GCT CTT TTA GGT'",
+  "ok": true,
+  "tick_hashes": 400,
+  "census_lines": 40,
+  "births_rows": 1562,
+  "births_identical": true,
+  "first_diff_line": null,
+  "ref_secs": 7.9,
+  "engine_secs": 2.7,
+  "final": {
+   "tick": 399,
+   "live": 701,
+   "births_total": 1562,
+   "faithful_total": 1478,
+   "energy_total": 270111,
+   "zone_live": [
+    348,
+    353
+   ],
+   "live_land": 336,
+   "harvesters": 700,
+   "starved_total": 891,
+   "hash": "ee6fac78bd6d6d7b"
+  }
+ },
+ {
+  "name": "ladder_aa_x1_mu",
+  "args": "--days 1,2,3,4,5,6 --ladder --answer-all --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 --ticks 600 --seed 137 --mu 0.03 --pool-cell 16 --eat-eff 12 --n-seed 16 --seed-terrain sea --genome 'ATG AGA TCA AAT TCG GCT CTT TTA GGT'",
+  "ok": true,
+  "tick_hashes": 600,
+  "census_lines": 60,
+  "births_rows": 1539,
+  "births_identical": true,
+  "first_diff_line": null,
+  "ref_secs": 12.6,
+  "engine_secs": 3.1,
+  "final": {
+   "tick": 599,
+   "live": 678,
+   "births_total": 1539,
+   "faithful_total": 627,
+   "energy_total": 490581,
+   "zone_live": [
+    346,
+    332
+   ],
+   "live_land": 471,
+   "harvesters": 518,
+   "starved_total": 787,
+   "hash": "826b0cfd23e6e845"
+  }
+ }
+]

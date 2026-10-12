@@ -31,6 +31,8 @@ WALKER = "ATG AGA ACA AGA GCT CTT TTA GGT"       # the swimmer of day 5; on day 
 LX1 = "ATG AGA TCA AAT TCG GCT CTT TTA GGT"      # ladder (section 18): IN FLIP OUT computes x^1 on the I/O cells
 LSOC = "ATG AGA TCA CGA CGG AAA TCG GCT CTT TTA GGT"  # ladder: IN SIGNAL LISTEN <N> OUT (social task partner)
 LCARRY = "ATG AGA TCA CAA TAT GTT CGT CAA TCG GCT CTT TTA GGT"  # ladder: IN INC LDA JNZB L1 INC OUT (hangs in LDA JNZB unless the carry is needed; exercises the loop)
+LABST0 = "ATG AGA GCT CTA TTA GGT TAT CGT AGG ATA TCG TCA ATT"  # D8 (section 18.6): LDA L1 HARVEST SKNZ OUT IN SKNZ, answers only when a = 0
+LSKIP = "ATG AGG GCT CTT TTA GGA TCA CAG TTT TCG AGG CCA AGG CCA CCG"  # D8: IN INC SKZ OUT HARVEST EAT <> HARVEST EAT <> EAT <>, skips the carry
 
 CONFIGS = [
     ("dna1_t1", "--N 16384 --G 256 --ticks 200 --seed 1"),
@@ -104,6 +106,17 @@ CONFIGS = [
     ("ladder_uniform_g255", "--days 1,2,3,4,5,6 --ladder --uniform-code --shade --T 0 --W 16 --land-cell 8 --N 65280 --G 255 "
                             "--ticks 400 --seed 109 --mu 0.01 --F 4 --pool-cell 8 --pool-max 100 --pool-in 3 --n-seed 16 "
                             "--genome 'AAA CCG CTG ATT CTT AGA AAG CCC AGC'"),
+    # docs/17 section 18.7: --answer-all (an input left unanswered resets every streak)
+    ("ladder_aa_abstain", "--days 1,2,3,4,5,6 --ladder --answer-all --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 "
+                          "--ticks 400 --seed 113 --mu 0.01 --pool-cell 8 --pool-max 256 --pool-in 4 --n-seed 16 "
+                          "--seed-terrain sea --genome '%s'" % LABST0),
+    ("ladder_aa_skip", "--days 1,2,3,4,5,6 --ladder --answer-all --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 "
+                       "--ticks 400 --seed 127 --pool-cell 0 --eat-eff 12 --n-seed 32 --genome '%s'" % LSKIP),
+    ("ladder_aa_social", "--days 1,2,3,4,5,6 --ladder --answer-all --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 "
+                         "--ticks 400 --seed 131 --streak-len 4 --n-seed 64 --genome '%s'" % LSOC),
+    ("ladder_aa_x1_mu", "--days 1,2,3,4,5,6 --ladder --answer-all --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 "
+                        "--ticks 600 --seed 137 --mu 0.03 --pool-cell 16 --eat-eff 12 --n-seed 16 --seed-terrain sea "
+                        "--genome '%s'" % LX1),
 ]
 
 
