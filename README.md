@@ -142,9 +142,11 @@ held back by the firmament. **The day-7 run** (3 x 10^9 cells, days 1 to 6 froze
 criteria fixed beforehand (docs/17 sections 9 and 17). **Its fork with a long task ladder** (4-bit inputs, 18 tasks
 ranked by their shortest program on the organisms' own machine), depletable regional task pools, a social task and
 more profitable predation (section 18) is, after 102,400 ticks, open-ended by the same criteria: about 1,400 new
-adaptive operation sequences per census against D7's 5, task income rising at every census, x+1 with carry, x-1 and
-a xor b climbing, and 83 % of the organisms predators that still harvest; no evidence yet that the social task is
-solved by communication.
+adaptive operation sequences per census against D7's 5, task income rising at every census, and 83 % of the
+organisms predators that still harvest; no evidence yet that the social task is solved by communication. The rising
+rank-4 rewards (x+1, x-1, a xor b) are not computed: the common programs answer only the inputs on which a
+3-instruction trick is right (OUT is optional) and collect two or three bounties per answer, e.g. answering only when
+a = 0 earns x&3 and a xor b at once (section 18.6, an abstention loophole to close in the next fork).
 
 **Real ISAs.** AArch64 exhaustive over all 2^32 words: **1,526,900,218 valid instructions (35.5509 %)**, 1,298
 mnemonics, 15 minutes on the workstation. Encoding density of other ISAs (16.7 M-word samples, Capstone): ARM32

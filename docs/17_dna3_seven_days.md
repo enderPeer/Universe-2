@@ -1238,3 +1238,40 @@ trophic level, which reflects the spread of predation, not of computation. The s
 counts (section 17.2). Depletable pools reward rarity, so part of the turnover may be cycling between tasks; the
 activity measure counts only components that stay active beyond the shadow's threshold. D8 runs on a GPU shared with
 another job, at 1 to 2 ticks per second.
+
+### 18.6 Which programs earn the ladder tasks: abstaining and multiple bounties (D8 checkpoint, tick 307,200)
+
+Per-gene reward counts are not recorded, so they were measured (`tools/dna3_task_profile.py`,
+`results/dna3/fork8/task_profile.json`): the 1,500 most common exact spellings that contain OUT (1,345,253 of the
+6,307,733 living organisms) were each run alone for 1,500 ticks in a 16 x 16 reference world of the same rules
+(`--ladder`, days 1 to 6, shade, T = 0, G = 256) without mutation, inflow, damage or pools, and the ladder's reward
+counts per task were read. This shows what a program computes, not what it earns in D8 (no pools, no neighbours).
+
+**Every common program collects two or three bounties, and none computes its rank-4 task.** Grouped by the tasks that
+give at least 5 % of a program's rewarded answers:
+
+| family | organisms | typical program (after `START HARVEST ALLOC COPY TERM DIVIDE`) | what it does |
+|---|---:|---|---|
+| x^1 + x&12 + x-1 | 753,867 | `TERM SEEK HARVEST SKNZ OUT IN FLIP` | flips the low cell; SKNZ skips OUT unless it became 0, so it answers only inputs with b = 1, where 4a is x^1, x&12 and x-1 at once (equal counts of the three) |
+| x&3 + a xor b | 389,849 | `LDA L1 HARVEST SKNZ OUT IN SKNZ`, `SKZ SEEK MOVE LISTEN OUT IN L1` | moves the head to the high cell and answers only when a = 0; then the untouched low cell b is x&3 and a xor b (= b) at once (49 % and 49 %) |
+| x+1 + x^1 | 197,620 | `IN INC SKZ OUT HARVEST EAT HARVEST EAT EAT` | adds 1 to the low cell and skips OUT when it wrapped to 0 (a carry was needed); correct x+1 on every answer, x^1 too when b is even (85 to 89 % and 11 to 15 %) |
+| a + a xor b | 1,575 | `... OUT IN FLIP IN JNZB L1 HARVEST ALLOC LDA R1 STA ...` | copies a into the low cell, answers selectively; a and a xor b agree when b = 0 |
+| x+8 | 1,044 | `TERM L3 OUT HARVEST ALLOC IN L1 INC INC` | adds 2 to the high cell: x+8 on all 16 inputs (a real rank-1 computation) |
+| x^4 | 711 | `IN L1 TERM DIVIDE HARVEST FLIP OUT` | flips the high cell: x^4 on all inputs |
+
+No profiled program earns a xor b, x-1, x+1 or parity other than through one of these subsets: no spelling has a xor b
+clearly above x&3, x-1 above x^1, x+1 without its x^1 companion, or parity at 10 % of its rewards. The rising counts of
+a xor b and x&3 in D8 (section 18.5) are therefore one family that answers only a quarter of its inputs (a = 0) and is
+paid twice per answer (16 + 128 at full pools); x-1 is mostly paid to the b = 1 family, x+1 to the carry-skipping one.
+Weighted by carriers and per organism, the energy of the profiled programs comes from x+1 (38 %), x-1 (35 %), a xor b
+(19 %), x^1, x&3, x&12 (2 to 3 % each); the rank-4 rewards dominate although none of them is computed.
+
+**A loophole: abstaining.** OUT is optional and an input without an answer neither breaks nor raises a streak, so a
+program may answer only the inputs on which a 2- or 3-instruction computation happens to be right; the conditionals
+(SKZ, SKNZ) that decide whether OUT runs read the I/O cells, so the program chooses its own easy subset. The ranking of
+section 18.1 (all 16 inputs correct) does not hold for such programs: x+1, x-1 and a xor b cost 3 instructions, not 8
+or more, and several tasks agree on the chosen subset. The anti-guessing rule assumed one answer per input. Possible
+fixes (a rule change, so a new fork, not D8): count an input that is replaced by the next IN without an answer as a
+wrong answer for every task (abstaining resets all streaks), or pay in proportion to the inputs answered. D8 keeps
+running unchanged; its open-endedness by the day-7 criteria (section 18.5) stands, but the ladder it climbs is mostly
+this abstention trick, not computation.
