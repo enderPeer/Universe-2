@@ -191,3 +191,138 @@ tick 307,200, kept when D8 writes its next one).
   green and magenta). D9 is in a steady state since about tick 1,200,000: population, income and diversity flat,
   the x^1 and x|3 counts still rising.
 - Running (adler40 GPU 0, 100 %); 66 GB free (L6 still on adler40). Checkpoint tick 1,587,200 being profiled.
+- Checkpoint tick 1,587,200 (6,155,104 alive): x+1 with carry in 8,384 profiled organisms (carry A and B forms,
+  98.9 to 100 %); x-1: 1,150 programs (576,804 organisms), none solves the borrow; a xor b: no program. Signals:
+  367,745 signallers; the signal carries 0.55 bits about the sender's b (0.39 at tick 1,433,600; 0.07 at 460,800) and
+  0.30 bits about its low I/O cell; listeners echo (0.71). Social target 25.17 % (listened) vs 24.89 % (control),
+  with a signalling partner 23.5 % vs 24.0 % (1,847 cases): no channel.
+
+## 2026-10-13 08:22 UTC: tick 1,791,999
+
+- 6,142,268 alive (zone 0 3,234,798 / zone 1 2,907,470); eaters 4,763,247 (77.5 %), movers 381,546, WAIT 282,858,
+  SENSE 336,912, SIGNAL 373,757, LISTEN 1,420,562; 474,413 distinct genes (468,650 at tick 1,633,279).
+- Rewarded answers since D8's fork (rank): x^1 (0) 2,315 G, x^4 (0) 170 G, x+4 (0) 299 G, x&12 (0) 233 G, x^5 (1)
+  803 G, x+8 (1) 890 G, x&3 (1) 743 G, 4x (1) 6.4 G, a (1) 38.4 G, x+1 (4) 1,084 G, x|3 (2) 60.2 G, x/4 (2) 851 M,
+  15-x (3) 6.41 M, x-1 (4) 604 G, 2x (4) 568 M, x/2 (4) 582 M, parity (4) 729 M, a xor b (4) 44.7 G, social (3)
+  11.1 G.
+- Last 10,240 ticks: x^1 +21.9 G, x+1 +7.07 G, x+8 +6.92 G, x^5 +6.66 G, x&3 +6.38 G, x-1 +3.98 G, x+4 +2.01 G,
+  x&12 +1.15 G, x^4 +1.10 G, x|3 +0.96 G (rising: 0.71 G at tick 1,633,279), a +0.37 G, a xor b +0.31 G, 4x +0.11 G,
+  social +92.7 M. Task income 567.0 G per 10,240 ticks.
+- Pools (fraction of full): x+1 0.31, x^1 0.54, x^5 0.72, x+8 0.72, x&3 0.75, x-1 0.78, x|3 0.97 (first drawn down).
+- No new sequence in the top 10. Animals map unchanged in character (red eaters, green plants, magenta hunters).
+  Steady state continues; x|3 (rank 2) is the one task still rising clearly.
+- Running (adler40 GPU 0, 100 %); 65 GB free (L6 still on adler40). Checkpoint tick 1,740,800 being profiled.
+- Checkpoint tick 1,792,000 (copied after it overwrote 1,740,800; 6,142,268 alive): a **shorter carry program** for
+  x+1: `START HARVEST ALLOC COPY TERM DIVIDE SKZ L3 L1 INC OUT IN INC` (472 carriers, 100.0 % correct, 8,135 of 8,135
+  carry inputs; without a carry L3 moves the head 3 cells left, off the I/O cells, so L1 INC changes nothing answered;
+  with a carry SKZ skips L3 and L1 INC adds the carry), next to carry B (100 %) and the SKNZ form (100 %); 7,629
+  profiled organisms solve the carry. x-1: 1,163 programs (578,195 organisms), none solves the borrow; a xor b: no
+  program. Signals: 0.65 bits about the sender's b (0.55 at tick 1,587,200), 0.37 bits about its low I/O cell; social
+  target 24.90 % (listened) vs 24.74 % (control), with a signalling partner 23.4 % vs 23.5 % (1,713 cases): no channel.
+
+## 2026-10-13 10:22 UTC: tick 1,950,719
+
+- 6,120,798 alive (zone 0 3,219,848 / zone 1 2,900,950); eaters 4,782,109 (78.1 %), movers 340,654 (falling), WAIT
+  282,687, SENSE 370,541, SIGNAL 371,985, LISTEN 1,463,157; 480,371 distinct genes (rising slowly: 474,413 at tick
+  1,791,999).
+- Rewarded answers since D8's fork (rank): x^1 (0) 2,649 G, x^4 (0) 186 G, x+4 (0) 330 G, x&12 (0) 250 G, x^5 (1)
+  906 G, x+8 (1) 997 G, x&3 (1) 840 G, 4x (1) 8.1 G, a (1) 44.0 G, x+1 (4) 1,194 G, x|3 (2) 79.4 G, x/4 (2) 966 M,
+  15-x (3) 7.12 M, x-1 (4) 665 G, 2x (4) 653 M, x/2 (4) 667 M, parity (4) 775 M, a xor b (4) 49.4 G, social (3)
+  12.6 G.
+- Last 10,240 ticks: x^1 +21.3 G, x+1 +7.06 G, x+8 +6.86 G, x^5 +6.61 G, x&3 +6.26 G, x-1 +3.95 G, x+4 +1.86 G,
+  x|3 +1.49 G (0.96 G at tick 1,791,999, still rising), x&12 +1.19 G, x^4 +1.04 G, a +0.35 G, a xor b +0.30 G,
+  4x +0.10 G, social +90.0 M. Task income 574.6 G per 10,240 ticks.
+- Pools (fraction of full): x+1 0.30, x^1 0.56, x^5 0.73, x+8 0.74, x&3 0.75, x-1 0.78, x|3 0.96.
+- New in the top 10: another x^1 program with SIGNAL (`START COPY ALLOC HARVEST TERM DIVIDE OUT IN FLIP SIGNAL OUT IN
+  FLIP`). Traits map: the cyan (plant + SENSE) patches are spread more evenly than before, the yellow (plant + WAIT)
+  corner patches are smaller.
+- Running (adler40 GPU 0, 100 %); 63 GB free (L6 still on adler40). Latest checkpoint being profiled.
+- Checkpoint tick 1,945,600 (6,119,631 alive): x+1 with carry in 9,274 profiled organisms (carry A, the short
+  `SKZ L3 L1 INC OUT IN INC` at 100 %); x-1: 1,185 programs (606,800 organisms), none solves the borrow; a xor b: no
+  program. Signals: 0.76 bits about the sender's b (0.65 at tick 1,792,000), 0.44 bits about its low I/O cell;
+  social target 24.90 % (listened) vs 25.08 % (control), with a signalling partner 23.5 % vs 23.6 % (1,600 cases):
+  no channel.
+
+## 2026-10-13 12:22 UTC: tick 2,109,439
+
+- 6,123,212 alive (zone 0 3,206,570 / zone 1 2,916,642); eaters 4,771,924 (77.9 %), movers 304,063 (falling), WAIT
+  293,882, SENSE 359,336, SIGNAL 371,004, LISTEN 1,543,209 (rising); 487,181 distinct genes (rising: 480,371 at
+  tick 1,950,719).
+- Rewarded answers since D8's fork (rank): x^1 (0) 2,982 G, x^4 (0) 200 G, x+4 (0) 357 G, x&12 (0) 268 G, x^5 (1)
+  1,008 G, x+8 (1) 1,103 G, x&3 (1) 937 G, 4x (1) 9.7 G, a (1) 49.5 G, x+1 (4) 1,303 G, x|3 (2) 107 G, x/4 (2)
+  1.08 G, 15-x (3) 7.79 M, x-1 (4) 727 G, 2x (4) 735 M, x/2 (4) 752 M, parity (4) 819 M, a xor b (4) 54.1 G, social
+  (3) 13.9 G.
+- Last 10,240 ticks: x^1 +21.6 G, x+1 +7.09 G, x+8 +6.78 G, x^5 +6.59 G, x&3 +6.21 G, x-1 +4.02 G, x|3 +2.16 G
+  (1.49 G at tick 1,950,719: still rising), x+4 +1.65 G, x&12 +1.12 G, x^4 +0.89 G, a +0.36 G, a xor b +0.30 G,
+  4x +0.11 G, social +87.8 M. Task income 588.8 G per 10,240 ticks (574.6 G).
+- Pools (fraction of full): x+1 0.30, x^1 0.56, x^5 0.74, x+8 0.74, x&3 0.76, x-1 0.77, x|3 0.93.
+- No new top-10 sequence. Animals map unchanged in character. Steady state with slowly rising diversity, income and
+  x|3.
+- Running (adler40 GPU 0, 100 %); 62 GB free (L6 still on adler40). Latest checkpoint being profiled.
+- Checkpoint tick 2,099,200 (6,126,467 alive): x+1 with carry in 5,258 profiled organisms (the short
+  `SKZ L3 L1 INC OUT IN INC` in two spellings, 100 %; a carry-B form, 100 %); x-1: 1,220 programs (629,971
+  organisms), none solves the borrow; a xor b: no program. Signals: 0.74 bits about the sender's b, 0.42 bits about
+  its low I/O cell; social target 24.86 % (listened) vs 25.40 % (control); with a signalling partner 25.7 % vs 23.5 %
+  (2,113 cases, a difference of about 1.7 standard errors, not significant): no channel shown.
+
+## 2026-10-13 14:22 UTC: tick 2,268,159
+
+- 6,132,163 alive (zone 0 3,205,875 / zone 1 2,926,288); eaters 4,768,379 (77.8 %), movers 319,330, WAIT 282,445,
+  SENSE 380,898, SIGNAL 415,229, LISTEN 1,655,592 (rising); 493,260 distinct genes (rising).
+- Rewarded answers since D8's fork (rank): x^1 (0) 3,314 G, x^4 (0) 212 G, x+4 (0) 381 G, x&12 (0) 285 G, x^5 (1)
+  1,109 G, x+8 (1) 1,205 G, x&3 (1) 1,033 G, 4x (1) 11.6 G, a (1) 55.2 G, x+1 (4) 1,414 G, x|3 (2) 148 G, x/4 (2)
+  1.20 G, 15-x (3) 8.40 M, x-1 (4) 789 G, 2x (4) 816 M, x/2 (4) 841 M, parity (4) 862 M, a xor b (4) 58.8 G, social
+  (3) 15.3 G.
+- Last 10,240 ticks: x^1 +21.6 G, x+1 +7.13 G, x+8 +6.55 G, x^5 +6.51 G, x&3 +6.22 G, x-1 +3.96 G, x|3 +3.09 G
+  (2.16 G at tick 2,109,439), x+4 +1.42 G, x&12 +1.05 G, x^4 +0.70 G, a +0.38 G, a xor b +0.31 G, 4x +0.13 G, social
+  +87.5 M. Task income 600.5 G per 10,240 ticks (588.8 G).
+- Pools (fraction of full): x+1 0.29, x^1 0.56, x^5 0.74, x+8 0.75, x&3 0.77, x-1 0.77, x|3 0.89.
+- New in the top 10: three more x^1 programs (`OUT IN FLIP OUT IN FLIP` and copy-loop variants).
+- Running (adler40 GPU 0, 100 %); 60 GB free (L6 still on adler40). adler40's second card (RTX 4080, GPU 1) no
+  longer answers nvidia-smi ("Unable to determine the device handle ... Unknown Error"); D9 on the 4090 is not
+  affected.
+
+## 2026-10-13 16:22 UTC: tick 2,431,999
+
+- 6,149,792 alive (zone 0 3,198,091 / zone 1 2,951,701); eaters 4,786,598 (77.8 %), movers 308,871, WAIT 254,894,
+  SENSE 407,924, SIGNAL 482,077 (rising), LISTEN 1,743,762 (rising); 492,767 distinct genes.
+- Rewarded answers since D8's fork (rank): x^1 (0) 3,668 G, x^4 (0) 222 G, x+4 (0) 404 G, x&12 (0) 302 G, x^5 (1)
+  1,213 G, x+8 (1) 1,310 G, x&3 (1) 1,133 G, 4x (1) 13.7 G, a (1) 61.5 G, x+1 (4) 1,528 G, x|3 (2) 204 G, x/4 (2)
+  1.32 G, 15-x (3) 8.95 M, x-1 (4) 853 G, 2x (4) 906 M, x/2 (4) 936 M, parity (4) 907 M, a xor b (4) 63.9 G, social
+  (3) 16.7 G.
+- Last 10,240 ticks: x^1 +22.3 G, x+1 +7.15 G, x+8 +6.52 G, x^5 +6.40 G, x&3 +6.22 G, x-1 +3.98 G, x|3 +3.84 G
+  (3.09 G at tick 2,268,159), x+4 +1.43 G, x&12 +1.06 G, x^4 +0.53 G, a +0.40 G, a xor b +0.32 G, 4x +0.15 G, social
+  +88.0 M. Task income 610.9 G per 10,240 ticks (600.5 G).
+- Pools (fraction of full): x+1 0.29, x^1 0.56, x+8 0.75, x^5 0.76, x-1 0.76, x&3 0.77, x|3 0.86.
+- No new top-10 sequence. Traits map: green with evenly scattered cyan (plant + SENSE) and yellow (plant + WAIT);
+  the corner patches of the morning have dissolved.
+- Running (adler40 GPU 0, 100 %); 486 GB free after the L6 deletion. The RTX 4080 (GPU 1) still does not answer
+  nvidia-smi. Latest checkpoint being profiled (with a screen of the x|3 programs).
+- Checkpoint tick 2,406,400 (6,149,886 alive, 270,553 operation sequences): **x|3 is computed by programs that use
+  LISTEN as a source of zero**: `... IN HARVEST LISTEN <operand> STA INC INC INC` (348, 308, 299 carriers in the
+  profile, 100 % correct in the reference, where the neighbours are silent clones): LISTEN loads a silent neighbour's
+  signal (0) into A, STA writes it into the low cell, three INCs make it 3, the high cell stays: x|3. In D9 this works
+  only next to neighbours that do not signal a non-zero value. x+1 with carry: 6,288 profiled organisms (three forms,
+  100 %); x-1: 1,244 programs, none solves the borrow; a xor b: no program. Signals: social target 24.59 % (listened)
+  vs 25.20 % (control), with a signalling partner 25.3 % vs 24.4 % (2,889 cases): no channel.
+- Energy over the last 10,240 ticks (ledger, G): income light 43.5, harvest 254.7, tasks 610.8; spent on
+  instructions 616.8, copying 37.3, maintenance 64.2; overflow (energy above emax, lost) 302.9; moved by predation
+  713.9 with 189.7 trophic loss.
+- Gene length (START to the codon before STOP): mean 16.9 codons, median 16; the most common gene (358,648 organisms)
+  is `START HARVEST ALLOC COPY TERM DIVIDE IN FLIP INC FLIP OUT` (11 codons), x-1 without borrow.
+
+## 2026-10-13 18:22 UTC: tick 2,595,839
+
+- 6,171,019 alive (zone 0 3,201,816 / zone 1 2,969,203); eaters 4,783,781 (77.5 %), movers 302,933, WAIT 228,860
+  (falling), SENSE 423,847, SIGNAL 504,009 (rising), LISTEN 1,845,992 (rising); 490,936 distinct genes.
+- Rewarded answers since D8's fork (rank): x^1 (0) 4,026 G, x^4 (0) 230 G, x+4 (0) 425 G, x&12 (0) 319 G, x^5 (1)
+  1,316 G, x+8 (1) 1,413 G, x&3 (1) 1,231 G, 4x (1) 16.1 G, a (1) 68.2 G, x+1 (4) 1,642 G, x|3 (2) 272 G, x/4 (2)
+  1.45 G, 15-x (3) 9.43 M, x-1 (4) 916 G, 2x (4) 1.00 G, x/2 (4) 1.04 G, parity (4) 953 M, a xor b (4) 69.1 G, social
+  (3) 18.1 G.
+- Last 10,240 ticks: x^1 +22.8 G, x+1 +7.16 G, x^5 +6.49 G, x+8 +6.37 G, x&3 +6.13 G, x|3 +4.52 G (3.84 G at tick
+  2,431,999), x-1 +3.99 G, x+4 +1.29 G, x&12 +1.07 G, x^4 +0.48 G, a +0.44 G, a xor b +0.34 G, 4x +0.15 G, social
+  +93.0 M. Task income 620.6 G per 10,240 ticks (610.9 G).
+- Pools (fraction of full): x+1 0.28, x^1 0.54, x^5 0.75, x+8 0.77, x-1 0.77, x&3 0.78, x|3 0.83.
+- New in the top 10: `START SIGNAL ALLOC HARVEST TERM DIVIDE OUT IN FLIP COPY OUT IN FLIP` (x^1). Animals map:
+  red eaters with green plants and magenta hunters, a few small white/magenta clusters in zone 1.
+- Running (adler40 GPU 0, 100 %); 484 GB free; the RTX 4080 still offline. Latest checkpoint being profiled.

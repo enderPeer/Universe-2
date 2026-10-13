@@ -507,5 +507,40 @@
   "ops": "START HARVEST ALLOC SIGNAL TERM DIVIDE OUT IN FLIP COPY OUT IN FLIP",
   "codons": "ATG AGA GCA CGA TTA GGT TCG TCA AAC CTG TCG TCA AAC",
   "count": 1958
+ },
+ {
+  "tick": 1853439,
+  "event": "new operation sequence in the top 10",
+  "ops": "START COPY ALLOC HARVEST TERM DIVIDE OUT IN FLIP SIGNAL OUT IN FLIP",
+  "codons": "ATG CTA GCA AGA TTA GGG TCG TCA AAT CGA TCG TCA AAC",
+  "count": 1704
+ },
+ {
+  "tick": 2129919,
+  "event": "new operation sequence in the top 10",
+  "ops": "START COPY ALLOC START TERM DIVIDE OUT IN FLIP HARVEST OUT IN FLIP",
+  "codons": "ATG CTA GCA ATG TTA GGC TCG TCA AAT AGA TCG TCA AAT",
+  "count": 1636
+ },
+ {
+  "tick": 2140159,
+  "event": "new operation sequence in the top 10",
+  "ops": "START SKZ ALLOC COPY TERM DIVIDE OUT IN FLIP HARVEST OUT IN FLIP",
+  "codons": "ATG TTC GCA CTC TTA GGC TCG TCA AAC AGG TCG TCA AAC",
+  "count": 1657
+ },
+ {
+  "tick": 2145279,
+  "event": "new operation sequence in the top 10",
+  "ops": "START HARVEST ALLOC COPY TERM DIVIDE OUT IN FLIP OUT IN FLIP",
+  "codons": "ATG AGA GCA CTT TTA GGA TCG TCA AAC TCG TCA AAT",
+  "count": 1573
+ },
+ {
+  "tick": 2483199,
+  "event": "new operation sequence in the top 10",
+  "ops": "START SIGNAL ALLOC HARVEST TERM DIVIDE OUT IN FLIP COPY OUT IN FLIP",
+  "codons": "ATG CGA GCT AGA TTA GGT TCG TCA AAC CTC TCG TCA AAT",
+  "count": 1603
  }
 ]

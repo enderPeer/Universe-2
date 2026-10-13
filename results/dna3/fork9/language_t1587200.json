@@ -1,0 +1,30 @@
+{
+ "tick": 1587200,
+ "live": 6155104,
+ "signal_genes": 367745,
+ "listen_genes": 1395804,
+ "signal_values": [
+  223182,
+  47047,
+  45802,
+  46221
+ ],
+ "mi_signal_b": 0.5486860084788769,
+ "mi_signal_a": 5.261728878546443e-05,
+ "mi_signal_lowcell": 0.30028661950663194,
+ "p_signal_eq_b": 0.5779070923003876,
+ "adjacent_signaller_pairs": 368182,
+ "p_same_signal_adjacent": 0.4823701321628977,
+ "p_same_signal_expected": 0.42870780251050994,
+ "listeners_with_direction": 1187844,
+ "listened_neighbour_alive": 0.49030849168746066,
+ "listened_neighbour_signals": 0.020837753105626664,
+ "answered_listeners_tested": 44045,
+ "p_target_listened": 0.2517425360426836,
+ "p_target_control_opposite": 0.24892723351118173,
+ "p_echo_b": 0.7128845498921558,
+ "p_listened_b_is_0": 0.2529004427290271,
+ "tested_with_signalling_partner": 1847,
+ "p_target_listened_signalling_partner": 0.2349756361667569,
+ "p_target_control_signalling_partner": 0.24038982133188955
+}
