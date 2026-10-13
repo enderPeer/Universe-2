@@ -25,6 +25,18 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import dna3_maps  # noqa: E402
 
 
+def gzopen(path, mode, tries=10):
+    """gzip.open that retries for a few seconds when Windows briefly locks the file (e.g. a virus scan: OSError 22/13)."""
+    import time
+    for k in range(tries):
+        try:
+            return gzip.open(path, mode)
+        except OSError:
+            if k == tries - 1:
+                raise
+            time.sleep(2)
+
+
 def ssh(host, cmd):
     return subprocess.run(["ssh", "-n", "-o", "BatchMode=yes", host, cmd], capture_output=True, text=True).stdout
 
@@ -50,9 +62,9 @@ def main():
     if not a.no_fetch:
         txt = ssh(a.host, "cat %s.txt" % base)
         top = ssh(a.host, "cat %s.top" % base)
-        with gzip.open(os.path.join(od, a.name + ".raw.txt.gz"), "wt") as f:
+        with gzopen(os.path.join(od, a.name + ".raw.txt.gz"), "wt") as f:
             f.write(txt)
-        with gzip.open(os.path.join(od, a.name + ".top.gz"), "wt") as f:
+        with gzopen(os.path.join(od, a.name + ".top.gz"), "wt") as f:
             f.write(top)
         subprocess.run(["scp", "-q", "-o", "BatchMode=yes", "%s:%s.map.terrain" % (a.host, base),
                         os.path.join(od, "frames.map.terrain")])
@@ -68,7 +80,7 @@ def main():
                 f.write(data)
             with open(os.path.join(od, "frames.%s.idx" % m), "w") as f:
                 json.dump(idx, f)
-    with gzip.open(os.path.join(od, a.name + ".raw.txt.gz"), "rt") as f:
+    with gzopen(os.path.join(od, a.name + ".raw.txt.gz"), "rt") as f:
         lines = [l for l in f if l.startswith("census ")]
     if a.census_every:
         lines = [l for l in lines if (json.loads(l[7:])["tick"] + 1) % a.census_every == 0]
@@ -80,13 +92,13 @@ def main():
             order.append(d["tick"])
         by_tick[d["tick"]] = d
     cens = [by_tick[t] for t in sorted(order)]
-    with gzip.open(os.path.join(od, a.name + ".txt.gz"), "wt") as f:
+    with gzopen(os.path.join(od, a.name + ".txt.gz"), "wt") as f:
         for c in cens:
             f.write("census " + json.dumps(c) + "\n")
     # all census lines in file order map one to one onto the map frames
     frame_ticks = [json.loads(l[7:])["tick"] for l in lines]
     tops = {}
-    with gzip.open(os.path.join(od, a.name + ".top.gz"), "rt") as f:
+    with gzopen(os.path.join(od, a.name + ".top.gz"), "rt") as f:
         for l in f:
             if l.startswith("#"):
                 continue
