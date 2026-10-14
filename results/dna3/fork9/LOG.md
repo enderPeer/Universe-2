@@ -326,3 +326,72 @@ tick 307,200, kept when D8 writes its next one).
 - New in the top 10: `START SIGNAL ALLOC HARVEST TERM DIVIDE OUT IN FLIP COPY OUT IN FLIP` (x^1). Animals map:
   red eaters with green plants and magenta hunters, a few small white/magenta clusters in zone 1.
 - Running (adler40 GPU 0, 100 %); 484 GB free; the RTX 4080 still offline. Latest checkpoint being profiled.
+- Checkpoint tick 2,560,000: x+1 with carry in 8,350 profiled organisms (100 %); x|3 by 10 programs (3,159
+  organisms), all of the LISTEN-as-zero form (`... LISTEN <operand> STA INC INC INC`, 100 %); x-1: 1,220 programs, none
+  solves the borrow; a xor b: no program. Signals: 491,136 signallers, 1,656,293 listeners with a direction; 0.86 bits
+  about the sender's b (0.74 at tick 2,099,200), 0.52 bits about its low I/O cell. Social target 25.09 % (listened) vs
+  24.98 % (control). With a signalling partner 26.4 % vs 24.8 % (3,200 cases, 1.5 standard errors); this subset was
+  above its control at the last three checkpoints (25.7/23.5, 25.3/24.4, 26.4/24.8) and below it at the three before
+  (23.7/25.5, 23.7/24.8, 23.4/23.5): not significant, watched.
+
+## 2026-10-13 20:22 UTC: tick 2,749,439
+
+- 6,196,435 alive (zone 0 3,200,195 / zone 1 2,996,240); eaters 4,794,627 (77.4 %), movers 308,569, WAIT 236,068,
+  SENSE 427,366, SIGNAL 548,468 (rising), LISTEN 1,967,496 (rising); 496,536 distinct genes.
+- Rewarded answers since D8's fork (rank): x^1 (0) 4,379 G, x^4 (0) 237 G, x+4 (0) 443 G, x&12 (0) 335 G, x^5 (1)
+  1,413 G, x+8 (1) 1,507 G, x&3 (1) 1,324 G, 4x (1) 18.3 G, a (1) 75.0 G, x+1 (4) 1,750 G, x|3 (2) 346 G, x/4 (2)
+  1.59 G, 15-x (3) 9.78 M, x-1 (4) 977 G, 2x (4) 1.10 G, x/2 (4) 1.14 G, parity (4) 996 M, a xor b (4) 74.4 G, social
+  (3) 19.6 G.
+- Last 10,240 ticks: x^1 +24.2 G, x+1 +7.26 G, x^5 +6.41 G, x+8 +6.33 G, x&3 +6.17 G, x|3 +5.25 G (4.52 G at tick
+  2,595,839), x-1 +4.08 G, x+4 +1.15 G, x&12 +1.03 G, a +0.48 G, x^4 +0.43 G, a xor b +0.36 G, 4x +0.15 G, social
+  +98.8 M. Task income 639.7 G per 10,240 ticks (620.6 G).
+- Pools (fraction of full): x+1 0.28, x^1 0.53, x-1 0.76, x^5 0.77, x+8 0.78, x&3 0.78, x|3 0.80.
+- No new top-10 sequence. Traits map at tick 2,754,559: green with evenly scattered yellow (plant + WAIT) and cyan
+  (plant + SENSE), no large patches.
+- Watcher: the 22:22 local run labelled its newest frame "t477" (a census written between fetching the census file
+  and the map: one frame more than lines); fixed in `tools/dna3_watch.py` (frames are capped at the census lines read),
+  the picture was redone as `*_t2754559.png`.
+- Running (adler40 GPU 0, 100 %); 483 GB free; the RTX 4080 still offline. Latest checkpoint being profiled.
+- Checkpoint tick 2,713,600: x+1 with carry in 4,002 profiled organisms (carry B forms 100 %); x|3 by 9 programs
+  (3,047 organisms), all LISTEN-as-zero, 100 %; x-1: 1,241 programs (662,096 organisms), none solves the borrow; a xor
+  b: no program. Signals: 524,944 signallers, 1,789,858 listeners with a direction; 0.93 bits about the sender's b,
+  0.57 bits about its low I/O cell. Social target 24.79 % (listened) vs 24.53 % (control); with a signalling partner
+  24.5 % vs 23.5 % (2,978 cases, about 0.9 standard errors): no channel.
+
+## 2026-10-14 08:37 UTC: tick 3,701,759 (the scheduled checks did not run overnight: the PC slept)
+
+- D9 ran without interruption (same process for 45 h 39 min, about 20 ticks/s). 6,077,938 alive (zone 0 3,162,670 /
+  zone 1 2,915,268), slowly falling: 6.20 M at tick 2,749,439, 6.16 M at 2,959,359, 6.11 M at 3,164,159, 6.10 M at
+  3,368,959, 6.09 M at 3,573,759. Eaters 4,955,368 (81.5 %, rising from 77.4 %), movers 389,780, WAIT 249,022,
+  SENSE 393,161, SIGNAL 483,884 (peak 577,804 at tick 2,959,359, falling since), LISTEN 2,183,396; 496,633 distinct
+  genes (flat at 494,000 to 498,000).
+- Rewarded answers since D8's fork (rank): x^1 (0) 6,429 G, x^4 (0) 266 G, x+4 (0) 526 G, x&12 (0) 414 G, x^5 (1)
+  2,000 G, x+8 (1) 2,063 G, x&3 (1) 1,884 G, 4x (1) 35.0 G, a (1) 118 G, x+1 (4) 2,428 G, x|3 (2) 913 G, x/4 (2)
+  2.46 G, 15-x (3) 11.0 M, x-1 (4) 1,324 G, 2x (4) 1.77 G, x/2 (4) 1.84 G, parity (4) 1.24 G, a xor b (4) 106 G, social
+  (3) 28.6 G.
+- Last 10,240 ticks: x^1 +20.6 G, x+1 +7.31 G, x|3 +6.32 G (5.25 G at tick 2,749,439), x^5 +6.30 G, x&3 +5.99 G,
+  x+8 +5.79 G, x-1 +3.52 G, x&12 +0.77 G, x+4 +0.73 G, a +0.46 G, a xor b +0.33 G, x^4 +0.31 G, 4x +0.13 G, social
+  +96.8 M. Task income 629.9 G per 10,240 ticks (639.7 G at tick 2,749,439).
+- Pools (fraction of full): x+1 0.25, x^1 0.59, x|3 0.76, x^5 0.78, x-1 0.79, x&3 0.80, x+8 0.84.
+- New in the top 10: `START SIGNAL ALLOC COPY TERM DIVIDE OUT IN FLIP OUT IN FLIP` (x^1, tick 3,445,759).
+- Reading: after a slow rise to tick ~2.75 M, D9 drifts back a little: fewer organisms, more eaters (81.5 %),
+  fewer signallers, task income slightly down; x|3 is the only task that keeps climbing.
+- Running (adler40 GPU 0, 100 %); 473 GB free; the RTX 4080 still offline; knecht24's three cards idle.
+
+## 2026-10-14 11:30 UTC: D9 paused for a hardware change on adler40 (RTX 4080 -> RTX 5090)
+
+- Stopped by the user's decision at census tick 3,921,919; checkpoint `D9_answer.ckpt` at tick 3,891,200 (written
+  11:03:43 UTC). Resume with the same `dna3_open.sh` command (it resumes from D9_answer.ckpt and recomputes the ticks
+  after the checkpoint identically; the census, op census and map files get the repeated ticks appended, which the
+  tools drop or deduplicate). The RTX 5090 needs a build for sm_120 (CUDA 12.8 or newer); the 4090 keeps sm_89.
+- All other processes on adler40 stopped for the shutdown (homunculi-chat-ui, claude-gateway, gpu-panel, ollama,
+  fernzugang); the 2-hourly watch is paused.
+
+## 2026-10-14 14:30 UTC: resumed on adler40 after the card swap, now on the RTX 5090
+
+- adler40 rebooted with an RTX 5090 in place of the RTX 4080; the NVIDIA module was first rejected by Secure Boot
+  (the module signing key was no longer enrolled) and loaded after the user fixed it. D9 resumed at 14:24 UTC on the
+  RTX 4090 from tick 3,891,200, then moved to the RTX 5090 (GPU 1) after the 5090 build `dna_world3m` (sm_120, CUDA
+  13.3, same source md5 6234fdb5...) was verified (10 of 10 configurations identical, `results/dna3/verify_5090/`).
+  Resumed again from tick 3,891,200 at 14:28 UTC on the 5090. The RTX 4090 runs D10 (section 18.9) from the same
+  checkpoint.

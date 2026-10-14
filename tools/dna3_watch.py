@@ -73,6 +73,8 @@ def main():
         for m in a.modes.split(","):
             # the last frame and some before it, cut out on the node with dd (no numpy needed there)
             n = int(ssh(a.host, "stat -c %%s %s.map.%s" % (base, m)).strip() or 0) // S
+            # a census written between the two fetches adds a frame without its line: use only frames with a line
+            n = min(n, sum(1 for l in txt.splitlines() if l.startswith("census ")))
             idx = sorted(set(n - 1 - b for b in backs if n - 1 - b >= 0))
             cmd = "; ".join("dd if=%s.map.%s bs=%d skip=%d count=1 status=none" % (base, m, S, i) for i in idx)
             data = subprocess.run(["ssh", "-n", "-o", "BatchMode=yes", a.host, cmd], capture_output=True).stdout

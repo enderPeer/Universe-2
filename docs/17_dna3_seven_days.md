@@ -1339,3 +1339,37 @@ signalling partner 25.9 % against 23.8 % (804 cases, a difference of 1.4 standar
 rewards (+35.3 M per 10,240 ticks) is therefore not explained by a channel; a likely source, not tested, is coincidence
 streaks: an organism that answers b xor c with a fixed c (x^1: c = 1) next to a neighbour whose input stays the same
 over seven of its answers.
+
+### 18.9 An easy social task (`--social-copy`) and D10, a fork of D9
+
+**Why.** D9's signals came to carry up to 0.93 bits about the sender's input b, but listeners never used them
+(sections 18.8 and the D9 log): the social task paid for b xor b', and no organism in D9 computes an XOR even on its
+own input (a xor b: no program in any checkpoint profile). Listening was therefore locked behind an unsolved
+computation, and the "ear" was used as a source of zero instead (the x|3 programs `LISTEN STA INC INC INC`).
+
+**Rule** (`--social-copy`, a ladder option in `sim/dna_ref.py` and `gpu/dna_world.cu`): the social task (index 18,
+rank 3, bonus 64) is correct when the low I/O cell equals b', the low half of the input of the neighbour in the
+direction of the last LISTEN (start-of-tick value), instead of b xor b'. Everything else as in D9 (`--answer-all`,
+pools, eat_eff 12). A receiver now needs only `LISTEN <direction> STA OUT` once a neighbour broadcasts its b (SIGNAL
+right after IN, as D9's spreading x^1 programs already do). Reading b' from the neighbour's tape without its signal is
+possible in principle and would count as well (eavesdropping).
+
+**Verification.** Two new configurations (`ladder_sc_copy`: 64 copy-listeners `IN SIGNAL LISTEN <N> STA OUT`, streak 4;
+`ladder_sc_mixed`: the same with mu 0.02, pools and eat_eff 12) plus the ten earlier ladder and day-6 ones, engine
+`dna_world3n` (sm_89) on the RTX 4090 against the reference: **12 of 12 identical on every tick**
+(`results/dna3/verify_sc/`). In the reference the copy-listener colony earns 287,491 social rewards in 400 ticks with
+`--social-copy` against 3,286 with the XOR rule. The RTX 5090 build of the unchanged engine (`dna_world3m`, sm_120,
+CUDA 13.3) was verified on the ten earlier configurations (`results/dna3/verify_5090/`, 10 of 10 identical).
+
+**D10_listen.** D9's checkpoint at tick 3,891,200 continued with D9's arguments plus `--social-copy`, on adler40's RTX
+4090 from 2026-10-14 14:33 UTC; D9 continues unchanged on the RTX 5090 from the same checkpoint, so D9 and D10 are a
+controlled pair. Run log: `results/dna3/fork10/LOG.md`.
+
+**Predictions, written at the fork.** (i) Social rewards rise at once by orders of magnitude over D9's (+97 M per
+10,240 ticks): the senders already exist and the copy needs one STA after LISTEN; (ii) the share of listeners whose
+listened neighbour signals rises from about 2 % within 10^5 ticks, and the tool `tools/dna3_language.py` shows a
+channel: the social target matched clearly more often with the listened neighbour than with the control neighbour;
+(iii) signalling is not paid to the sender, so honest signals (sig = b) can only spread through kin (neighbours are
+relatives) or as a by-product of the x^1 programs; if listeners spread faster than signallers, the information in
+signals falls again (free-riding); (iv) the XOR social task of D9 stays unsolved in D10, but the copy is a stepping
+stone towards using a heard value in a computation.

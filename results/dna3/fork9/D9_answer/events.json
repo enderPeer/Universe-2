@@ -542,5 +542,12 @@
   "ops": "START SIGNAL ALLOC HARVEST TERM DIVIDE OUT IN FLIP COPY OUT IN FLIP",
   "codons": "ATG CGA GCT AGA TTA GGT TCG TCA AAC CTC TCG TCA AAT",
   "count": 1603
+ },
+ {
+  "tick": 3445759,
+  "event": "new operation sequence in the top 10",
+  "ops": "START SIGNAL ALLOC COPY TERM DIVIDE OUT IN FLIP OUT IN FLIP",
+  "codons": "ATG CGA GCC CTT TTA GGG TCG TCA AAC TCG TCA AAC",
+  "count": 1883
  }
 ]

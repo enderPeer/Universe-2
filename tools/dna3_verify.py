@@ -32,6 +32,7 @@ LX1 = "ATG AGA TCA AAT TCG GCT CTT TTA GGT"      # ladder (section 18): IN FLIP 
 LSOC = "ATG AGA TCA CGA CGG AAA TCG GCT CTT TTA GGT"  # ladder: IN SIGNAL LISTEN <N> OUT (social task partner)
 LCARRY = "ATG AGA TCA CAA TAT GTT CGT CAA TCG GCT CTT TTA GGT"  # ladder: IN INC LDA JNZB L1 INC OUT (hangs in LDA JNZB unless the carry is needed; exercises the loop)
 LABST0 = "ATG AGA GCT CTA TTA GGT TAT CGT AGG ATA TCG TCA ATT"  # D8 (section 18.6): LDA L1 HARVEST SKNZ OUT IN SKNZ, answers only when a = 0
+LCOPY = "ATG AGA TCA CGA CGG AAA CAC TCG GCT CTT TTA GGT"  # 18.9: IN SIGNAL LISTEN <N> STA OUT, copies the neighbour's b
 LSKIP = "ATG AGG GCT CTT TTA GGA TCA CAG TTT TCG AGG CCA AGG CCA CCG"  # D8: IN INC SKZ OUT HARVEST EAT <> HARVEST EAT <> EAT <>, skips the carry
 
 CONFIGS = [
@@ -114,6 +115,11 @@ CONFIGS = [
                        "--ticks 400 --seed 127 --pool-cell 0 --eat-eff 12 --n-seed 32 --genome '%s'" % LSKIP),
     ("ladder_aa_social", "--days 1,2,3,4,5,6 --ladder --answer-all --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 "
                          "--ticks 400 --seed 131 --streak-len 4 --n-seed 64 --genome '%s'" % LSOC),
+    # docs/17 section 18.9: --social-copy (the social task asks for the listened neighbour's b)
+    ("ladder_sc_copy", "--days 1,2,3,4,5,6 --ladder --answer-all --social-copy --shade --T 0 --W 32 --land-cell 8 --N 262144 "
+                       "--G 256 --ticks 400 --seed 139 --streak-len 4 --n-seed 64 --genome '%s'" % LCOPY),
+    ("ladder_sc_mixed", "--days 1,2,3,4,5,6 --ladder --answer-all --social-copy --shade --T 0 --W 32 --land-cell 8 --N 262144 "
+                        "--G 256 --ticks 600 --seed 149 --mu 0.02 --pool-cell 16 --eat-eff 12 --n-seed 32 --genome '%s'" % LCOPY),
     ("ladder_aa_x1_mu", "--days 1,2,3,4,5,6 --ladder --answer-all --shade --T 0 --W 32 --land-cell 8 --N 262144 --G 256 "
                         "--ticks 600 --seed 137 --mu 0.03 --pool-cell 16 --eat-eff 12 --n-seed 16 --seed-terrain sea "
                         "--genome '%s'" % LX1),

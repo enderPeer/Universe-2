@@ -216,7 +216,7 @@ struct Params {
     int d4, shade;            /* docs/17 day 4; section 14 shading (a day-3 option) */
     int d5; i64 c_move, c_fly, eat_shift, eat_eff;   /* docs/17 day 5 */
     int d6; i64 c_walk, task_bonus;                   /* docs/17 day 6 */
-    int ladder, answer_all; i64 streak_len, pool_cell, pool_max, pool_in, nreg, rx;   /* docs/17 section 18 */
+    int ladder, answer_all, social_copy; i64 streak_len, pool_cell, pool_max, pool_in, nreg, rx;   /* docs/17 section 18 */
     i64 year_days, moon_days, season_amp, lat_amp, lmoon;
     i64 W, R, firm;
     int opc;                  /* --op-census (docs/17 day 7): output only, never read by the world's rules */
@@ -505,7 +505,8 @@ __global__ void k_execute(World w, Params P, i64 t, i64 lam0)
                 i64 reg = P.pool_cell ? ((s / P.W) / P.pool_cell) * P.rx + (s % P.W) / P.pool_cell : -1;
                 for (int k = 0; k < LADDER_NT; k++) {
                     bool ok = k < LADDER_NT - 1 ? (v & (u32)LT_MASK[k]) == (ladder_f(k, xi) & (u32)LT_MASK[k])
-                                                : nlo >= 0 && (v & 3u) == ((xi & 3u) ^ (u32)nlo);
+                                                : nlo >= 0 && (v & 3u) == (P.social_copy ? (u32)nlo   /* 18.9 */
+                                                                                    : ((xi & 3u) ^ (u32)nlo));
                     i64 c = (p.streak >> (3 * k)) & 7;
                     c = ok ? (c + 1 > 7 ? 7 : c + 1) : 0;
                     p.streak = (p.streak & ~(7LL << (3 * k))) | (c << (3 * k));
@@ -1348,7 +1349,7 @@ int main(int argc, char **argv)
     i64 gp_sea = 8, gp_land = 0, gh_sea = 16, gh_land = 32, c_copy = 1, maint = 1, land_cell = 32, land_thr = 32768; bool inflow_land = false;
     i64 year_days = 16, moon_days = 8, season_amp = -1, lat_amp = 8, lmoon = 1; bool shade = false;
     i64 c_move = 2, c_fly = 8, eat_shift = 1, eat_eff = 8, c_walk = 4, task_bonus = 8;
-    bool ladder = false, fork = false, answer_all = false; i64 streak_len = 7, pool_cell = 32, pool_max = 4096, pool_in = 64;
+    bool ladder = false, fork = false, answer_all = false, social_copy = false; i64 streak_len = 7, pool_cell = 32, pool_max = 4096, pool_in = 64;
     std::string ckpt_path, resume_path; i64 ckpt_every = 0;
     std::string op_path;   /* --op-census (docs/17 day 7) */
     for (int i = 1; i < argc; i++) {
@@ -1407,6 +1408,7 @@ int main(int argc, char **argv)
         else if (a == "--ladder") ladder = true;
         else if (a == "--fork") fork = true;
         else if (a == "--answer-all") answer_all = true;
+        else if (a == "--social-copy") social_copy = true;
         else if (a == "--streak-len") streak_len = atoll(next());
         else if (a == "--pool-cell") pool_cell = atoll(next());
         else if (a == "--pool-max") pool_max = atoll(next());
@@ -1459,6 +1461,7 @@ int main(int argc, char **argv)
     if (c_walk < 0 || task_bonus < 0) { fprintf(stderr, "bad day-6 parameters\n"); return 1; }
     if (ladder && !d6) { fprintf(stderr, "--ladder needs day 6\n"); return 1; }
     if (answer_all && !ladder) { fprintf(stderr, "--answer-all needs --ladder\n"); return 1; }
+    if (social_copy && !ladder) { fprintf(stderr, "--social-copy needs --ladder\n"); return 1; }
     if (shade && !d3) { fprintf(stderr, "--shade is a day-3 option\n"); return 1; }
     if (d1 || d2 || d3) dna2 = true;
     if (light_len < 0) light_len = day_len / 2;
@@ -1487,7 +1490,7 @@ int main(int argc, char **argv)
     P.e_seed = e_seed; P.e_spont = e_spont; P.gp[0] = d3 ? gp_sea : g_pass; P.gp[1] = d3 ? gp_land : g_pass; P.gh[0] = gh_sea; P.gh[1] = gh_land;
     P.c_copy = c_copy; P.maint = maint; P.inflow_land = inflow_land ? 1 : 0; P.W = Wg; P.R = Rg; P.firm = firm;
     P.d6 = d6; P.c_walk = c_walk; P.task_bonus = task_bonus;
-    P.ladder = ladder; P.answer_all = answer_all && ladder; P.streak_len = streak_len; P.pool_cell = pool_cell; P.pool_max = pool_max; P.pool_in = pool_in;
+    P.ladder = ladder; P.answer_all = answer_all && ladder; P.social_copy = social_copy && ladder; P.streak_len = streak_len; P.pool_cell = pool_cell; P.pool_max = pool_max; P.pool_in = pool_in;
     if (ladder && (streak_len < 1 || streak_len > 7 || pool_cell < 0 || pool_max < 1 || pool_in < 0 || (pool_cell && (Wg % pool_cell || Rg % pool_cell)))) {
         fprintf(stderr, "bad ladder parameters (1 <= streak_len <= 7, pool_cell divides W and R)\n"); return 1; }
     P.rx = (ladder && pool_cell) ? Wg / pool_cell : 0; P.nreg = (ladder && pool_cell) ? (Wg / pool_cell) * (Rg / pool_cell) : 0;
